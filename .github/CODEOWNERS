@@ -1,0 +1,8 @@
+# Frontend directory ownership
+/frontend/ @Kanku-SEP4-org//sep4-frontend
+
+# Machine Learning directory ownership
+/machine_learning/ @Kanku-SEP4-org/sep4-machine-learning
+
+# IoT directory ownership
+/internet_of_things/ @Kanku-SEP4-org/sep4-internet-of-things
