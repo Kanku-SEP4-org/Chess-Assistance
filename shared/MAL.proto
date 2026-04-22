@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package machine_learning;
+
+message PhysicalCondition {
+    int32 minutes_slept = 1;
+    int32 minutes_awake = 2;
+}
+
+message Sensor {
+    string sensor_id = 1; 
+}
+
+message SensorReading {
+    int32 value = 1;
+    int32 type = 2;
+    int32 time = 3;
+    Sensor sensor = 4; 
+}
+
+message Room {
+    string room_id = 1;
+    repeated SensorReading sensor_reading = 2;
+}
+
+message WinratePredictionInput {
+    PhysicalCondition physical_condition = 1;
+    Room room = 2;
+}
+
+message Dashboard {
+    int32 prediction_wirate = 1;
+    bool is_active = 2;
+    string message = 3;
+}
+
+service WinrateService {
+    rpc GetWinrateAnalysis(WinratePredictionInput) returns (Dashboard);
+}
