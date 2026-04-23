@@ -14,10 +14,11 @@ model  = joblib.load(MODEL_PATH)
 scaler = joblib.load(SCALER_PATH)
 
 class ChanceWinrateFeatures(BaseModel):
-    minutes_slept: int
-    minutes_awake:  int
-    temperature: int
-    co2:  int
+    minutes_slept: float
+    minutes_awake:  float
+    temperature_celsius: float
+    co2:  float
+    light:  float
 
 @app.post("/predict")
 def predict(data: ChanceWinrateFeatures):
