@@ -1,9 +1,11 @@
 const express = require("express");
+const cors = require("cors");
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
 const path = require("path");
 
 const app = express();
+app.use(cors());
 app.use(express.json());
 
 // ===================== LOAD MODEL PROTO =====================

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import './App.css';
 import PredForm from './PredForm';
 
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'http://localhost:3001';
 
 function App() {
   const [sleepMinutes, setSleepMinutes] = useState('');
@@ -21,7 +21,7 @@ function App() {
 
     if (mockMode) {
       setTimeout(() => {
-        setResult({ chance: 72, temperature: 24 });
+        setResult({ chance: 72, temperature: { value: 24 } });
         setLoading(false);
       }, 800);
       return;
@@ -33,8 +33,10 @@ function App() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            sleep_minutes: Number(sleepMinutes),
-            awake_minutes: Number(awakeMinutes),
+            condition: {
+              minutes_slept: Number(sleepMinutes),
+              minutes_awake: Number(awakeMinutes),
+            },
           }),
         }),
         fetch(`${BASE_URL}/iot/temp?id=${arduinoId}`),
@@ -43,7 +45,7 @@ function App() {
       const predictionData = await predictionRes.json();
       const tempData = await tempRes.json();
 
-      setResult({ chance: predictionData.chance, temperature: tempData });
+      setResult({ chance: predictionData.predictionWinrate, temperature: tempData });
     } catch (err) {
       setError('Failed to fetch data. Make sure the API is running.');
     } finally {
@@ -71,6 +73,17 @@ function App() {
           />
         </div>
       </div>
+
+      {error && <div className="alert alert-danger mt-3">{error}</div>}
+
+      {result && (
+        <div className="card mt-4 mx-auto text-center" style={{ maxWidth: '480px' }}>
+          <div className="card-body">
+            <h4>Win Rate: {result.chance}%</h4>
+            <p>Temperature: {result.temperature?.value ?? 'N/A'} °C</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
