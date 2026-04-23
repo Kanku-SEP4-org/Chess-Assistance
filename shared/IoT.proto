@@ -1,0 +1,36 @@
+syntax = "proto3"
+
+//imports here
+//options here
+package iotService;
+
+enum sensorType {
+    temp = 0;
+}
+service iotService {
+    rpc getTemperature(tempReq) returns (tempRes);
+}
+
+message tempReq {
+    int32 arduinoId = 1;
+}
+
+message tempRes {
+    sensorReading =1;
+    Status status = 2;
+}
+
+message Status {
+    bool success = 1;
+    string message = 2;
+}
+
+message sensorReading {
+    int8 value = 1; //type might differ instead of 32. get back to it 
+    sensorType type = 2; //to identify the kind of sensor. possibly use an enum
+    int32 timestamp = 3;
+}
+
+
+
+
