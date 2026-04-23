@@ -34,7 +34,8 @@ const modelPackage = grpcObject.model || grpcObject;
 
 // ===================== FUNCTIONS =====================
 
-// Existing function
+// Current dummy: const score = Math.min(100, Math.floor(minutes_slept / 6));
+// Replace with: call your Python ML API: const mlRes = await fetch('http://localhost:5000/predict', { ... });
 function PredictWinrate(call, callback) {
   const { minutes_slept, minutes_awake } = call.request.condition;
 
@@ -47,7 +48,8 @@ function PredictWinrate(call, callback) {
   });
 }
 
-// 🔥 NEW FUNCTION (ADD THIS)
+// Current dummy: value: 25.5 + id
+// Replace with: read from Arduino/MQTT/serial
 function GetTemperature(call, callback) {
   const id = call.request.id;
 
