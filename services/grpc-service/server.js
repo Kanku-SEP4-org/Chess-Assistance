@@ -4,7 +4,7 @@ const path = require("path");
 
 // ===================== LOAD SENSOR PROTO =====================
 const sensorDef = protoLoader.loadSync(
-  path.join(__dirname, "../frontend/proto/sensor.proto"),
+  path.join(__dirname, "../../frontend/proto/sensor.proto"),
   {
     keepCase: true,
     longs: String,
@@ -19,7 +19,7 @@ const sensorPackage = sensorObject.iot;
 
 // ===================== LOAD MODEL PROTO =====================
 const packageDef = protoLoader.loadSync(
-  path.join(__dirname, "../frontend/proto/model.proto"),
+  path.join(__dirname, "../../frontend/proto/model.proto"),
   {
     keepCase: true,
     longs: String,
