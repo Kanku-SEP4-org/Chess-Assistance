@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package iot;
+
+// ===================== SERVICE =====================
+service SensorService {
+  // Get temperature by sensor/arduino id
+  rpc GetTemperature (TemperatureRequest) returns (SensorReading);
+}
+
+// ===================== REQUEST =====================
+message TemperatureRequest {
+  int32 id = 1; // sensor or device id
+}
+
+// ===================== RESPONSE =====================
+message SensorReading {
+  float value = 1; // temperature value
+  int32 type = 2;  // type of sensor (e.g., 1 = temperature)
+}
