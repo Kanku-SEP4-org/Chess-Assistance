@@ -1,0 +1,10 @@
+{
+  "name": "chess-assistance",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "concurrently \"npm start --prefix api-gateway\" \"npm start --prefix services\" \"npm start --prefix frontend/chessapp\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
