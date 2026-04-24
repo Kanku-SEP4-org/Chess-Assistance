@@ -4,25 +4,27 @@ public class IoTStateStore
 {
     private readonly object _lock = new();
 
-    public int LatestTemperature { get; private set; }
+    public int LatestValue { get; private set; }
+    public string LatestType { get; private set; } = string.Empty;
     public long LatestTimestamp { get; private set; }
     public bool HasValue { get; private set; }
 
-    public void Update(int value, long timestamp)
+    public void Update(int value, long timestamp, string type)
     {
         lock (_lock)
         {
-            LatestTemperature = value;
+            LatestValue = value;
             LatestTimestamp = timestamp;
+            LatestType = type;
             HasValue = true;
         }
     }
 
-    public (bool HasValue, int Value, long Timestamp) GetLatest()
+    public (bool HasValue, int Value, long Timestamp, string Type) GetLatest()
     {
         lock (_lock)
         {
-            return (HasValue, LatestTemperature, LatestTimestamp);
+            return (HasValue, LatestValue, LatestTimestamp, LatestType);
         }
     }
 }

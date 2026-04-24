@@ -31,7 +31,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
                 Status = new ProtoStatus
                 {
                     Success = false,
-                    Message = "No temperature reading available yet."
+                    Message = "No sensor reading available yet."
                 }
             });
         }
@@ -41,14 +41,23 @@ public class IoTServiceImpl : iotService.iotServiceBase
             Reading = new sensorReading
             {
                 Value = latest.Value,
-                Type = sensorType.Temp,
+                Type = MapSensorType(latest.Type),
                 Timestamp = latest.Timestamp
             },
             Status = new ProtoStatus
             {
                 Success = true,
-                Message = $"Latest temperature for Arduino {request.ArduinoId} retrieved successfully."
+                Message = $"Latest reading for Arduino {request.ArduinoId} retrieved successfully."
             }
         });
+    }
+
+    private static sensorType MapSensorType(string type)
+    {
+        return type.ToLower() switch
+        {
+            "temp" => sensorType.Temp,
+            _ => sensorType.Temp
+        };
     }
 }

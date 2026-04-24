@@ -13,9 +13,6 @@ public class MessageReceiver : IMessageReceiver
 
     public void ReceiveSensorMessage(SensorMessage message)
     {
-        if (message.Type.ToLower() == "temp")
-        {
-            _stateStore.Update(message.Value, message.Timestamp);
-        }
+        _stateStore.Update(message.Value, message.Timestamp, message.Type);
     }
 }
