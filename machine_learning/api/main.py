@@ -24,12 +24,12 @@ class ChanceWinrateFeatures(BaseModel):
 def predict(data: ChanceWinrateFeatures):
     X = np.array([[
         data.minutes_slept, data.minutes_awake,
-        data.temperature_celsius, data.co2, data.light
+        data.temperature, data.co2
     ]])
     X_scaled = scaler.transform(X)
     proba = model.predict_proba(X_scaled)[0]
     return {
-        "winrate": int(proba[1] * 100)
+        "Chance": 100
     }
 
 @app.get("/health")
