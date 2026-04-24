@@ -7,6 +7,11 @@ message PhysicalCondition {
     int32 minutes_awake = 2;
 }
 
+message Empty
+{
+
+}
+
 message Sensor {
     string sensor_id = 1; 
 }
@@ -29,11 +34,22 @@ message WinratePredictionInput {
 }
 
 message Dashboard {
-    int32 prediction_wirate = 1;
+    int32 prediction_winrate = 1;
     bool is_active = 2;
     string message = 3;
 }
 
-service WinrateService {
-    rpc GetWinrateAnalysis(WinratePredictionInput) returns (Dashboard);
+message WinratePredictionRequest
+{
+    Empty empty = 1;
+}
+
+message WinratePredictionResponse
+{
+    int32 winrate = 1;
+}
+
+service WinrateService
+{
+    rpc Predict(WinratePredictionInput) returns (WinratePredictionResponse);
 }

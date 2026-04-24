@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="GrpcService1/GrpcService1.csproj" />
   <Project Path="PredictionService.grpc/PredictionService.grpc.csproj" />
 </Solution>
