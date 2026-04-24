@@ -57,7 +57,7 @@ uint8_t menu(void)
     printf("\t 5. stdio\n");
     printf("\t 6. Timer\n");
     printf("\t 7. Buzzer\n");
-    printf("\t 8. Temperature and humiduty sensor (DHT11)\n");
+    printf("\t 8. Temperature and humidity sensor (DHT11)\n");
     printf("\t 9. Proximity sensor (HC-SR04)\n");
     printf("\t10. Servo motor (SG90)\n");
     printf("\t11. Light sensor (KY-018)\n");
@@ -135,7 +135,7 @@ int interactive_demo(void)
         {
         case 1:
             printf("Button and LED driver. Type 'q' to exit.\n");
-            printf("LED 4 vill blink. Push a button to light one of the other LEDs.\n");
+            printf("LED 4 will blink. Push a button to light one of the other LEDs.\n");
             led_blink(4, 500); // Blink LED4 with 500ms period
             do
             {
@@ -163,7 +163,7 @@ int interactive_demo(void)
             {
                 display_setDecimals(1); // Set comma before least significant digit for demonstration
                 display_int(x);
-                printf("Du skrev: %d\n", x);
+                printf("You wrote: %d\n", x);
             }
             scanf("%*s"); // Clear invalid input from buffer
             break;

@@ -3,7 +3,7 @@
  *  Main application file for the IoT hardware drivers demo.
  *  This file initializes all the hardware drivers and demonstrates their
  *  functionality.
- *  Push button 2 on the shield during reset to enter continious sensor
+ *  Push button 2 on the shield during reset to enter continuous sensor
  *  reading mode. Otherwise the program will run an interactive demo that
  *  allows you to test each driver individually by sending commands over UART.
  *  See interactive.c for details.

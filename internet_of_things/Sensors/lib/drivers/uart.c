@@ -172,19 +172,19 @@ uart_t uart_write_byte(uart_id_t uart_id, uint8_t b)
     switch (uart_id)
     {
     case UART0_ID:
-        while (!(UCSR0A & (1 << UDRE0))) { }  // vent til buffer tom
+        while (!(UCSR0A & (1 << UDRE0))) { }  // wait for buffer empty
         UDR0 = b;
         break;
     case UART1_ID:
-        while (!(UCSR1A & (1 << UDRE1))) { }  // vent til buffer tom
+        while (!(UCSR1A & (1 << UDRE1))) { }  // wait for buffer empty
         UDR1 = b;
         break;
     case UART2_ID:
-        while (!(UCSR2A & (1 << UDRE2))) { }  // vent til buffer tom
+        while (!(UCSR2A & (1 << UDRE2))) { }  // wait for buffer empty
         UDR2 = b;
         break;
     case UART3_ID:
-        while (!(UCSR3A & (1 << UDRE3))) { }  // vent til buffer tom
+        while (!(UCSR3A & (1 << UDRE3))) { }  // wait for buffer empty
         UDR3 = b;
         break;
     default:
