@@ -2,20 +2,27 @@ using Grpc.Core;
 using IotService;
 using IoTGrpcServer;
 using ProtoStatus = IotService.Status;
+using Grpc_Server.Messaging;
+using System.Text;
 
 namespace Grpc_Server.Services;
 
 public class IoTServiceImpl : iotService.iotServiceBase
 {
     private readonly IoTStateStore _stateStore;
+    private readonly IMessageQueue _messageQueue;
 
-    public IoTServiceImpl(IoTStateStore stateStore)
+    public IoTServiceImpl(IoTStateStore stateStore, IMessageQueue messageQueue)
     {
         _stateStore = stateStore;
+        _messageQueue = messageQueue;
     }
 
     public override Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
     {
+        // We need to change 
+        _messageQueue.DequeueObjectAsync();
+        _messageQueue.EnqueueAsync(Encoding.UTF8.GetBytes("test"));
         var latest = _stateStore.GetLatest();
 
         if (!latest.HasValue)
