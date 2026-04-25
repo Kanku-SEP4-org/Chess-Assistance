@@ -1,0 +1,22 @@
+
+services:
+  grpc-server:
+    build:
+      context: .
+      dockerfile: Grpc-Server/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__User: guest
+      RabbitMQ__Password: guest
+      RabbitMQ__RequestQueue: sensor.requests
+      RabbitMQ__ResponseQueue: sensor.responses
+    depends_on:
+      - rabbitmq
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
