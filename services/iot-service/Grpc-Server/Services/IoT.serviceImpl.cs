@@ -3,7 +3,6 @@ using IotService;
 using IoTGrpcServer;
 using ProtoStatus = IotService.Status;
 using Grpc_Server.Messaging;
-using System.Text;
 
 namespace Grpc_Server.Services;
 
@@ -18,16 +17,15 @@ public class IoTServiceImpl : iotService.iotServiceBase
         _messageQueue = messageQueue;
     }
 
-    public override Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
+    public override async Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
     {
-        // We need to change 
-        _messageQueue.DequeueObjectAsync();
-        _messageQueue.EnqueueAsync(Encoding.UTF8.GetBytes("test"));
+        await _messageQueue.DequeueObjectAsync();
+
         var latest = _stateStore.GetLatest();
 
         if (!latest.HasValue)
         {
-            return Task.FromResult(new tempRes
+            return new tempRes
             {
                 Reading = new sensorReading
                 {
@@ -40,10 +38,10 @@ public class IoTServiceImpl : iotService.iotServiceBase
                     Success = false,
                     Message = "No temperature reading available yet."
                 }
-            });
+            };
         }
 
-        return Task.FromResult(new tempRes
+        return new tempRes
         {
             Reading = new sensorReading
             {
@@ -56,6 +54,6 @@ public class IoTServiceImpl : iotService.iotServiceBase
                 Success = true,
                 Message = $"Latest temperature for Arduino {request.ArduinoId} retrieved successfully."
             }
-        });
+        };
     }
 }

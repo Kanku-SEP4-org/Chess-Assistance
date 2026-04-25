@@ -19,7 +19,6 @@ builder.Services.AddGrpc();
 
 builder.Services.AddSingleton<IoTStateStore>();
 builder.Services.AddSingleton<IMessageReceiver, MessageReceiver>();
-builder.Services.AddScoped<IMessageQueue, MessageService>();
 
 builder.Services.AddSingleton(sp => new ConnectionFactory
 {
@@ -47,7 +46,8 @@ builder.Services.AddSingleton<ResChannel>(sp =>
 {
     var conn = sp.GetRequiredService<IConnection>();
     var ch = conn.CreateChannelAsync().GetAwaiter().GetResult();
-    ch.QueueDeclareAsync(queue: responseQueue, durable: true, exclusive: false, autoDelete: false, arguments: null);
+    ch.QueueDeclareAsync(queue: responseQueue, durable: true, exclusive: false, autoDelete: false, arguments: null)
+        .GetAwaiter().GetResult();
     return new ResChannel(ch);
 });
 
