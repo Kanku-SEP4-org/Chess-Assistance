@@ -1,0 +1,45 @@
+import pandas as pd
+import numpy as np
+import os
+import joblib
+from sklearn.preprocessing import StandardScaler
+
+#load data
+df = pd.read_csv("data/raw_test_data.csv")
+#remove acidental spaces??
+df.columns = df.columns.str.strip().str.lower()
+
+#features
+#debug for hidden carachters
+if df.columns[0].endswith('temperature'):
+    df.rename(columns={df.columns[0]: 'temperature'}, inplace=True)
+
+df['elo_diff'] = df['current elo'] - df['opponent elo']
+
+df['sleep_hours'] = df['sleep'] / 60
+
+co2_norm = (df['co2'] - 400) / 1600
+temp_dist = abs(df['temperature'] - 20)
+df['env_score'] = 1 - (co2_norm * 0.7 + (temp_dist / 5)* 0.3)
+# 1 win, 0.5 is a draw
+df['target'] = 0.0
+df.loc[df['win white'] == 1,  'target'] = 1.0
+df.loc[df['win black']==1, 'target'] = 1.0
+df.loc[df['draw']==1, 'target'] = 0.5
+
+#Selecting and scaling
+features = ['elo_diff', 'sleep_hours', 'env_score', 'water', 'light']
+X = df[features]
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X)
+
+df_final = pd.DataFrame(X_scaled, columns=features)
+df_final['target'] = df['target'].values
+
+#save as per nikolay the gay
+os.makedirs("data", exist_ok=True)
+os.makedirs("models", exist_ok=True)
+df_final.to_csv("data/features.csv", index=False)
+joblib.dump(scaler, "models/scaler.pkl")
+
+print(f"Features saved to data/features.csv. Shape: {df_final.shape}")
