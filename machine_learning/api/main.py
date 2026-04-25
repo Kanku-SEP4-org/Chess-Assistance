@@ -24,7 +24,7 @@ class ChanceWinrateFeatures(BaseModel):
 def predict(data: ChanceWinrateFeatures):
     X = np.array([[
         data.minutes_slept, data.minutes_awake,
-        data.temperature, data.co2
+        data.temperature_celsius, data.co2, data.light
     ]])
     X_scaled = scaler.transform(X)
     proba = model.predict_proba(X_scaled)[0]
