@@ -8,13 +8,11 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 builder.Services.AddGrpc();
-builder.Services.AddHttpClient<IWinRateService, WinRateService>();
+builder.Services.AddHttpClient("FastApiClient", client =>
+{
+    client.BaseAddress = new Uri("http://localhost:8000/"); 
+});
 var app = builder.Build();
 app.MapGrpcService<WinRateService>();
-app.MapPost("/api/winrate/predict", async (WinRateService winRateService) =>
-{
-    var response = await winRateService.Predict(new WinratePredictionInput(), null!);
-    return Results.Ok(response);
-});
 app.Run();
 
