@@ -9,8 +9,8 @@ using var connection = await conFactory.CreateConnectionAsync();
 using var channel = await connection.CreateChannelAsync();
 
 await channel.QueueDeclareAsync(
-    queue: "sensor.respones", //queue name
-    durable: false, //if false, messages dont persist through server restart
+    queue: "sensor.responses", //queue name
+    durable: true, //if false, messages dont persist through server restart
     exclusive: false, //whether queue is exclusive to this connection
     autoDelete: false, //if true, deletes queue if no subcribers exist
     arguments: null
