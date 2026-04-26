@@ -11,7 +11,7 @@ void get_and_report_temperature(void) {
     if (dht11_get(&h_int, &h_dec, &t_int, &t_dec) == DHT11_OK) {
         // Clear, consistent output for the C# app
        char buffer[50];
-        sprintf(buffer,"TEMP:%d.%d\n", t_int, t_dec);
+        sprintf(buffer,"TEMP:%d.%d\n", t_int, t_dec); //TEMP:20.5
         transmit_data(buffer);
     } else {
         transmit_data("ERROR:DHT11_READ_FAIL\n");
@@ -24,7 +24,7 @@ void get_and_report_temp_json(void) {
     if (dht11_get(&h_int, &h_dec, &t_int, &t_dec) == DHT11_OK) {
         // escaped quotes \" to create a valid JSON string
         char buffer[50];
-        sprintf(buffer, "{\"temperature\": %d.%d}", 
+        sprintf(buffer, "{\"temperature\": %d.%d}", //{"temperature":20.5}
                 t_int, t_dec);
         transmit_data(buffer);
     } else {
