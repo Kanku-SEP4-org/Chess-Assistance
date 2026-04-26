@@ -1,19 +1,11 @@
 """
-Step 4: Evaluate the model (simple v0).
 
-Current project state:
-- Step 2 writes `data/features.csv`
-- Step 3 writes `models/model.pkl`
-
-Slides alignment (Regression + Validation/Performance Metrics):
 - Regression performance metrics: MSE, RMSE, MAE, R2
 - Validation reminder: compare against a simple baseline
-- Preprocessing reminder: split test out before preprocessing
 
 Predictions are converted to a winrate in [0..100]:
-  winrate = clip(round(pred * 100), 0, 100)
 
-TODO (future improvements):
+Future improvements: 
 - Split test out before preprocessing (current pipeline does not do this yet)
 - Add classification-style metrics (confusion matrix, ROC/PR, log loss)
 """
