@@ -423,3 +423,21 @@ FodyWeavers.xsd
 *.iml
 *.ipr
 out/
+
+
+# Virtual environments
+**/venv/
+**/.venv/
+**/env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pkl
+
+# ML artifacts
+*.pkl
+*.csv
+**/models/metrics.json
+**/models/eval_metrics.json

@@ -12,7 +12,7 @@ def generate_mock_chess_data(num_rows=100, output_path='data/mock_data.csv'):
     
     for _ in range(num_rows):
     
-        temp = random.randint(18, 22)
+        temperature = random.randint(18, 22)
         
         co2 = random.randint(800, 2000)
         
@@ -20,7 +20,9 @@ def generate_mock_chess_data(num_rows=100, output_path='data/mock_data.csv'):
         
         water = random.randint(0, 5)
         
-        sleep = random.randint(240, 600)
+        minutes_slept = random.randint(240, 600)
+
+        minutes_awake = random.randint(10, 720)
         
         current_elo = random.randint(1750, 2750)
         opponent_elo = random.randint(1750, 2750)
@@ -31,13 +33,14 @@ def generate_mock_chess_data(num_rows=100, output_path='data/mock_data.csv'):
         draw = 1 if result_choice == 'draw' else 0
         
         data.append([
-            temp, co2, light, water, sleep, 
+            temperature, co2, light, water, minutes_slept, minutes_awake,
             current_elo, opponent_elo, 
             win_black, win_white, draw
         ])
 
     columns = [
-        'temperature ', 'CO2', 'Light', 'Water', 'Sleep', 
+        'temperature', 'co2', 'light', 'water', 'minutes_slept',
+        'minutes_awake', 
         'current ELO', 'opponent ELO', 'Win black ', 'win white', 'Draw '
     ]
     
