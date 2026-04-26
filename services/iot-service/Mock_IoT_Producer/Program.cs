@@ -3,7 +3,11 @@ using System.Text.Json;
 using IoTGrpcServer.Contracts;
 using RabbitMQ.Client;
 
-var conFactory = new ConnectionFactory { HostName = "localhost" };
+var rabbitUrl = Environment.GetEnvironmentVariable("RABBITMQ_URL");
+
+Uri uri = new Uri(rabbitUrl);
+
+var conFactory = new ConnectionFactory { Uri = uri };
 
 using var connection = await conFactory.CreateConnectionAsync();
 using var channel = await connection.CreateChannelAsync();

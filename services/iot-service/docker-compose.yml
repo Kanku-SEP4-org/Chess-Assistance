@@ -16,7 +16,21 @@ services:
       - rabbitmq
 
   rabbitmq:
-    image: rabbitmq:3-management
+    image: rabbitmq:4-management
     ports:
       - "5672:5672"
       - "15672:15672"
+
+  mock-producer:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    container_name: mock-producer
+    volumes:
+      - ./:/src:rw
+    working_dir: /src/Mock_IoT_Producer
+    depends_on:
+      - rabbitmq
+    environment:
+      RABBITMQ_URL: amqp://guest:guest@rabbitmq:5672
+    tty: true
+    stdin_open: true
+    command: /bin/bash
