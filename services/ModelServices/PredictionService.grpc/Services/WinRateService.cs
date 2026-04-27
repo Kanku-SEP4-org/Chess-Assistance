@@ -42,9 +42,9 @@ public class WinRateService : WinrateService.WinrateServiceBase
         ServerCallContext context)
     {
         var random = new Random();
-        var response = new WinratePredictionResponse
+        var response = new WinratePredictionResponse()
         {
-            Winrate = random.Next(0, 101)
+            Prediction = (float)random.NextDouble() * 100 // Mock prediction between 0 and 100
         };
         return Task.FromResult(response);
     }
