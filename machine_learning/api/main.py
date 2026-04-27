@@ -45,7 +45,7 @@ def predict(data: ChanceWinrateFeatures):
     print(X_scaled)
     print(scaler.feature_names_in_)
     return {
-        "prediciton": prediction
+        "prediction": prediction
     }
 
 @app.get("/health")
