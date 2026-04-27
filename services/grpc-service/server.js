@@ -74,7 +74,7 @@ server.addService(sensorPackage.SensorService.service, {
 
 // Start server
 server.bindAsync(
-  "127.0.0.1:50051",
+  "0.0.0.0:50051",
   grpc.ServerCredentials.createInsecure(),
   () => {
     console.log("gRPC server running on port 50051");

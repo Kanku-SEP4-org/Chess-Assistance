@@ -1,0 +1,21 @@
+# Run from repo root:
+#   docker compose -f services/compose.yml up --build
+
+services:
+  grpc-service:
+    build:
+      context: ..
+      dockerfile: services/grpc-service/Dockerfile
+    ports:
+      - "50051:50051"
+
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - GRPC_HOST=grpc-service
+    depends_on:
+      - grpc-service
