@@ -2,10 +2,11 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY machine_learning/api/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt fastapi
 
-COPY main.py .
+COPY machine_learning/api/main.py .
+COPY machine_learning/trainer/models/ /app/models/
 
 EXPOSE 8000
 
