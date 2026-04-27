@@ -5,7 +5,7 @@ import joblib
 from sklearn.preprocessing import StandardScaler
 
 #load data
-df = pd.read_csv("data/raw_test_data.csv")
+df = pd.read_csv("data/mock_data.csv")
 #remove acidental spaces??
 df.columns = df.columns.str.strip().str.lower()
 
@@ -14,9 +14,8 @@ df.columns = df.columns.str.strip().str.lower()
 if df.columns[0].endswith('temperature'):
     df.rename(columns={df.columns[0]: 'temperature'}, inplace=True)
 
-df['elo_diff'] = df['current elo'] - df['opponent elo']
 
-df['sleep_hours'] = df['sleep'] / 60
+# df['sleep_hours'] = df['sleep'] / 60
 
 co2_norm = (df['co2'] - 400) / 1600
 temp_dist = abs(df['temperature'] - 20)
@@ -28,7 +27,8 @@ df.loc[df['win black']==1, 'target'] = 1.0
 df.loc[df['draw']==1, 'target'] = 0.5
 
 #Selecting and scaling
-features = ['elo_diff', 'sleep_hours', 'env_score', 'water', 'light']
+#I'm dropping elo_diff because this use case relies on before-game data
+features = ['minutes_slept','minutes_awake','env_score', 'light']
 X = df[features]
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
