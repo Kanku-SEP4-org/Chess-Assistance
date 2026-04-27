@@ -1,9 +1,19 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import joblib, numpy as np, os
 import pandas as pd
 
 app = FastAPI(title="Chess Asistance Models API")
+
+# Enable CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 MODEL_PATH  = "../trainer/models/model.pkl"
 SCALER_PATH = "../trainer/models/scaler.pkl"
@@ -39,13 +49,13 @@ def predict(data: ChanceWinrateFeatures):
         scaler.transform(X),
         columns=X.columns
     )
-    prediction = model.predict(X_scaled)[0];
+    prediction = model.predict(X_scaled)[0]
 
     print(model.feature_names_in_)
     print(X_scaled)
     print(scaler.feature_names_in_)
     return {
-        "prediciton": prediction
+        "prediction": prediction
     }
 
 @app.get("/health")
