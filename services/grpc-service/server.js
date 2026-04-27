@@ -39,7 +39,8 @@ async function PredictWinrate(call, callback) {
   const { minutes_slept, minutes_awake } = call.request.condition;
 
   try {
-    const response = await fetch('http://localhost:8000/predict', {
+    const mlApiHost = process.env.ML_API_HOST || 'localhost';
+    const response = await fetch(`http://${mlApiHost}:8000/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -98,7 +99,7 @@ server.addService(sensorPackage.SensorService.service, {
 
 // Start server
 server.bindAsync(
-  "127.0.0.1:50051",
+  "0.0.0.0:50051",
   grpc.ServerCredentials.createInsecure(),
   () => {
     console.log("gRPC server running on port 50051");

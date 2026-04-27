@@ -5,8 +5,6 @@ function PredForm({
   setAwakeMinutes,
   arduinoId,
   setArduinoId,
-  mockMode,
-  setMockMode,
   handleSubmit,
   loading,
 }) {
@@ -46,19 +44,6 @@ function PredForm({
           min="0"
           required
         />
-      </div>
-
-      <div className="form-check mb-3">
-        <input
-          className="form-check-input"
-          type="checkbox"
-          id="mockMode"
-          checked={mockMode}
-          onChange={(e) => setMockMode(e.target.checked)}
-        />
-        <label className="form-check-label text-muted" htmlFor="mockMode">
-          Use mock data (API not ready)
-        </label>
       </div>
 
       <button type="submit" className="btn btn-primary w-100" disabled={loading}>
