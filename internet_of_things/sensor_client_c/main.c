@@ -2,6 +2,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <fcntl.h>
+#include <unistd.h>
+// #include <termios.h>
 
 #include <amqp.h>
 #include <amqp_tcp_socket.h>
@@ -15,6 +18,9 @@
 #define RESPONSE_QUEUE "sensor.responses"
 
 #define MESSAGE_SIZE 512
+
+#define SERIAL_PORT "/dev/ttyACM0"
+//#define SERIAL_PORT "/dev/ttyUSB0"
 
 void fail_on_amqp_error(amqp_rpc_reply_t reply, const char *message)
 {
@@ -36,9 +42,77 @@ void fail_on_error(int status, const char *message)
     }
 }
 
-float read_temperature()
+// settings for linux to talk to arduino
+// int setup_serial(int serial)
+// {
+//     struct termios tty;
+//     memset(&tty, 0, sizeof(tty));
+
+//     if (tcgetattr(serial, &tty) != 0)
+//     {
+//         return 0;
+//     }
+
+//     cfsetospeed(&tty, B115200);
+//     cfsetispeed(&tty, B115200);
+
+//     tty.c_cflag = CS8 | CLOCAL | CREAD;
+//     tty.c_iflag = 0;
+//     tty.c_oflag = 0;
+//     tty.c_lflag = 0;
+
+//     tty.c_cc[VMIN] = 0;
+//     tty.c_cc[VTIME] = 20; // waiting 2 sec for arduino response
+
+//     if (tcsetattr(serial, TCSANOW, &tty) != 0)
+//     {
+//         return 0;
+//     }
+
+//     return 1;
+// }
+
+int read_temperature(float *temperature)
 {
-    return 23.7; //fake temp for now... need read_temp() function
+    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
+
+    // if (serial < 0)
+    // {
+    //     printf("Could not open Arduino serial port: %s\n", SERIAL_PORT);
+    //     return 0; // as it failed
+    // }
+    
+    // this functions is for linux to know how to corrrectly communicate with arduino through serial
+    // if (!setup_serial(serial))
+    // {
+    //     printf("Could not configure Arduino serial port\n");
+    //     close(serial);
+    //     return 0;
+    // }
+
+    char buffer[100] = {0};
+
+    write(serial, "1\n", 2); // asks Arduino for temperature
+
+    int bytesRead = read(serial, buffer, sizeof(buffer) - 1);
+
+    close(serial);
+
+    if (bytesRead <= 0)
+    {
+        printf("No response from Arduino\n");
+        return 0; // failed arduino temperature
+    }
+
+    printf("Arduino response: %s\n", buffer);
+
+    if (sscanf(buffer, "TEMP:%f", temperature) == 1) // gets the number 1 case, stores it inside temperature
+    {
+        return 1; // success
+    }
+
+    printf("Could not read temperature from response\n");
+    return 0; // failed
 }
 
 long get_timestamp()
@@ -48,39 +122,58 @@ long get_timestamp()
 
 void create_temperature_response_message(char *responseMessage)
 {
-    float temperature = read_temperature();
-    long timestamp = get_timestamp();
+    /*This could have stayed if we would return fake temperature fx -99.0 when failing. 
+    error would be harder to spot since JSON reposne would give us some temp.
 
-    /*
-        This response is based on the proto structure:
+        float temperature = read_temperature();
+        long timestamp = get_timestamp();
 
-        TempRes
-        - sensorReading
-          - value
-          - type
-          - timestamp
-        - status
-          - success
-          - message
-    */
-
-    sprintf(
-        responseMessage,
-        "{"
-            "\"arduinoId\":1,"
-            "\"sensorReading\":{"
+        sprintf(
+            responseMessage,
+            "{"
+                "\"arduinoId\":1,"
                 "\"value\":%.2f,"
                 "\"type\":\"temp\","
                 "\"timestamp\":%ld"
-            "},"
-            "\"status\":{"
-                "\"success\":true,"
-                "\"message\":\"Temperature reading successful\""
-            "}"
-        "}",
-        temperature,
-        timestamp
-    );
+            "}",
+            temperature,
+            timestamp
+        );
+    */
+
+    // for success and failure JSON message
+
+    //if arduino gives temp - sends value - success
+    float temperature = 0.0; // creates variable for real temp
+    long timestamp = get_timestamp();
+
+    if (read_temperature(&temperature)) // &temperature - function can access variable to change its value
+    {
+        sprintf(
+            responseMessage,
+            "{"
+                "\"arduinoId\":1,"
+                "\"value\":%.2f,"
+                "\"type\":\"temp\","
+                "\"timestamp\":%ld"
+            "}",
+            temperature,
+            timestamp
+        );
+    }
+    else // no temp from arduino - send error - failure
+    {
+        sprintf(
+            responseMessage,
+            "{"
+                "\"arduinoId\":1,"
+                "\"type\":\"temp\","
+                "\"timestamp\":%ld,"
+                "\"value\": null"
+            "}",
+            timestamp
+        );
+    }
 }
 
 void send_response(amqp_connection_state_t connection, const char *message)
@@ -230,3 +323,5 @@ int main()
 
     return 0;
 }
+
+// RabbitMQ - http://localhost:15672
