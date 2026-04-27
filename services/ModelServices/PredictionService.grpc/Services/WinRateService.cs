@@ -18,7 +18,7 @@ public class WinRateService : WinrateService.WinrateServiceBase
         WinratePredictionRequest request,
         ServerCallContext context)
     {
-        var formatter = new JsonFormatter(JsonFormatter.Settings.Default);
+        var formatter = new JsonFormatter(JsonFormatter.Settings.Default.WithPreserveProtoFieldNames(true));
         var jsonPayload = formatter.Format(request);
 
         var fastApiClient = _httpClientFactory.CreateClient("FastApiClient");
