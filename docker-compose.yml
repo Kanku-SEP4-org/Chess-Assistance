@@ -1,0 +1,23 @@
+services:
+  prediction-service-grpc:
+    build:
+      context: .
+      dockerfile: services/ModelServices/PredictionService.grpc/Dockerfile
+    ports:
+      - "5283:5283"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5283
+      - FastApi__BaseUrl=http://fastapi-service:8000/
+    depends_on:
+      - fastapi-service
+
+  fastapi-service:
+    build:
+      context: .
+      dockerfile: machine_learning/api/.dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - MODEL_PATH=/app/models/model.pkl
+      - SCALER_PATH=/app/models/scaler.pkl
