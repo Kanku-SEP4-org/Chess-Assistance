@@ -34,18 +34,42 @@ const modelPackage = grpcObject.model || grpcObject;
 
 // ===================== FUNCTIONS =====================
 
-// Current dummy: const score = Math.min(100, Math.floor(minutes_slept / 6));
-// Replace with: call your Python ML API: const mlRes = await fetch('http://localhost:5000/predict', { ... });
-function PredictWinrate(call, callback) {
+// Calls Python ML API to get prediction
+async function PredictWinrate(call, callback) {
   const { minutes_slept, minutes_awake } = call.request.condition;
 
-  const score = Math.min(100, Math.floor(minutes_slept / 6));
+  try {
+    const response = await fetch('http://localhost:8000/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        minutes_slept: minutes_slept,
+        minutes_awake: minutes_awake,
+        temperature_celsius: 20, // Default values for env factors
+        co2: 400,
+        light: 0.5
+      })
+    });
 
-  callback(null, {
-    predictionWinrate: score,
-    isActive: score > 50,
-    message: score > 50 ? "Good condition" : "Poor condition",
-  });
+    if (!response.ok) {
+      throw new Error(`ML API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const winrate = Math.max(0, Math.min(100, data.predictionWinrate));
+
+    callback(null, {
+      predictionWinrate: winrate,
+      isActive: winrate > 50,
+      message: winrate > 50 ? "Good condition for chess" : "Poor condition for chess",
+    });
+  } catch (error) {
+    console.error('Prediction error:', error);
+    callback({
+      code: 14, // UNAVAILABLE
+      details: `Failed to get prediction: ${error.message}`
+    });
+  }
 }
 
 // Current dummy: value: 25.5 + id
