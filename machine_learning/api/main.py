@@ -39,13 +39,9 @@ def predict(data: ChanceWinrateFeatures):
         scaler.transform(X),
         columns=X.columns
     )
-    prediction = model.predict(X_scaled)[0];
-
-    print(model.feature_names_in_)
-    print(X_scaled)
-    print(scaler.feature_names_in_)
+    prediction_proba = model.predict_proba(X_scaled)
     return {
-        "prediciton": prediction
+        "prediciton": prediction_proba[0][1]
     }
 
 @app.get("/health")
