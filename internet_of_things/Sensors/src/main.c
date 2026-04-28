@@ -4,6 +4,7 @@
 #include "uart_stdio.h"
 
 #include "sensorRead.h" // access interface
+#include "communication.h"
 
 #include "wifi.h" // Include WiFi driver
 
@@ -43,7 +44,7 @@ int main(void) {
                 break;
 
             default:
-                printf("Invalid input. Please enter 1, 2, 3, or 4.\n");
+                transmit_data("Invalid input. Please enter 1, 2, 3, or 4.\n");
                 break;
             }
         }
