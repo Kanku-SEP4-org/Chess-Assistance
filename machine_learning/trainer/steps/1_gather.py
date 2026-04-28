@@ -1,50 +1,47 @@
 import pandas as pd
 import numpy as np
 import os
-import random
 
 def generate_mock_chess_data(num_rows=100, output_path='data/mock_data.csv'):
     if not os.path.exists('data'):
         os.makedirs('data')
-        print("Created 'data' folder.")
 
-    data = []
-    
-    for _ in range(num_rows):
-    
-        temperature = random.randint(18, 22)
-        
-        co2 = random.randint(800, 2000)
-        
-        light = random.randint(1000, 2000)
-        
-        water = random.randint(0, 5)
-        
-        minutes_slept = random.randint(240, 600)
+    temp = np.random.normal(loc=20, scale=1.2, size=num_rows)
+    temp = np.clip(temp, 18, 22).astype(int)
 
-        minutes_awake = random.randint(10, 720)
-        
-        current_elo = random.randint(1750, 2750)
-        opponent_elo = random.randint(1750, 2750)
-        
-        result_choice = random.choice(['black', 'white', 'draw'])
-        win_black = 1 if result_choice == 'black' else 0
-        win_white = 1 if result_choice == 'white' else 0
-        draw = 1 if result_choice == 'draw' else 0
-        
-        data.append([
-            temperature, co2, light, water, minutes_slept, minutes_awake,
-            current_elo, opponent_elo, 
-            win_black, win_white, draw
-        ])
+    co2 = np.random.normal(loc=1200, scale=300, size=num_rows)
+    co2 = np.clip(co2, 400, 2100).astype(int)
 
-    columns = [
-        'temperature', 'co2', 'light', 'water', 'minutes_slept',
-        'minutes_awake', 
-        'current ELO', 'opponent ELO', 'Win black ', 'win white', 'Draw '
-    ]
-    
-    df = pd.DataFrame(data, columns=columns)
+    light = np.random.normal(loc=1500, scale=200, size=num_rows)
+    light = np.clip(light, 800, 2000).astype(int)
+
+    water = np.random.poisson(lam=2, size=num_rows)
+    water = np.clip(water, 0, 6)
+
+    minutes_slept = np.random.normal(loc=450, scale=60, size=num_rows)
+    minutes_slept = np.clip(minutes_slept, 240, 600).astype(int)
+
+    minutes_awake = np.random.normal(loc=450, scale=60, size=num_rows)
+    minutes_awake = np.clip(minutes_awake, 1, 1020).astype(int)
+
+    current_elo = np.random.normal(loc=2250, scale=200, size=num_rows).astype(int)
+    opponent_elo = np.random.normal(loc=2250, scale=200, size=num_rows).astype(int)
+
+    user_won = np.random.randint(0, 2, size=num_rows)
+
+
+    df = pd.DataFrame({
+        'temperature ': temp,
+        'CO2': co2,
+        'Light': light,
+        'Water': water,
+        'Minutes_Slept': minutes_slept,
+        'Minutes_Awake': minutes_awake,
+        'current ELO': current_elo,
+        'opponent ELO': opponent_elo,
+        'user_won': user_won
+    })
+
     df.to_csv(output_path, index=False)
     print(f"Successfully generated {num_rows} rows at: {output_path}")
 

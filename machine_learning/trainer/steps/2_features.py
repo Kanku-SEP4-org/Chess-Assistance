@@ -20,11 +20,10 @@ if df.columns[0].endswith('temperature'):
 co2_norm = (df['co2'] - 400) / 1600
 temp_dist = abs(df['temperature'] - 20)
 df['env_score'] = 1 - (co2_norm * 0.7 + (temp_dist / 5)* 0.3)
-# 1 win, 0.5 is a draw
-df['target'] = 0.0
-df.loc[df['win white'] == 1,  'target'] = 1.0
-df.loc[df['win black']==1, 'target'] = 1.0
-df.loc[df['draw']==1, 'target'] = 0.5
+
+# 1 is win, 0 is either draw or loss 
+df['target'] = df['user_won']
+
 
 #Selecting and scaling
 #I'm dropping elo_diff because this use case relies on before-game data
@@ -36,7 +35,6 @@ X_scaled = scaler.fit_transform(X)
 df_final = pd.DataFrame(X_scaled, columns=features)
 df_final['target'] = df['target'].values
 
-#save as per nikolay the gay
 os.makedirs("data", exist_ok=True)
 os.makedirs("models", exist_ok=True)
 df_final.to_csv("data/features.csv", index=False)

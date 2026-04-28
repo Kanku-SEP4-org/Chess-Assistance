@@ -52,7 +52,7 @@ message WinratePredictionRequest
 
 message WinratePredictionResponse
 {
-    int32 winrate = 1;
+    float prediction = 1;
 }
 
 service WinrateService

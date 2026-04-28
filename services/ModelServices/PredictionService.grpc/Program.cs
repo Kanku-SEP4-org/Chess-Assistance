@@ -7,9 +7,10 @@ builder.Services.AddGrpc(options =>
 {
     options.Interceptors.Add<GlobalExceptionInterceptor>();
 });
+var fastApiBaseUrl = builder.Configuration["FastApi:BaseUrl"] ?? "http://localhost:8000/";
 builder.Services.AddHttpClient("FastApiClient", client =>
 {
-    client.BaseAddress = new Uri("http://localhost:8000/");
+    client.BaseAddress = new Uri(fastApiBaseUrl);
 });
 var app = builder.Build();
 app.MapGrpcService<WinRateService>();
