@@ -27,10 +27,7 @@ def generate_mock_chess_data(num_rows=100, output_path='data/mock_data.csv'):
     current_elo = np.random.normal(loc=2250, scale=200, size=num_rows).astype(int)
     opponent_elo = np.random.normal(loc=2250, scale=200, size=num_rows).astype(int)
 
-    outcomes = np.random.choice(['black', 'white', 'draw'], size=num_rows, p=[0.4, 0.4, 0.2])
-    win_black = (outcomes == 'black').astype(int)
-    win_white = (outcomes == 'white').astype(int)
-    draw = (outcomes == 'draw').astype(int)
+    user_won = np.random.randint(0, 2, size=num_rows)
 
 
     df = pd.DataFrame({
@@ -42,9 +39,7 @@ def generate_mock_chess_data(num_rows=100, output_path='data/mock_data.csv'):
         'Minutes_Awake': minutes_awake,
         'current ELO': current_elo,
         'opponent ELO': opponent_elo,
-        'Win black ': win_black,
-        'win white': win_white,
-        'Draw ': draw
+        'user_won': user_won
     })
 
     df.to_csv(output_path, index=False)
