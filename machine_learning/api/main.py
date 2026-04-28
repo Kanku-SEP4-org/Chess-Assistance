@@ -41,7 +41,7 @@ def predict(data: ChanceWinrateFeatures):
     )
     prediction_proba = model.predict_proba(X_scaled)
     return {
-        "prediciton": prediction_proba[0][1]
+        "prediction": prediction_proba[0][1]
     }
 
 @app.get("/health")
