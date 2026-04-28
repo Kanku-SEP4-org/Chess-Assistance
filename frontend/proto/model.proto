@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package model;
+
+service WinrateService {
+  rpc PredictWinrate (WinratePredictionInput) returns (DashboardResponse);
+}
+
+message WinratePredictionInput {
+  PhysicalCondition condition = 1;
+}
+
+message PhysicalCondition {
+  int32 minutes_slept = 1;
+  int32 minutes_awake = 2;
+}
+
+message DashboardResponse {
+  int32 predictionWinrate = 1;
+  bool isActive = 2;
+  string message = 3;
+}
