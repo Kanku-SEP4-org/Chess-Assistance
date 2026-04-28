@@ -23,10 +23,9 @@ function App() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            condition: {
-              minutes_slept: Number(sleepMinutes),
-              minutes_awake: Number(awakeMinutes),
-            },
+            minutes_slept: Number(sleepMinutes),
+            minutes_awake: Number(awakeMinutes),
+            arduino_id: Number(arduinoId),
           }),
         }),
         fetch(`${BASE_URL}/iot/temp?id=${arduinoId}`),
