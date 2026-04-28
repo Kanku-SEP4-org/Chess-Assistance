@@ -1,0 +1,30 @@
+
+# How to run from repo root:
+#   docker compose -f services/compose.yml up --build
+#
+# TODO before enabling full stack:
+# - `PredictionService.grpc` currently calls FastAPI using `http://localhost:8000`,
+#   which will not work across containers without changing the URL to `http://ml-api:8000`
+#   (or making it configurable via env var).
+# - `services/ModelServices/PredictionService.grpc/Dockerfile` uses `USER $APP_UID`
+#   without defining `APP_UID`.
+
+services:
+  ml-api:
+    build:
+      context: ../machine_learning/api
+      dockerfile: .dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../machine_learning/trainer/models:/trainer/models:ro
+
+  # prediction-service:
+  #   build:
+  #     context: ./ModelServices
+  #     dockerfile: PredictionService.grpc/Dockerfile
+  #   ports:
+  #     - "8080:8080"
+  #     - "8081:8081"
+  #   depends_on:
+  #     - ml-api
