@@ -424,6 +424,10 @@ FodyWeavers.xsd
 *.ipr
 out/
 
+<<<<<<< HEAD
+# prompts
+prompts/
+=======
 
 # Virtual environments
 **/venv/
@@ -441,3 +445,4 @@ __pycache__/
 *.csv
 **/models/metrics.json
 **/models/eval_metrics.json
+>>>>>>> 33-integrate-api-with-the-model
