@@ -9,17 +9,16 @@ using Grpc_Server.Contracts;
 var builder = WebApplication.CreateBuilder(args);
 
 // RabbitMQ settings
-var rabbitHost = "localhost";
-var rabbitUser = "guest";
-var rabbitPass = "guest";
-var requestQueue = "sensor.requests";
-var responseQueue = "sensor.responses";
+var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "rabbitmq";
+var rabbitUser = builder.Configuration["RabbitMQ:User"] ?? "guest";
+var rabbitPass = builder.Configuration["RabbitMQ:Password"] ?? "guest";
+var requestQueue = builder.Configuration["RabbitMQ:RequestQueue"] ?? "sensor.requests";
+var responseQueue = builder.Configuration["RabbitMQ:ResponseQueue"] ?? "sensor.responses";
 
 builder.Services.AddGrpc();
 
 builder.Services.AddSingleton<IoTStateStore>();
 builder.Services.AddSingleton<IMessageReceiver, MessageReceiver>();
-builder.Services.AddScoped<IMessageQueue, MessageService>();
 
 builder.Services.AddSingleton(sp => new ConnectionFactory
 {
@@ -47,7 +46,8 @@ builder.Services.AddSingleton<ResChannel>(sp =>
 {
     var conn = sp.GetRequiredService<IConnection>();
     var ch = conn.CreateChannelAsync().GetAwaiter().GetResult();
-    ch.QueueDeclareAsync(queue: responseQueue, durable: true, exclusive: false, autoDelete: false, arguments: null);
+    ch.QueueDeclareAsync(queue: responseQueue, durable: true, exclusive: false, autoDelete: false, arguments: null)
+        .GetAwaiter().GetResult();
     return new ResChannel(ch);
 });
 
