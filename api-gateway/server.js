@@ -40,15 +40,17 @@ const sensorPackage = sensorObject.iot;
 
 // ===================== CLIENTS =====================
 
+const grpcHost = process.env.GRPC_HOST || 'localhost';
+
 // Winrate client
 const client = new modelPackage.WinrateService(
-  "localhost:50051",
+  `${grpcHost}:50051`,
   grpc.credentials.createInsecure()
 );
 
 // Sensor client
 const sensorClient = new sensorPackage.SensorService(
-  "localhost:50051",
+  `${grpcHost}:50051`,
   grpc.credentials.createInsecure()
 );
 

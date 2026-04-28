@@ -11,21 +11,11 @@ function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [mockMode, setMockMode] = useState(false);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
     setResult(null);
-
-    if (mockMode) {
-      setTimeout(() => {
-        setResult({ chance: 72, temperature: { value: 24 } });
-        setLoading(false);
-      }, 800);
-      return;
-    }
 
     try {
       const [predictionRes, tempRes] = await Promise.all([
@@ -66,9 +56,7 @@ function App() {
             setAwakeMinutes={setAwakeMinutes}
             arduinoId={arduinoId}
             setArduinoId={setArduinoId}
-            mockMode={mockMode}
-            setMockMode={setMockMode}
-            handleSubmit={handleSubmit}
+handleSubmit={handleSubmit}
             loading={loading}
           />
         </div>
