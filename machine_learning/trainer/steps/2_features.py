@@ -22,8 +22,7 @@ temp_dist = abs(df['temperature'] - 20)
 df['env_score'] = 1 - (co2_norm * 0.7 + (temp_dist / 5)* 0.3)
 
 # 1 is win, 0 is either draw or loss 
-df['target'] = 0.0
-df.loc[df['user_won'],  'target'] = 1.0
+df['target'] = df['user_won']
 
 
 #Selecting and scaling
