@@ -2,7 +2,10 @@
   "name": "chess-assistance",
   "version": "1.0.0",
   "scripts": {
-    "start": "concurrently \"npm start --prefix api-gateway\" \"npm start --prefix services/grpc-service\" \"npm start --prefix frontend/chessapp\""
+    "start": "concurrently --names \"GRPC,GATEWAY,FRONTEND\" --prefix-colors \"cyan,green,blue\" \"npm start --prefix services/grpc-service\" \"npm start --prefix api-gateway\" \"npm start --prefix frontend/chessapp\"",
+    "start:grpc": "npm start --prefix services/grpc-service",
+    "start:gateway": "npm start --prefix api-gateway",
+    "start:frontend": "npm start --prefix frontend/chessapp"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
