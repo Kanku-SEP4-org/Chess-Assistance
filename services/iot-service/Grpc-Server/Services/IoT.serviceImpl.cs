@@ -19,6 +19,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
 
     public override async Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
     {
+        //await _messageQueue.EnqueueAsync([]);
         await _messageQueue.DequeueObjectAsync();
 
         var latest = _stateStore.GetLatest();
