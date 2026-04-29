@@ -26,7 +26,7 @@ message Status {
 }
 
 message sensorReading {
-    int32 value = 1; //type might differ instead of 32. get back to it 
+    float value = 1;
     sensorType type = 2; //to identify the kind of sensor. possibly use an enum
     int64 timestamp = 3;
 }

@@ -8,6 +8,7 @@
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^13.5.0",
     "bootstrap": "^5.3.8",
+    "chess-assistance": "file:../..",
     "react": "^19.2.5",
     "react-dom": "^19.2.5",
     "react-jsx": "^1.0.0",

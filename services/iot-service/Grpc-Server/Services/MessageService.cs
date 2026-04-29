@@ -61,7 +61,7 @@ public class MessageService : IMessageQueue
         try
         {
             // TODO: Move casting to Sensor Message somewhere else
-            var obj = JsonSerializer.Deserialize<SensorMessage>(bytes);
+            var obj = JsonSerializer.Deserialize<SensorMessage>(bytes, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
             Console.WriteLine(JsonSerializer.Serialize(obj));
             _messageReceiver.ReceiveSensorMessage(obj);
             return obj;

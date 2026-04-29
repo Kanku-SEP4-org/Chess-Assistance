@@ -70,7 +70,7 @@ void setup_rabbitmq_queues(amqp_connection_state_t connection)
         1,
         amqp_cstring_bytes(REQUEST_QUEUE),
         0,
-        0,
+        1,
         0,
         0,
         amqp_empty_table
@@ -86,7 +86,7 @@ void setup_rabbitmq_queues(amqp_connection_state_t connection)
         1,
         amqp_cstring_bytes(RESPONSE_QUEUE),
         0,
-        0,
+        1,
         0,
         0,
         amqp_empty_table
@@ -102,8 +102,8 @@ void setup_rabbitmq_queues(amqp_connection_state_t connection)
         1,
         amqp_cstring_bytes(REQUEST_QUEUE),
         amqp_empty_bytes,
-        0,
         1,
+        0,
         0,
         amqp_empty_table
     );

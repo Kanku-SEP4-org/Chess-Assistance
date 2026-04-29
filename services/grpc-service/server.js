@@ -28,7 +28,7 @@ const IotServiceClient = iotObject.iotService.iotService;
 
 // ===================== IoT CLIENT (→ C# IoT gRPC service) =====================
 const iotHost = process.env.IOT_HOST || "localhost";
-const iotPort = process.env.IOT_PORT || "5143";
+const iotPort = process.env.IOT_PORT || "8080";
 const iotClient = new IotServiceClient(
   `${iotHost}:${iotPort}`,
   grpc.credentials.createInsecure()

@@ -77,7 +77,7 @@ app.post("/model/winrate/predict", async (req, res) => {
           minutes_awake: Number(minutes_awake),
           temperature_celsius: temperature,
           co2: 400,
-          light: 0.5,
+          light: 1500,
         },
         (err, response) => {
           if (err) reject(err);
