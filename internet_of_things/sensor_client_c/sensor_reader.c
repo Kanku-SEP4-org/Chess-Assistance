@@ -62,15 +62,17 @@ int read_temperature(float *temperature)
     sleep(2); // arduino may reset when port opens
     tcflush(serial, TCIOFLUSH); // clear old data
 
-    write(serial, "1", 1); // asks Arduino for temperature, send 1, 1 character
+    write(serial, "1\n", 2);
 
-    usleep(500000); // wait for arduino to answer
+    usleep(500000);
 
     read(serial, buffer, sizeof(buffer) - 1);
 
     close(serial);
 
-    sscanf(buffer, "TEMP:%f", temperature);
+    char *temp_pos = strstr(buffer, "TEMP:");
+    if (temp_pos)
+        sscanf(temp_pos, "TEMP:%f", temperature);
 
     return 1;
 }

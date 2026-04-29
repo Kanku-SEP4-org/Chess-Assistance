@@ -4,12 +4,12 @@ public class IoTStateStore
 {
     private readonly object _lock = new();
 
-    public int LatestValue { get; private set; }
+    public float LatestValue { get; private set; }
     public string LatestType { get; private set; } = string.Empty;
     public long LatestTimestamp { get; private set; }
     public bool HasValue { get; private set; }
 
-    public void Update(int value, long timestamp, string type)
+    public void Update(float value, long timestamp, string type)
     {
         lock (_lock)
         {
@@ -20,7 +20,7 @@ public class IoTStateStore
         }
     }
 
-    public (bool HasValue, int Value, long Timestamp, string Type) GetLatest()
+    public (bool HasValue, float Value, long Timestamp, string Type) GetLatest()
     {
         lock (_lock)
         {
