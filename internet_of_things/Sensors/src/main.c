@@ -4,6 +4,7 @@
 #include "uart_stdio.h"
 
 #include "sensorRead.h" // access interface
+#include "light.h"
 #include "communication.h"
 
 #include "wifi.h" // Include WiFi driver
@@ -24,6 +25,8 @@ int main(void) {
     #endif
     sei();
 
+    light_init();
+
     while (1) {
         // Wait for a prompt from the PC/RabbitMQ Producer
         //" %c" allows us to skip any whitespace characters, including newlines (note the space before %c)
@@ -41,6 +44,12 @@ int main(void) {
                 break;
             case '4':
                 get_and_report_hum_json();
+                break;
+            case '5':
+                get_and_report_light();
+                break;
+            case '6':
+                get_and_report_light_json();
                 break;
 
             default:

@@ -1,5 +1,6 @@
 #include "sensorRead.h"
 #include "dht11.h"
+#include "light.h"
 #include "communication.h"
 #include <stdio.h>
 #include <stddef.h>
@@ -58,4 +59,20 @@ void get_and_report_hum_json(void) {
     } else {
         transmit_data("{\"error\": \"DHT11_READ_FAIL\"}\n");
     }
+}
+
+void get_and_report_light(void){
+    uint16_t light_level = light_measure_raw();
+
+    char buffer[50];
+    sprintf(buffer,"LIG:%d\n", light_level);
+    transmit_data(buffer);
+}
+
+void get_and_report_light_json(void){
+    uint16_t light_level = light_measure_raw();
+
+    char buffer[100];
+    sprintf(buffer,"{\"light\":%d\n}", light_level);
+    transmit_data(buffer);
 }
