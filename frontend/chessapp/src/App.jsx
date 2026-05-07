@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import PredForm from './PredForm';
 
@@ -11,6 +11,24 @@ function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [co2Level] = useState(1200);
+  const [co2Threshold] = useState(1000);
+  const [windowState, setWindowState] = useState('Closed');
+  const [windowNotification, setWindowNotification] = useState('');
+  const [lastOpeningAngle, setLastOpeningAngle] = useState(0);
+
+  useEffect(() => {
+  if (co2Level > co2Threshold) {
+    setWindowNotification('Window is going to open...');
+
+    setTimeout(() => {
+      setWindowState('Open');
+      setLastOpeningAngle(45);
+      setWindowNotification('Window is open');
+    }, 5000);
+  }
+}, [co2Level, co2Threshold]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -70,7 +88,34 @@ handleSubmit={handleSubmit}
             <p>Temperature: {result.temperature?.value ?? 'N/A'} °C</p>
           </div>
         </div>
-      )}
+      )} 
+
+      <div className="card mt-4 mx-auto text-center" style={{ maxWidth: '480px' }}>
+  <div className="card-body">
+    <h4>Window</h4>
+
+    <p>
+      <strong>Window State:</strong> {windowState}
+    </p>
+
+    <p>
+      <strong>CO2 Level:</strong> {co2Level} ppm
+    </p>
+
+    <p>
+      <strong>Threshold:</strong> {co2Threshold} ppm
+    </p>
+
+    <p>
+      <strong>Last Opening Angle:</strong> {lastOpeningAngle}°
+    </p>
+
+    <p>
+      <strong>Notification:</strong> {windowNotification}
+    </p>
+  </div>
+</div>
+
     </div>
   );
 }
