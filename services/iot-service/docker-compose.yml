@@ -13,14 +13,19 @@ services:
       RabbitMQ__RequestQueue: sensor.requests
       RabbitMQ__ResponseQueue: sensor.responses
     depends_on:
-      - rabbitmq
+      rabbitmq:
+        condition: service_healthy
 
   rabbitmq:
     image: rabbitmq:4-management
     ports:
       - "5672:5672"
       - "15672:15672"
-
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
   mock-producer:
     image: mcr.microsoft.com/dotnet/sdk:10.0
     container_name: mock-producer

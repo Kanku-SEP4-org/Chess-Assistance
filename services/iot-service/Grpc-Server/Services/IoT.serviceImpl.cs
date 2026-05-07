@@ -2,31 +2,25 @@ using Grpc.Core;
 using IotService;
 using IoTGrpcServer;
 using ProtoStatus = IotService.Status;
-using Grpc_Server.Messaging;
 
 namespace Grpc_Server.Services;
 
 public class IoTServiceImpl : iotService.iotServiceBase
 {
     private readonly IoTStateStore _stateStore;
-    private readonly IMessageQueue _messageQueue;
 
-    public IoTServiceImpl(IoTStateStore stateStore, IMessageQueue messageQueue)
+    public IoTServiceImpl(IoTStateStore stateStore)
     {
         _stateStore = stateStore;
-        _messageQueue = messageQueue;
     }
 
-    public override async Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
+    public override Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
     {
-        //await _messageQueue.EnqueueAsync([]);
-        await _messageQueue.DequeueObjectAsync();
-
         var latest = _stateStore.GetLatest();
 
         if (!latest.HasValue)
         {
-            return new tempRes
+            return Task.FromResult(new tempRes
             {
                 Reading = new sensorReading
                 {
@@ -39,10 +33,10 @@ public class IoTServiceImpl : iotService.iotServiceBase
                     Success = false,
                     Message = "No sensor reading available yet."
                 }
-            };
+            });
         }
 
-        return new tempRes
+        return Task.FromResult( new tempRes
         {
             Reading = new sensorReading
             {
@@ -55,7 +49,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
                 Success = true,
                 Message = $"Latest reading for Arduino {request.ArduinoId} retrieved successfully."
             }
-        };
+        });
     }
 
     private static sensorType MapSensorType(string type)
