@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import './App.css';
 import PredForm from './PredForm';
+import LightSensor from './LightSensor';
 
 const BASE_URL = 'http://localhost:3001';
 
@@ -115,7 +116,7 @@ handleSubmit={handleSubmit}
     </p>
   </div>
 </div>
-
+<LightSensor />
     </div>
   );
 }
