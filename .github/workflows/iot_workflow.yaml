@@ -1,0 +1,9 @@
+#set up c# sdk (opt: and rabbitMQ, shouldn't be needed)
+#build grpc_server
+#maybe install gcc to set up PIO
+#set up PIO
+#build sensor_client_c
+#build sensors
+#run tests for each
+#run grpc_server
+#run sensor_client_c

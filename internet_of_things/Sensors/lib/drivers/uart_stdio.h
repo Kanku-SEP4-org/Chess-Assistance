@@ -10,8 +10,10 @@
 #include "uart.h"
 #include <stdint.h>
 
-// Buffer size for incoming bytes on stdio (UART0).
-#define UART_STDIO_RX_BUFFER_SIZE 32
+// Buffer size for incoming bytes on stdio (UART0) Use Interrupt.
+#ifndef UNITY_TEST
+    #define UART_STDIO_RX_BUFFER_SIZE 32
+#endif
 
 // Initialize USART0 and bind stdin/stdout/stderr to it
 uart_t uart_stdio_init(uint32_t baud);
