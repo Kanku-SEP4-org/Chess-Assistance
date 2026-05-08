@@ -61,18 +61,34 @@ void get_and_report_hum_json(void) {
     }
 }
 
-void get_and_report_light(void){
-    uint16_t light_level = light_measure_raw();
-
+void get_and_report_light(ADC_Error_t light_sensor){
     char buffer[50];
-    sprintf(buffer,"LIG:%d\n", light_level);
+
+    if(light_sensor == ADC_OK){
+        uint16_t light_level = light_measure_raw();
+
+        sprintf(buffer,"LIG:%d\n", light_level);
+    }else if (light_sensor == ADC_ERROR_INVALID_CHANNEL){
+        sprintf(buffer, "Invalid channel for light sensor");
+    }else if (light_sensor == ADC_ERROR_INVALID_REFERENCE){
+        sprintf(buffer, "Invalid reference for light sensor");
+    }
+    
     transmit_data(buffer);
 }
 
-void get_and_report_light_json(void){
-    uint16_t light_level = light_measure_raw();
-
+void get_and_report_light_json(ADC_Error_t light_sensor){
     char buffer[100];
-    sprintf(buffer,"{\"light\":%d}\n", light_level);
+
+    if(light_sensor == ADC_OK){
+        uint16_t light_level = light_measure_raw();
+
+        sprintf(buffer,"{\"light\":%d}\n", light_level);
+    }else if (light_sensor == ADC_ERROR_INVALID_CHANNEL){
+        sprintf(buffer, "Invalid channel for light sensor");
+    }else if (light_sensor == ADC_ERROR_INVALID_REFERENCE){
+        sprintf(buffer, "Invalid reference for light sensor");
+    }
+
     transmit_data(buffer);
 }

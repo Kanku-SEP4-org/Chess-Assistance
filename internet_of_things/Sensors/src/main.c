@@ -46,22 +46,10 @@ int main(void) {
                 get_and_report_hum_json();
                 break;
             case '5':
-                if(light == ADC_OK){
-                    get_and_report_light();
-                }else if (light == ADC_ERROR_INVALID_CHANNEL){
-                    transmit_data("Invalid channel for light sensor");
-                }else if (light == ADC_ERROR_INVALID_REFERENCE){
-                    transmit_data("Invalid reference for light sensor");
-                }
+                get_and_report_light(light);
                 break;
             case '6':
-                if(light == ADC_OK){
-                    get_and_report_light_json();
-                }else if (light == ADC_ERROR_INVALID_CHANNEL){
-                    transmit_data("Invalid channel for light sensor");
-                }else if (light == ADC_ERROR_INVALID_REFERENCE){
-                    transmit_data("Invalid reference for light sensor");
-                }
+                get_and_report_light_json(light);
                 break;
 
             default:
