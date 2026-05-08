@@ -1,8 +1,8 @@
 namespace IoTGrpcServer;
 
-public class IoTStateStore
+public class TemperatureStateStore : IIoTStateStore
 {
-    private readonly object _lock = new();
+     private readonly object _lock = new();
 
     public float LatestValue { get; private set; }
     public string LatestType { get; private set; } = string.Empty;
@@ -15,7 +15,7 @@ public class IoTStateStore
         {
             LatestValue = value;
             LatestTimestamp = timestamp;
-            LatestType = type;
+            LatestType = "temperature";
             HasValue = true;
         }
     }
