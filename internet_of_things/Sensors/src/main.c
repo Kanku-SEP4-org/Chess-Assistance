@@ -25,7 +25,7 @@ int main(void) {
     #endif
     sei();
 
-    light_init();
+    ADC_Error_t light = light_init();
 
     while (1) {
         // Wait for a prompt from the PC/RabbitMQ Producer
@@ -46,14 +46,26 @@ int main(void) {
                 get_and_report_hum_json();
                 break;
             case '5':
-                get_and_report_light();
+                if(light == ADC_OK){
+                    get_and_report_light();
+                }else if (light == ADC_ERROR_INVALID_CHANNEL){
+                    transmit_data("Invalid channel for light sensor");
+                }else if (light == ADC_ERROR_INVALID_REFERENCE){
+                    transmit_data("Invalid reference for light sensor");
+                }
                 break;
             case '6':
-                get_and_report_light_json();
+                if(light == ADC_OK){
+                    get_and_report_light_json();
+                }else if (light == ADC_ERROR_INVALID_CHANNEL){
+                    transmit_data("Invalid channel for light sensor");
+                }else if (light == ADC_ERROR_INVALID_REFERENCE){
+                    transmit_data("Invalid reference for light sensor");
+                }
                 break;
 
             default:
-                transmit_data("Invalid input. Please enter 1, 2, 3, or 4.\n");
+                transmit_data("Invalid input. Please enter 1 - 6.\n");
                 break;
             }
         }

@@ -73,6 +73,6 @@ void get_and_report_light_json(void){
     uint16_t light_level = light_measure_raw();
 
     char buffer[100];
-    sprintf(buffer,"{\"light\":%d\n}", light_level);
+    sprintf(buffer,"{\"light\":%d}\n", light_level);
     transmit_data(buffer);
 }
