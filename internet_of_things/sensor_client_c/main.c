@@ -21,7 +21,9 @@ int main()
     {
         char responseMessage[MESSAGE_SIZE];
 
-        create_temperature_response_message(responseMessage);
+        //TODO: create light messages
+
+        create_temperature_message(responseMessage);
 
         send_response(connection, responseMessage);
 
