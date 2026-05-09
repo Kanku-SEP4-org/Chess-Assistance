@@ -19,7 +19,6 @@ builder.Services.AddGrpc();
 
 builder.Services.AddSingleton<IoTStateStore>();
 builder.Services.AddSingleton<IMessageReceiver, MessageReceiver>();
-builder.Services.AddHostedService<RabbitMqConsumerService>();
 builder.Services.AddSingleton(sp => new ConnectionFactory
 {
     HostName = rabbitHost,
@@ -39,26 +38,44 @@ builder.Services.AddSingleton<ReqChannel>(sp =>
 {
     var conn = sp.GetRequiredService<IConnection>();
     var ch = conn.CreateChannelAsync().GetAwaiter().GetResult();
-    ch.QueueDeclareAsync(queue: requestQueue, durable: true, exclusive: false, autoDelete: false, arguments: null).GetAwaiter().GetResult();
+    ch.QueueDeclareAsync(
+        queue: requestQueue,
+        durable: true,
+        exclusive: false,
+        autoDelete: false,
+        arguments: null
+    ).GetAwaiter().GetResult();
+
     return new ReqChannel(ch);
 });
 builder.Services.AddSingleton<ResChannel>(sp =>
 {
     var conn = sp.GetRequiredService<IConnection>();
     var ch = conn.CreateChannelAsync().GetAwaiter().GetResult();
-    ch.QueueDeclareAsync(queue: responseQueue, durable: true, exclusive: false, autoDelete: false, arguments: null)
-        .GetAwaiter().GetResult();
+    ch.QueueDeclareAsync(
+        queue: responseQueue,
+        durable: true,
+        exclusive: false,
+        autoDelete: false,
+        arguments: null
+    ).GetAwaiter().GetResult();
+
     return new ResChannel(ch);
 });
 
-// Register IMessageQueue using the typed channels
-builder.Services.AddSingleton<IMessageQueue>(sp =>
+builder.Services.AddSingleton<MessageService>(sp =>
 {
     var receiver = sp.GetRequiredService<IMessageReceiver>();
     var req = sp.GetRequiredService<ReqChannel>();
     var res = sp.GetRequiredService<ResChannel>();
     return new MessageService(receiver, req, res);
 });
+
+builder.Services.AddSingleton<IMessageQueue>(sp =>
+    sp.GetRequiredService<MessageService>());
+
+builder.Services.AddHostedService(sp =>
+    sp.GetRequiredService<MessageService>());
 
 var app = builder.Build();
 

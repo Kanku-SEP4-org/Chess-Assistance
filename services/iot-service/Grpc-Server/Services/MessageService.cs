@@ -3,20 +3,19 @@ using System.Text.Json;
 using Grpc_Server.Contracts;
 using Grpc_Server.Messaging;
 using IoTGrpcServer.Contracts;
-using IotService;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
 namespace Grpc_Server.Services;
 
-public class MessageService : IMessageQueue
-{
+public class MessageService : BackgroundService, IMessageQueue{
     private readonly IMessageReceiver _messageReceiver;
 
     private readonly IChannel _reqChannel;
     private readonly IChannel _resChannel;
 
-    private string reqQueue {get; set;}
-    private string resQueue {get; set;}
+    private readonly string reqQueue;
+    private readonly string resQueue;
 
     public MessageService(IMessageReceiver messageReceiver, ReqChannel reqChannel, ResChannel resChannel)
     {
@@ -27,49 +26,42 @@ public class MessageService : IMessageQueue
         resQueue = "sensor.responses";
     }
 
-    public async Task<byte[]> DequeueAsync()
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        // Gets 1 message only
-        var result = await _resChannel.BasicGetAsync(queue: resQueue, autoAck: false);
-        if(result == null)
-        {
-            return null;
-        }
+        var consumer = new AsyncEventingBasicConsumer(_resChannel);
 
-        byte[] body = result.Body.ToArray();
-
-        try
+        consumer.ReceivedAsync += async (_, ea) => //This is the event that happens when RabbitMQ delivers a message
+        // += means attach/subscribe the handler to the event
+        // _,ea - is a lambda expression, basically a short anonymous function which means the handler receives 2 parameters, one ignored and the ea-eventArgs
         {
-            // Try to ACK message
-            await _resChannel.BasicAckAsync(result.DeliveryTag, multiple: false);
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Failed to Ack message: {ex.Message}");
-            try { await _resChannel.BasicNackAsync(result.DeliveryTag, multiple: false, requeue: true); } catch { }
-            throw;
-        }
+            try
+            {
+                var body = ea.Body.ToArray();
+                var obj = JsonSerializer.Deserialize<SensorMessage>(body);
 
-        return body;
-    }
+                if (obj != null)
+                {
+                    _messageReceiver.ReceiveSensorMessage(obj);
+                    Console.WriteLine($"Consumed: {JsonSerializer.Serialize(obj)}");
+                }
 
-    public async Task<object> DequeueObjectAsync()
-    {
-        var bytes = await DequeueAsync();
-        if (bytes == null) return null;
+                await _resChannel.BasicAckAsync(ea.DeliveryTag, multiple: false);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Message consume error: {ex.Message}");
+                await _resChannel.BasicNackAsync(ea.DeliveryTag, multiple: false, requeue: true);
+            }
+        };
 
-        try
-        {
-            // TODO: Move casting to Sensor Message somewhere else
-            var obj = JsonSerializer.Deserialize<SensorMessage>(bytes, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-            Console.WriteLine(JsonSerializer.Serialize(obj));
-            _messageReceiver.ReceiveSensorMessage(obj);
-            return obj;
-        }
-        catch (JsonException)
-        {
-            return bytes;
-        }
+        await _resChannel.BasicConsumeAsync(
+            queue: resQueue,
+            autoAck: false,
+            consumer: consumer,
+            cancellationToken: stoppingToken
+        );
+
+        await Task.Delay(Timeout.Infinite, stoppingToken);
     }
 
     public async Task EnqueueAsync(byte[] bytes)
@@ -81,8 +73,6 @@ public class MessageService : IMessageQueue
             basicProperties: new BasicProperties { Persistent = true },
             body: bytes
         );
-
-        Console.WriteLine($"Sent { bytes }");
     }
 
     public async Task EnqueueObjectAsync(object message)
@@ -90,4 +80,5 @@ public class MessageService : IMessageQueue
         byte[] body = JsonSerializer.SerializeToUtf8Bytes(message);
         await EnqueueAsync(body);
     }
+
 }

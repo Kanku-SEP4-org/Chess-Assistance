@@ -8,7 +8,6 @@
 #include "communication.h"
 
 #include "wifi.h" // Include WiFi driver
-#include "uart_stdio.h"
 #define USE_WIFI_COMM 0 // Change this to 1 when ready to use WiFi
 
 int main(void) {
@@ -28,7 +27,6 @@ int main(void) {
     ADC_Error_t light = light_init();
 
     while (1) {
-<<<<<<< HEAD
         // Wait for a prompt from the PC/RabbitMQ Producer
         //" %c" allows us to skip any whitespace characters, including newlines (note the space before %c)
         if (scanf(" %c", &input) == 1) {
@@ -58,10 +56,5 @@ int main(void) {
                 break;
             }
         }
-=======
-        get_and_report_temp_json();
-        _delay_ms(5000);
-        
->>>>>>> ff0c57a (Fix: Branch rebase)
     }
 }
