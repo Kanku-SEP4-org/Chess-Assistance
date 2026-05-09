@@ -19,7 +19,7 @@ builder.Services.AddGrpc();
 
 builder.Services.AddSingleton<IoTStateStore>();
 builder.Services.AddSingleton<IMessageReceiver, MessageReceiver>();
-
+builder.Services.AddHostedService<RabbitMqConsumerService>();
 builder.Services.AddSingleton(sp => new ConnectionFactory
 {
     HostName = rabbitHost,
