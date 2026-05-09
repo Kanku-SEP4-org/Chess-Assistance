@@ -2,6 +2,6 @@
 #define SENSOR_READER_H
 
 int read_temperature(float *temperature);
-int read_light(int *light);
+int read_light(short *light);
 
 #endif

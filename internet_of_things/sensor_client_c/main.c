@@ -19,13 +19,16 @@ int main()
 
     while (1)
     {
-        char responseMessage[MESSAGE_SIZE];
+        char lightMessage[MESSAGE_SIZE];
+        char tempMessage[MESSAGE_SIZE];
 
-        //TODO: create light messages
+        create_light_message(lightMessage);
 
-        create_temperature_message(responseMessage);
+        send_response(connection, lightMessage);
 
-        send_response(connection, responseMessage);
+        create_temperature_message(tempMessage);
+
+        send_response(connection, tempMessage);
 
         sleep(5);
     }

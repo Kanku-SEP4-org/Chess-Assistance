@@ -76,7 +76,7 @@ int read_temperature(float *temperature)
     return 1;
 }
 
-int read_light(int *light)
+int read_light(short *light)
 {
     int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
     if (serial == -1)
@@ -92,7 +92,7 @@ int read_light(int *light)
     sleep(2);
     tcflush(serial, TCIOFLUSH);
 
-    write(serial, "1\n", 5);
+    write(serial, "5\n", 2);
 
     usleep(500000);
 
@@ -102,7 +102,7 @@ int read_light(int *light)
 
     char *light_pos = strstr(buffer, "LIG:");
     if (light_pos)
-        sscanf(light_pos, "TEMP:%f", light);
+        sscanf(light_pos, "LIG:%hd", light);
 
     return 1;
 }
