@@ -16,9 +16,9 @@ public class IoTServiceImpl : iotService.iotServiceBase
 
     public override Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
     {
-        var latest = _stateStore.GetLatest();
-
-        if (!latest.HasValue)
+        var latest = _stateStore.GetLatest(request.ArduinoId, "temp");
+        
+        if (latest == null)
         {
             return Task.FromResult(new tempRes
             {
@@ -31,7 +31,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
                 Status = new ProtoStatus
                 {
                     Success = false,
-                    Message = "No sensor reading available yet."
+                    Message = $"No temperature reading available yet for Arduino {request.ArduinoId}."
                 }
             });
         }
@@ -41,7 +41,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
             Reading = new sensorReading
             {
                 Value = latest.Value,
-                Type = MapSensorType(latest.Type),
+                Type = sensorType.Temp,
                 Timestamp = latest.Timestamp
             },
             Status = new ProtoStatus
@@ -51,6 +51,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
             }
         });
     }
+<<<<<<< HEAD
 
     public override Task<ProtoStatus> startRecording(recReq request, ServerCallContext context)
     {
@@ -81,4 +82,6 @@ public class IoTServiceImpl : iotService.iotServiceBase
             _ => sensorType.Temp
         };
     }
+=======
+>>>>>>> af1c16b (Consumer now updates appropriate state)
 }
