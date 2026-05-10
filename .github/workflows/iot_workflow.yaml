@@ -25,35 +25,34 @@ jobs:
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.0.x'
-    - name: Install RabbitMQ
+    - name: build and test gRPC server
+      run: |
+        dotnet build services/iot-service/Grpc-Server/Grpc-Server.csproj
+        dotnet test services/iot-service/Grpc_Test/Grpc_Test.csproj
+    - name: Install build tools and RabbitMQ
       run: |
         sudo apt-get update
-        sudo apt-get install -y rabbitmq-server
-    - name: Build gRPC Server
+        sudo apt-get install -y build-essential cmake librabbitmq-dev rabbitmq-server
+    - name: Build Sensor Client C (CMake)
       run: |
-        cd internet_of_things/GrpcServer
-        dotnet build
-    - name: Install GCC and PlatformIO
+        cd internet_of_things/sensor_client_c
+        mkdir build
+        cd build
+        # On Linux, apt-get puts rabbitmq in standard paths, so CMake finds it automatically
+        cmake ..
+        make
+    - name: Run C Unit Tests (Unity)
       run: |
-        sudo apt-get install -y build-essential
-        curl -fsSL https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py | python3 -
-    - name: Build Sensor Client C
+        cd internet_of_things/sensor_client_c/build
+        ./test_message_builder
+        ./test_sensor_reader    
+    - name: Install PlatformIO
       run: |
-        cd internet_of_things/SensorClientC
-        make all
-    - name: Build Sensors
+        python -m pip install --upgrade pip
+        pip install platformio
+    - name: Build Arduino Sensors (PlatformIO)
       run: |
         cd internet_of_things/Sensors
-        make all
-    - name: Run Tests for gRPC Server
-      run: |
-        cd internet_of_things/GrpcServer/tests
-        dotnet test
-    - name: Run Tests for Sensor Client C
-      run: |
-        cd internet_of_things/SensorClientC/tests
-        make test
-    - name: Run Tests for Sensors
-      run: |
-        cd internet_of_things/Sensors/tests
-        make test
+        pio run
+
+#CI forkflow to be added at the end of the project, when we have more code to test and build
