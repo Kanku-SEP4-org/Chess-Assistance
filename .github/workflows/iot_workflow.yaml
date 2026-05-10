@@ -7,3 +7,53 @@
 #run tests for each
 #run grpc_server
 #run sensor_client_c
+name: IoT Workflow
+
+on:
+  push:
+    branches: [ developer ]
+  pull_request:
+    branches: [ developer ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up .NET SDK
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+    - name: Install RabbitMQ
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y rabbitmq-server
+    - name: Build gRPC Server
+      run: |
+        cd internet_of_things/GrpcServer
+        dotnet build
+    - name: Install GCC and PlatformIO
+      run: |
+        sudo apt-get install -y build-essential
+        curl -fsSL https://raw.githubusercontent.com/platformio/platformio-core-installer/master/get-platformio.py | python3 -
+    - name: Build Sensor Client C
+      run: |
+        cd internet_of_things/SensorClientC
+        make all
+    - name: Build Sensors
+      run: |
+        cd internet_of_things/Sensors
+        make all
+    - name: Run Tests for gRPC Server
+      run: |
+        cd internet_of_things/GrpcServer/tests
+        dotnet test
+    - name: Run Tests for Sensor Client C
+      run: |
+        cd internet_of_things/SensorClientC/tests
+        make test
+    - name: Run Tests for Sensors
+      run: |
+        cd internet_of_things/Sensors/tests
+        make test

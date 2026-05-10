@@ -1,7 +1,9 @@
+#include<rabbitmq-c/amqp.h>
+#include <amqp_tcp_socket.h>
 #include "rabbitmq_client.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <amqp_tcp_socket.h>
+
 
 void fail_on_amqp_error(amqp_rpc_reply_t reply, const char *message)
 {
