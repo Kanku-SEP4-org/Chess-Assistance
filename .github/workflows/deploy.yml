@@ -1,0 +1,25 @@
+name: Deploy Chess-Assistance to VPS
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy Caddy config to VPS via SCP(stand for "Secure Copy Protocol")
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_IP }}
+          username: root
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "infrastructure/Caddyfile.chess"
+          target: "/opt/caddy/sites/chess-assistance"
+          strip_components: 1
+
+## TODO: implement start caddy and docker compose on the VPS
