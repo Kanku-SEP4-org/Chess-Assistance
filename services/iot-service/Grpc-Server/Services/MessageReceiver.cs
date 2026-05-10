@@ -13,6 +13,6 @@ public class MessageReceiver : IMessageReceiver
 
     public void ReceiveSensorMessage(SensorMessage message)
     {
-        _stateStore.Update(message.Value, message.Timestamp, message.Type);
+        _stateStore.Update(message.ArduinoId, message.Value, message.Timestamp, message.Type);
     }
 }
