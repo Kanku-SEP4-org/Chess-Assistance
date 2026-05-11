@@ -441,5 +441,11 @@ __pycache__/
 *.csv
 **/models/metrics.json
 **/models/eval_metrics.json
+*_cache.json
 
+# prompts
 prompts/
+/prompts/
+prompts/
+/.claude
+
