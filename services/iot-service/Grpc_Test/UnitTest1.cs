@@ -12,11 +12,10 @@ public class UnitTest1
         var store = new IoTStateStore();
 
         // Act
-        var result = store.GetLatest();
+        var result = store.GetLatest(1, "temp");
 
         // Assert
-        Assert.False(result.HasValue);
-        Assert.False(store.HasValue);
+        Assert.Null(result);
     }
 
     [Fact]
@@ -27,13 +26,15 @@ public class UnitTest1
         float expectedValue = 25.5f;
         long expectedTimestamp = 123456789;
         string expectedType = "temp";
+        int arduinoId = 1;
 
         // Act
-        store.Update(expectedValue, expectedTimestamp, expectedType);
-        var result = store.GetLatest();
+        store.Update(arduinoId, expectedValue, expectedTimestamp, expectedType);
+        var result = store.GetLatest(arduinoId, expectedType);
 
         // Assert
-        Assert.True(result.HasValue);
+        Assert.NotNull(result);
+        Assert.Equal(arduinoId, result.ArduinoId);
         Assert.Equal(expectedValue, result.Value);
         Assert.Equal(expectedTimestamp, result.Timestamp);
         Assert.Equal(expectedType, result.Type);
