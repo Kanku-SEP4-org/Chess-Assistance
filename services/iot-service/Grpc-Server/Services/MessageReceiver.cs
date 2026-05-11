@@ -4,18 +4,16 @@ namespace IoTGrpcServer.Services;
 
 public class MessageReceiver : IMessageReceiver
 {
-    private readonly IIoTStateStore _temperatureStateStore;
-    private readonly IIoTStateStore _lightStateStore;
+    private readonly SensorStateStores _sensorStateStores;
 
-    public MessageReceiver(IIoTStateStore temperatureStateStore,IIoTStateStore lightStateStore )
+    public MessageReceiver(SensorStateStores sensorStateStores)
     {
-        _temperatureStateStore = temperatureStateStore;
-        _lightStateStore = lightStateStore;
+        _sensorStateStores = sensorStateStores;
     }
 
     public void ReceiveSensorMessage(SensorMessage message)
     {
-        _temperatureStateStore.Update(message.Value, message.Timestamp, message.Type);
-        _lightStateStore.Update(message.Value, message.Timestamp, message.Type);
+        var store = _sensorStateStores.GetStore(message.Type);
+        store.Update(message.Value, message.Timestamp, message.Type);
     }
 }

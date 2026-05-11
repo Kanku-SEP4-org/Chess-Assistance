@@ -8,23 +8,22 @@ namespace Grpc_Server.Services;
 
 public class IoTServiceImpl : iotService.iotServiceBase
 {
-    private readonly TemperatureStateStore _temperatureStateStore;
-    private readonly LightStateStore _lightStateStore;
+    private readonly SensorStateStores _sensorStateStores;
     private readonly IMessageQueue _messageQueue;
 
-    public IoTServiceImpl(TemperatureStateStore temperatureStateStore,LightStateStore lightStateStore, IMessageQueue messageQueue)
+    public IoTServiceImpl(SensorStateStores sensorStateStores, IMessageQueue messageQueue)
     {
-        _temperatureStateStore = temperatureStateStore;
-        _lightStateStore = lightStateStore;
+        _sensorStateStores = sensorStateStores;
         _messageQueue = messageQueue;
     }
 
     public override async Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
     {
-        //await _messageQueue.EnqueueAsync([]);
         await _messageQueue.DequeueObjectAsync();
 
-        var latest = _temperatureStateStore.GetLatest();
+        var temperaturStore = _sensorStateStores.GetStore("temp");
+
+        var latest = temperaturStore.GetLatest();
 
         if (!latest.HasValue)
         {
@@ -63,7 +62,9 @@ public class IoTServiceImpl : iotService.iotServiceBase
     {
         await _messageQueue.DequeueObjectAsync();
 
-        var latest = _lightStateStore.GetLatest();
+        var lightStore = _sensorStateStores.GetStore("light");
+
+        var latest = lightStore.GetLatest();
 
         if (!latest.HasValue)
         {
