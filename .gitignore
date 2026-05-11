@@ -444,6 +444,6 @@ __pycache__/
 *_cache.json
 
 # prompts
+prompts/
 /prompts/
-
 /.claude
