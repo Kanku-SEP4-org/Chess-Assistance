@@ -2,11 +2,11 @@ name: ML Pipeline CI
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, main]
     paths:
       - "machine_learning/**"
   pull_request:
-    branches: [develop]
+    branches: [develop, main]
     paths:
       - "machine_learning/**"
 
