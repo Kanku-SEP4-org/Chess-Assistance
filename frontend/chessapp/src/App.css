@@ -315,3 +315,69 @@ body {
   font-weight: 800;
   cursor: pointer;
 }
+
+.sleep-toggle-btn {
+  display: block;
+  margin-top: 12px;
+  margin-bottom: 40px;
+
+  padding: 14px 24px;
+  border-radius: 999px;
+  border: none;
+
+  background: linear-gradient(135deg, #d8aa55, #8f6425);
+  color: #111;
+
+  font-size: 16px;
+  font-weight: 800;
+  cursor: pointer;
+
+  transition: all 0.25s ease;
+}
+
+.sleep-toggle-btn:hover {
+  background: rgba(216, 170, 85, 0.18);
+  transform: translateY(-2px);
+}
+
+.sleep-card {
+  margin: 0 64px 60px;
+  max-width: 720px;
+  padding: 32px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.62);
+  backdrop-filter: blur(14px);
+  color: white;
+}
+
+.sleep-card h2 {
+  margin: 0 0 24px;
+  font-size: 36px;
+}
+
+.sleep-inputs {
+  display: flex;
+  gap: 20px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.sleep-inputs input {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.08);
+  color: white;
+}
+
+.sleep-inputs button {
+  padding: 12px 22px;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 170, 85, 0.6);
+  background: linear-gradient(135deg, #d8aa55, #8f6425);
+  color: #111;
+  font-weight: 800;
+  cursor: pointer;
+}

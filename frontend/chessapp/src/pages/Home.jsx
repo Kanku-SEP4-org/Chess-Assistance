@@ -12,7 +12,32 @@ function Home() {
   const [playerStats, setPlayerStats] = useState(null)
   const [playerError, setPlayerError] = useState('')
   const [playerLoading, setPlayerLoading] = useState(false)
+  const [showSleepForm, setShowSleepForm] = useState(false)
+  const [sleepTime, setSleepTime] = useState("")
+  const [wakeTime, setWakeTime] = useState("")
+  const [sleepResult, setSleepResult] = useState("")
 
+  const calculateSleepTime = () => {
+  if (!sleepTime || !wakeTime) return
+
+  const [sleepHour, sleepMinute] = sleepTime.split(":").map(Number)
+  const [wakeHour, wakeMinute] = wakeTime.split(":").map(Number)
+
+  let sleepTotal = sleepHour * 60 + sleepMinute
+  let wakeTotal = wakeHour * 60 + wakeMinute
+
+  if (wakeTotal <= sleepTotal) {
+    wakeTotal += 24 * 60
+  }
+
+  const totalMinutes = wakeTotal - sleepTotal
+  const hours = Math.floor(totalMinutes / 60)
+  const minutes = totalMinutes % 60
+
+  setSleepResult(`${hours}h ${minutes}m`)
+}
+  
+  
   const handlePlayerSearch = async (e) => {
   e.preventDefault()
 
@@ -95,8 +120,52 @@ const [menuOpen, setMenuOpen] = useState(false);
         </div>
       </section>
 
+      {showSleepForm && (
+  <section className="sleep-card">
+    <h2>Sleep Tracker</h2>
+
+    <div className="sleep-inputs">
+      <div>
+        <p>Time you went to sleep</p>
+        <input
+          type="time"
+          value={sleepTime}
+          onChange={(e) => setSleepTime(e.target.value)}
+        />
+      </div>
+
+      <div>
+        <p>Time you woke up</p>
+        <input
+          type="time"
+          value={wakeTime}
+          onChange={(e) => setWakeTime(e.target.value)}
+        />
+      </div>
+
+      <button onClick={calculateSleepTime}>
+        Calculate Sleep
+      </button>
+    </div>
+
+    {sleepResult && (
+      <p>
+        You slept for: <strong>{sleepResult}</strong>
+      </p>
+    )}
+  </section>
+)}
+      
       {monitoringStarted && (
         <section id="track" className="dashboard">
+            {monitoringStarted && (
+           <button
+             className="sleep-toggle-btn"
+             onClick={() => setShowSleepForm(!showSleepForm)}
+           >
+            How much time did I sleep?
+           </button>
+)}
           <h2>Live Metrics</h2>
 
           <div className="cards-grid">
