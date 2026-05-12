@@ -1,4 +1,4 @@
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(UNIT_TESTING)
 // --- LINUX ONLY HEADERS ---
 #include <fcntl.h>
 #include <unistd.h>
@@ -24,7 +24,7 @@ int setup_serial(int serial)
     struct termios tty;
     memset(&tty, 0, sizeof(tty));
 
-    tcgetattr(serial, &tty);
+    if (tcgetattr(serial, &tty) != 0) return -1;
 
     cfsetospeed(&tty, B115200);
     cfsetispeed(&tty, B115200);
