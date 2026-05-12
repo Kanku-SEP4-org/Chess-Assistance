@@ -2,32 +2,25 @@ using Grpc.Core;
 using IotService;
 using IoTGrpcServer;
 using ProtoStatus = IotService.Status;
-using Grpc_Server.Messaging;
 
 namespace Grpc_Server.Services;
 
 public class IoTServiceImpl : iotService.iotServiceBase
 {
-    private readonly SensorStateStores _sensorStateStores;
-    private readonly IMessageQueue _messageQueue;
+    private readonly IoTStateStore _stateStore;
 
-    public IoTServiceImpl(SensorStateStores sensorStateStores, IMessageQueue messageQueue)
+    public IoTServiceImpl(IoTStateStore stateStore)
     {
-        _sensorStateStores = sensorStateStores;
-        _messageQueue = messageQueue;
+        _stateStore = stateStore;
     }
 
-    public override async Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
+    public override Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
     {
-        await _messageQueue.DequeueObjectAsync();
-
-        var temperaturStore = _sensorStateStores.GetStore("temp");
-
-        var latest = temperaturStore.GetLatest();
-
-        if (!latest.HasValue)
+        var latest = _stateStore.GetLatest(request.ArduinoId, "temp");
+        
+        if (latest == null)
         {
-            return new tempRes
+            return Task.FromResult(new tempRes
             {
                 Reading = new sensorReading
                 {
@@ -38,17 +31,17 @@ public class IoTServiceImpl : iotService.iotServiceBase
                 Status = new ProtoStatus
                 {
                     Success = false,
-                    Message = "No sensor reading available yet."
+                    Message = $"No temperature reading available yet for Arduino {request.ArduinoId}."
                 }
-            };
+            });
         }
 
-        return new tempRes
+        return Task.FromResult( new tempRes
         {
             Reading = new sensorReading
             {
                 Value = latest.Value,
-                Type = MapSensorType(latest.Type),
+                Type = sensorType.Temp,
                 Timestamp = latest.Timestamp
             },
             Status = new ProtoStatus
@@ -56,17 +49,13 @@ public class IoTServiceImpl : iotService.iotServiceBase
                 Success = true,
                 Message = $"Latest reading for Arduino {request.ArduinoId} retrieved successfully."
             }
-        };
+        });
     }
     public override async Task<lightRes> getLight(lightReq request, ServerCallContext context)
     {
-        await _messageQueue.DequeueObjectAsync();
+        var latest = _stateStore.GetLatest(request.ArduinoId, "light");
 
-        var lightStore = _sensorStateStores.GetStore("light");
-
-        var latest = lightStore.GetLatest();
-
-        if (!latest.HasValue)
+        if (latest == null)
         {
             return new lightRes
             {

@@ -4,10 +4,10 @@
 #include "uart_stdio.h"
 
 #include "sensorRead.h" // access interface
+#include "light.h"
 #include "communication.h"
 
 #include "wifi.h" // Include WiFi driver
-
 #define USE_WIFI_COMM 0 // Change this to 1 when ready to use WiFi
 
 int main(void) {
@@ -23,6 +23,8 @@ int main(void) {
         // wifi_command_create_TCP_connection("192.168.1.XX", 23, NULL, NULL);
     #endif
     sei();
+
+    ADC_Error_t light = light_init();
 
     while (1) {
         // Wait for a prompt from the PC/RabbitMQ Producer
@@ -42,9 +44,15 @@ int main(void) {
             case '4':
                 get_and_report_hum_json();
                 break;
+            case '5':
+                get_and_report_light(light);
+                break;
+            case '6':
+                get_and_report_light_json(light);
+                break;
 
             default:
-                transmit_data("Invalid input. Please enter 1, 2, 3, or 4.\n");
+                transmit_data("Invalid input. Please enter 1 - 6.\n");
                 break;
             }
         }

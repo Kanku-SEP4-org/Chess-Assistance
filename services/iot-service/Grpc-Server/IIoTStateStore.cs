@@ -1,7 +1,9 @@
+using IoTGrpcServer.Contracts;
+
 namespace IoTGrpcServer;
 
 public interface IIoTStateStore
 {
-    void Update(float value, long timestamp, string type);
-    (bool HasValue, float Value, long Timestamp, string Type)GetLatest();
+    void Update(int arduinoId, float value, long timestamp, string type);
+    SensorState? GetLatest(int arduinoId, string type);
 }
