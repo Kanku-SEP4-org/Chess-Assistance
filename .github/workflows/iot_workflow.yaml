@@ -13,45 +13,60 @@ on:
   push:
     branches: [ develop ]
   pull_request:
+    branches: [ "**" ]
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - name: Checkout Code
+      uses: actions/checkout@v3
+
+    # --- SETUP SECTION ---
     - name: Set up .NET SDK
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.0.x'
-    - name: build and test gRPC server
+
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y build-essential cmake librabbitmq-dev rabbitmq-server python3-pip
+
+    - name: Start RabbitMQ Service
+      run: sudo service rabbitmq-server start
+
+    # --- C# BUILD & TEST ---
+    - name: Build and Test gRPC Server
       run: |
         dotnet build services/iot-service/Grpc-Server/Grpc-Server.csproj
         dotnet test services/iot-service/Grpc_Test/Grpc_Test.csproj
-    - name: Install build tools and RabbitMQ
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y build-essential cmake librabbitmq-dev rabbitmq-server
-    - name: Build Sensor Client C (CMake)
+
+    # --- C CLIENT BUILD & TEST ---
+    - name: Build Sensor Client C
       run: |
         cd internet_of_things/sensor_client_c
-        mkdir build
+        mkdir -p build
         cd build
-        # On Linux, apt-get puts rabbitmq in standard paths, so CMake finds it automatically
         cmake ..
         make
-    - name: Run C Unit Tests (Unity)
+
+    - name: Run C Unit Tests
       run: |
         cd internet_of_things/sensor_client_c/build
         ./test_message_builder
-        ./test_sensor_reader    
+        ./test_sensor_reader
+
+    # --- ARDUINO/PLATFORMIO BUILD ---
     - name: Install PlatformIO
       run: |
-        python -m pip install --upgrade pip
+        python3 -m pip install --upgrade pip
         pip install platformio
-    - name: Build Arduino Sensors (PlatformIO)
+
+    - name: Build Sensors (Arduino)
       run: |
         cd internet_of_things/Sensors
         pio run
-
-#CI forkflow to be added at the end of the project, when we have more code to test and build
+        
+#CD forkflow to be added at the end of the project, when we have more code to test and build
