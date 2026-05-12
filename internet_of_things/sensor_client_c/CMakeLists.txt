@@ -16,6 +16,7 @@ endif()
 if(WIN32)
     # Windows: Use the local headers and the specific .dll.a file
     include_directories("${RABBIT_DIR}/include")
+    include_directories("${RABBIT_DIR}/include/rabbitmq-c")
     set(RABBIT_LIB "${RABBIT_DIR}/lib/librabbitmq.4.dll.a")
 
     # Add Windows-specific definitions to help headers behave

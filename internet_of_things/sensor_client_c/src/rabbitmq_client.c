@@ -1,4 +1,4 @@
-#include <rabbitmq-c/amqp.h>
+#include <amqp.h>
 #include <amqp_tcp_socket.h>
 #include "rabbitmq_client.h"
 #include <stdio.h>
