@@ -1,13 +1,11 @@
-#if !defined(_WIN32) && !defined(UNIT_TESTING)
-// --- LINUX ONLY HEADERS ---
-#include <fcntl.h>
-#include <unistd.h>
-#include <termios.h>
+#ifdef _WIN32
+  #include <windows.h>
+  #define usleep(x) Sleep((x)/1000)
 #else
-// --- WINDOWS ONLY HEADERS ---
-#include <windows.h>
-// Map Linux-style 'usleep' to Windows 'Sleep' for compatibility if needed
-#define usleep(x) Sleep((x)/1000)
+  // This covers Linux, even during Unit Testing
+  #include <fcntl.h>
+  #include <unistd.h>
+  #include <termios.h>
 #endif
 
 #include "sensor_reader.h"
