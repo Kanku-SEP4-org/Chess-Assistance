@@ -8,6 +8,7 @@ enum sensorType {
     temp = 0;
     light = 1;
     waterLevel = 2;
+    error = 3; 
 }
 service iotService {
     rpc getTemperature(tempReq) returns (tempRes);
