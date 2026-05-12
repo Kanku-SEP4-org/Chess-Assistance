@@ -4,11 +4,11 @@ namespace IoTGrpcServer.Services;
 
 public class MessageReceiver : IMessageReceiver
 {
-    private readonly IoTStateStore _stateStore;
+    private readonly IIoTStateStore _stateStore;
 
-    public MessageReceiver(IoTStateStore stateStore)
+    public MessageReceiver(IIoTStateStore sensorState)
     {
-        _stateStore = stateStore;
+        _stateStore = sensorState;
     }
 
     public void ReceiveSensorMessage(SensorMessage message)

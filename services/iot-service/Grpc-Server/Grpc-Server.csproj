@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\IoT.proto" GrpcServices="Server" />
+    <Protobuf Include=".\proto\IoT.proto" GrpcServices="Server" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <Folder Include="Messaging\" />
+    <Folder Include="SensorStateStores\" />
   </ItemGroup>
 
 </Project>
