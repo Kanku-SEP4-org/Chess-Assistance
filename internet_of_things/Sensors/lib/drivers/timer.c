@@ -106,11 +106,14 @@ int8_t timer_delete(int8_t timer_id)
 {
     if(timer_id > 0 && timer_id <= TIMER_MAX_TIMERS) 
     {
+        if (software_timers[timer_id - 1].callback != NULL)
+        {
+            timer_count--;
+        }
         software_timers[timer_id - 1].callback = NULL;
         software_timers[timer_id - 1].interval_ms = 0;
         software_timers[timer_id - 1].elapsed_ms = 0;
         software_timers[timer_id - 1].active = 0;
-        timer_count--;
         return TIMER_OK;
     }
     return TIMER_INVALID_ID;

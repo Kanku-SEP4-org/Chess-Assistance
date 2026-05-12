@@ -18,10 +18,12 @@ static bool _line_received = false;
 // Stream-objekt for stdio
 static FILE uart0_stream;
 
+#ifndef UNITY_TEST
 static void _uart0_line_callback(uint8_t b)
 {
     _line_received = true;
 }
+#endif
 
 uart_t uart_stdio_init(uint32_t baud)
 {
