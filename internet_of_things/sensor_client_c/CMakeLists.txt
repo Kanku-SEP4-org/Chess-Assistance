@@ -5,15 +5,15 @@ set(CMAKE_C_STANDARD 11)
 
 # --- 1. SETUP PATHS ---
 set(RABBIT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/rabbitmq-c-0.15.0")
-# Using the correct case-sensitive 'Unity'
 set(UNITY_SRC "${CMAKE_CURRENT_SOURCE_DIR}/tests/Unity/src/unity.c")
 
-# Check if the file actually exists
 if(NOT EXISTS ${UNITY_SRC})
     message(FATAL_ERROR "Unity source not found at: ${UNITY_SRC}")
 endif()
 
-# Updated include to match the Unity folder case
+# --- THE FIX: Tell RabbitMQ headers to ignore Windows-specific DLL logic ---
+add_definitions(-DAMQP_STATIC)
+
 include_directories(
         src
         tests/Unity/src
@@ -26,7 +26,6 @@ list(REMOVE_ITEM ALL_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c")
 
 # --- 3. EXECUTABLES ---
 
-# Test: Message Builder
 add_executable(test_message_builder
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_message_builder.c"
         "${UNITY_SRC}"
@@ -34,28 +33,25 @@ add_executable(test_message_builder
         "${CMAKE_CURRENT_SOURCE_DIR}/src/sensor_reader.c"
 )
 
-# Test: Sensor Reader - FIXED: Added 'test_sensor_reader' as the target name
 add_executable(test_sensor_reader
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_sensor_reader.c"
         "${UNITY_SRC}"
         ${ALL_SRC_FILES}
 )
 
-# Main App
 add_executable(sensor_client
         "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c"
         ${ALL_SRC_FILES}
 )
 
 # --- 4. LINKING ---
-link_directories("${RABBIT_DIR}/lib")
 set(RABBIT_LIB_PATH "${RABBIT_DIR}/lib/librabbitmq.4.dll.a")
 
 if(EXISTS "${RABBIT_LIB_PATH}")
     target_link_libraries(test_sensor_reader PRIVATE "${RABBIT_LIB_PATH}")
     target_link_libraries(sensor_client PRIVATE "${RABBIT_LIB_PATH}")
 else()
-    # On Linux/GitHub Actions, use the library installed via apt-get
+    # On Linux, use the system library installed via apt-get
     target_link_libraries(test_sensor_reader PRIVATE rabbitmq)
     target_link_libraries(sensor_client PRIVATE rabbitmq)
 endif()
