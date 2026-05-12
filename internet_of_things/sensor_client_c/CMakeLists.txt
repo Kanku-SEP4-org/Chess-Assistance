@@ -63,3 +63,6 @@ add_executable(sensor_client
 # We use the ${RABBIT_LIB} variable we set in the IF/ELSE block above
 target_link_libraries(test_sensor_reader PRIVATE ${RABBIT_LIB})
 target_link_libraries(sensor_client PRIVATE ${RABBIT_LIB})
+
+target_compile_definitions(test_message_builder PRIVATE UNIT_TESTING)
+target_compile_definitions(test_sensor_reader PRIVATE UNIT_TESTING)

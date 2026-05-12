@@ -19,7 +19,7 @@
 // 1. Wrap the Serial Setup logic
 int setup_serial(int serial)
 {
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(UNIT_TESTING)
     // This code ONLY exists for Linux use (arduino connected)
     struct termios tty;
     memset(&tty, 0, sizeof(tty));
@@ -59,7 +59,7 @@ int setup_serial(int serial)
 //  Wrap the Temperature Reading logic
 int read_temperature(float *temperature)
 {
-#ifndef _WIN32
+#if !defined(_WIN32) && !defined(UNIT_TESTING)
     // --- REAL LINUX LOGIC ---
     int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
     if (serial == -1) {
