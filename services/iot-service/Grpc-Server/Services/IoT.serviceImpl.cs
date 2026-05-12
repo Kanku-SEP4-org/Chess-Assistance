@@ -70,7 +70,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
                     Success = false,
                     Message = "No sensor reading available yet."
                 }
-            });
+            };
         }
 
         return new lightRes
@@ -86,7 +86,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
                 Success = true,
                 Message = $"Latest reading for Arduino {request.ArduinoId} retrieved successfully."
             }
-        });
+        };
     }
 
     private static sensorType MapSensorType(string type)
