@@ -7,10 +7,12 @@ package iotService;
 enum sensorType {
     temp = 0;
     light = 1;
+    waterLevel = 2;
 }
 service iotService {
     rpc getTemperature(tempReq) returns (tempRes);
     rpc getLight(lightReq) returns (lightRes);
+    rpc getWaterLevel(waterLevelReq) returns (waterLevelRes);
 
 }
 
@@ -32,6 +34,14 @@ message lightRes {
     Status status = 2;
 }
 
+message waterLevelReq {
+    int32 arduinoId = 1;
+}
+message waterLevelRes {
+    sensorReading reading =1;
+    Status status = 2;
+}
+
 message Status {
     bool success = 1;
     string message = 2;
@@ -42,7 +52,3 @@ message sensorReading {
     sensorType type = 2; //to identify the kind of sensor. possibly use an enum
     int64 timestamp = 3;
 }
-
-
-
-
