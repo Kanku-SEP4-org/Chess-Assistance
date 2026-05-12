@@ -11,9 +11,8 @@ name: IoT Workflow
 
 on:
   push:
-    branches: [ developer ]
+    branches: [ develop ]
   pull_request:
-    branches: [ developer ]
 
 jobs:
   build:
