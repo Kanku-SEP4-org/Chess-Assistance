@@ -45,7 +45,6 @@ int setup_serial(int serial)
     return 1;
 }
 
-
 int read_temperature(float *temperature)
 {
     int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
@@ -77,6 +76,36 @@ int read_temperature(float *temperature)
     return 1;
 }
 
+int read_light(short *light)
+{
+    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
+    if (serial == -1)
+    {
+        printf("open_port: Unable to open");
+        return -1;
+    }
+    
+    setup_serial(serial);
+
+    char buffer[100] = {0};
+
+    sleep(2);
+    tcflush(serial, TCIOFLUSH);
+
+    write(serial, "5\n", 2);
+
+    usleep(500000);
+
+    read(serial, buffer, sizeof(buffer) - 1);
+
+    close(serial);
+
+    char *light_pos = strstr(buffer, "LIG:");
+    if (light_pos)
+        sscanf(light_pos, "LIG:%hd", light);
+
+    return 1;
+}
 
 
 // in administrator powershell
