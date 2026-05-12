@@ -22,6 +22,9 @@ jobs:
     steps:
     - name: Checkout Code
       uses: actions/checkout@v3
+      with:
+        submodules: recursive  # Ensures Unity/libs are pulled if they are submodules
+        fetch-depth: 0         # Pulls all history (better for some build tools)
 
     # --- SETUP SECTION ---
     - name: Set up .NET SDK
