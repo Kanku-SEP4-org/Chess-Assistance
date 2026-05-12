@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <unistd.h>
+
 #include "rabbitmq_client.h"
 #include "message_builder.h"
 
@@ -13,20 +15,17 @@ int main()
 
     setup_rabbitmq_queues(connection);
 
-    printf("Waiting for messages from queue '%s'...\n", REQUEST_QUEUE);
+    printf("Producing temperature messages every 5 seconds...\n");
 
     while (1)
     {
-        if (!wait_for_request(connection))
-        {
-            break;
-        }
-
         char responseMessage[MESSAGE_SIZE];
 
         create_temperature_response_message(responseMessage);
 
         send_response(connection, responseMessage);
+
+        sleep(5);
     }
 
     close_rabbitmq(connection);

@@ -1,0 +1,46 @@
+# Production deployment for VPS
+# Note: Run from repo root: docker compose -f docker-compose.prod.yml up --build -d
+
+services:
+  
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: chess-api-gateway
+    environment:
+      - GRPC_HOST=chess-grpc-service
+    networks:
+      - caddy_net
+      - chess_internal
+    depends_on:
+      - grpc-service
+    restart: unless-stopped
+
+  ml-api:
+    build:
+      context: .
+      dockerfile: machine_learning/api/.dockerfile
+    container_name: chess-ml-api
+    environment:
+      - MODEL_PATH=/app/models/model.pkl
+      - SCALER_PATH=/app/models/scaler.pkl
+    networks:
+      - chess_internal
+    restart: unless-stopped
+
+  iot-service:
+    build:
+      context: ./services/iot-service
+      dockerfile: Grpc-Server/Dockerfile
+    container_name: chess-iot-service
+    networks:
+      - chess_internal
+    restart: unless-stopped
+
+networks:
+  caddy_net:
+    external: true
+    name: caddy_net
+  chess_internal:
+    driver: bridge
