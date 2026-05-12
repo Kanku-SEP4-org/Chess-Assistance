@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 
 # --- 1. SETUP PATHS (Relative to project) ---
 set(RABBIT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/rabbitmq-c-0.15.0")
-set(UNITY_SRC "${CMAKE_CURRENT_SOURCE_DIR}/tests/unity/src/unity.c")
+set(UNITY_SRC "${CMAKE_CURRENT_SOURCE_DIR}/tests/Unity/src/unity.c")
 
 # Check if the file actually exists before proceeding
 if(NOT EXISTS ${UNITY_SRC})
