@@ -7,9 +7,9 @@ namespace Grpc_Server.Services;
 
 public class IoTServiceImpl : iotService.iotServiceBase
 {
-    private readonly IoTStateStore _stateStore;
+    private readonly IIoTStateStore _stateStore;
 
-    public IoTServiceImpl(IoTStateStore stateStore)
+    public IoTServiceImpl(IIoTStateStore stateStore)
     {
         _stateStore = stateStore;
     }
