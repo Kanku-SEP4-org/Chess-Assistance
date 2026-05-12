@@ -3,29 +3,43 @@ project(CloudCProject C)
 
 set(CMAKE_C_STANDARD 11)
 
-# --- 1. SETUP PATHS ---
+# --- 1. DEFINE PATHS FIRST ---
 set(RABBIT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/libs/rabbitmq-c-0.15.0")
 set(UNITY_SRC "${CMAKE_CURRENT_SOURCE_DIR}/tests/Unity/src/unity.c")
 
-if(NOT EXISTS ${UNITY_SRC})
+# Fail-fast check for Unity
+if(NOT EXISTS "${UNITY_SRC}")
     message(FATAL_ERROR "Unity source not found at: ${UNITY_SRC}")
 endif()
 
-# --- THE FIX: Tell RabbitMQ headers to ignore Windows-specific DLL logic ---
+# --- 2. OS-SPECIFIC CONFIGURATION ---
+if(WIN32)
+    # Windows: Use the local headers and the specific .dll.a file
+    include_directories("${RABBIT_DIR}/include")
+    set(RABBIT_LIB "${RABBIT_DIR}/lib/librabbitmq.4.dll.a")
+
+    # Add Windows-specific definitions to help headers behave
+    add_definitions(-D_WIN32_WINNT=0x0600)
+else()
+    # Linux (GitHub Actions): Use system headers and the library from apt-get
+    # We DO NOT include_directories("${RABBIT_DIR}/include") here to avoid __declspec errors
+    set(RABBIT_LIB "rabbitmq")
+endif()
+
+# Global Fix: Treat RabbitMQ as static to avoid DLL export issues
 add_definitions(-DAMQP_STATIC)
 
+# Common Includes
 include_directories(
         src
         tests/Unity/src
-        "${RABBIT_DIR}/include"
 )
 
-# --- 2. COLLECT SOURCE FILES ---
+# --- 3. COLLECT SOURCE FILES ---
 file(GLOB_RECURSE ALL_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
 list(REMOVE_ITEM ALL_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c")
 
-# --- 3. EXECUTABLES ---
-
+# --- 4. EXECUTABLES ---
 add_executable(test_message_builder
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_message_builder.c"
         "${UNITY_SRC}"
@@ -44,14 +58,7 @@ add_executable(sensor_client
         ${ALL_SRC_FILES}
 )
 
-# --- 4. LINKING ---
-set(RABBIT_LIB_PATH "${RABBIT_DIR}/lib/librabbitmq.4.dll.a")
-
-if(EXISTS "${RABBIT_LIB_PATH}")
-    target_link_libraries(test_sensor_reader PRIVATE "${RABBIT_LIB_PATH}")
-    target_link_libraries(sensor_client PRIVATE "${RABBIT_LIB_PATH}")
-else()
-    # On Linux, use the system library installed via apt-get
-    target_link_libraries(test_sensor_reader PRIVATE rabbitmq)
-    target_link_libraries(sensor_client PRIVATE rabbitmq)
-endif()
+# --- 5. LINKING ---
+# We use the ${RABBIT_LIB} variable we set in the IF/ELSE block above
+target_link_libraries(test_sensor_reader PRIVATE ${RABBIT_LIB})
+target_link_libraries(sensor_client PRIVATE ${RABBIT_LIB})
