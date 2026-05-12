@@ -17,7 +17,7 @@ var responseQueue = builder.Configuration["RabbitMQ:ResponseQueue"] ?? "sensor.r
 
 builder.Services.AddGrpc();
 
-builder.Services.AddSingleton<IoTStateStore>();
+builder.Services.AddSingleton<IIoTStateStore, IoTStateStore>();
 builder.Services.AddSingleton<IMessageReceiver, MessageReceiver>();
 builder.Services.AddSingleton(sp => new ConnectionFactory
 {

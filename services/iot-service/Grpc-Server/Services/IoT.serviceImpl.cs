@@ -7,18 +7,18 @@ namespace Grpc_Server.Services;
 
 public class IoTServiceImpl : iotService.iotServiceBase
 {
-    private readonly IoTStateStore _stateStore;
+    private readonly IIoTStateStore _stateStore;
 
-    public IoTServiceImpl(IoTStateStore stateStore)
+    public IoTServiceImpl(IIoTStateStore stateStore)
     {
         _stateStore = stateStore;
     }
 
     public override Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
     {
-        var latest = _stateStore.GetLatest();
-
-        if (!latest.HasValue)
+        var latest = _stateStore.GetLatest(request.ArduinoId, "temp");
+        
+        if (latest == null)
         {
             return Task.FromResult(new tempRes
             {
@@ -31,12 +31,49 @@ public class IoTServiceImpl : iotService.iotServiceBase
                 Status = new ProtoStatus
                 {
                     Success = false,
-                    Message = "No sensor reading available yet."
+                    Message = $"No temperature reading available yet for Arduino {request.ArduinoId}."
                 }
             });
         }
 
         return Task.FromResult( new tempRes
+        {
+            Reading = new sensorReading
+            {
+                Value = latest.Value,
+                Type = sensorType.Temp,
+                Timestamp = latest.Timestamp
+            },
+            Status = new ProtoStatus
+            {
+                Success = true,
+                Message = $"Latest reading for Arduino {request.ArduinoId} retrieved successfully."
+            }
+        });
+    }
+    public override async Task<lightRes> getLight(lightReq request, ServerCallContext context)
+    {
+        var latest = _stateStore.GetLatest(request.ArduinoId, "light");
+
+        if (latest == null)
+        {
+            return new lightRes
+            {
+                Reading = new sensorReading
+                {
+                    Value = 0,
+                    Type = sensorType.Light,
+                    Timestamp = 0
+                },
+                Status = new ProtoStatus
+                {
+                    Success = false,
+                    Message = "No sensor reading available yet."
+                }
+            });
+        }
+
+        return new lightRes
         {
             Reading = new sensorReading
             {
@@ -57,6 +94,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
         return type.ToLower() switch
         {
             "temp" => sensorType.Temp,
+            "light" => sensorType.Light,
             _ => sensorType.Temp
         };
     }
