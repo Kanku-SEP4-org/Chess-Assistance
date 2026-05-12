@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import ChessTrack from "./pages/ChessTrack";
+import IotDashboard from "./pages/IotDashboard";
 
 function App() {
   return (
@@ -8,6 +9,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/chesstrack" element={<ChessTrack />} />
+        <Route path="/iot" element={<IotDashboard />} />
       </Routes>
     </Router>
   );

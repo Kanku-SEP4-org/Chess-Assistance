@@ -77,6 +77,7 @@ const [menuOpen, setMenuOpen] = useState(false);
         <Link to="/">Home</Link>
         <a href="#about">About</a>
         <Link to="/chesstrack">ChessTrack</Link>
+        <Link to="/iot">IoT Dashboard</Link>
         
         <div className="profile-menu-container">
   <button
@@ -94,6 +95,7 @@ const [menuOpen, setMenuOpen] = useState(false);
     <div className="profile-dropdown">
       <button>👤 My Profile</button>
       <button>📈 View Sessions</button>
+      <Link to="/iot" onClick={() => setMenuOpen(false)}>📡 IoT Dashboard</Link>
       <button>♟️ Elo Boosting</button>
       <button>⚙️ Settings</button>
     </div>
