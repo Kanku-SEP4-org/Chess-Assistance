@@ -78,7 +78,7 @@ builder.Services.AddHostedService(sp =>
     sp.GetRequiredService<MessageService>());
 
 var app = builder.Build();
-
+Console.WriteLine("GRPC SERVER BUILD TEEEEEST");
 app.MapGrpcService<IoTServiceImpl>();
 app.MapGet("/", () => "IoT gRPC server is running.");
 
