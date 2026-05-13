@@ -1,4 +1,4 @@
-﻿//testing out more DRY-abiding tests for the IoTServiceImpl class, using xUnit's
+﻿//testing out more DRY-compliant tests for the IoTServiceImpl class, using xUnit's
 //Theory and InlineData attributes to run the same test with different inputs.
 
 using Moq;
@@ -56,7 +56,7 @@ public class IoTServiceImplTheoryTests
     [Theory]
     [InlineData("temp", 23.5f, sensorType.Temp)]
     [InlineData("light", 500f, sensorType.Light)]
-    [InlineData("waterLevel", 75.0f, sensorType.WaterLevel)]
+    [InlineData("water", 75.0f, sensorType.Water)]
     public async Task GetSensorData_WhenDataExists_ReturnsCorrectValue(string key, float val, sensorType expectedType)
     {
         // Arrange
@@ -89,7 +89,7 @@ public class IoTServiceImplTheoryTests
             Assert.Equal(val, response.Reading.Value);
             Assert.Equal(expectedType, response.Reading.Type);
         }
-        else if (key == "waterLevel")
+        else if (key == "water")
         {
             var response = await _service.getWaterLevel(new waterLevelReq { ArduinoId = arduinoId }, null!);
 

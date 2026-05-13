@@ -91,7 +91,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
 
     public override async Task<waterLevelRes> getWaterLevel(waterLevelReq request, ServerCallContext context)
     {
-        var latest = _stateStore.GetLatest(request.ArduinoId, "waterLevel");
+        var latest = _stateStore.GetLatest(request.ArduinoId, "water");
 
         if (latest == null)
         {
@@ -100,7 +100,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
                 Reading = new sensorReading
                 {
                     Value = 0,
-                    Type = sensorType.WaterLevel,
+                    Type = sensorType.Water,
                     Timestamp = 0
                 },
                 Status = new ProtoStatus
@@ -136,7 +136,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
         {
             "temp" => sensorType.Temp,
             "light" => sensorType.Light,
-            "waterlevel" => sensorType.WaterLevel,
+            "water" => sensorType.Water,
             _ => sensorType.Error // default case, should not happen if we control the input types properly
             //!!! all cases must be added lowercase in declaration too, so the unit tests pass without a hitch
             //in the methods, camelcase must match the proto enum

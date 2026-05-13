@@ -7,7 +7,7 @@ package iotService;
 enum sensorType {
     temp = 0;
     light = 1;
-    waterLevel = 2;
+    water = 2;
     error = 3; 
 }
 service iotService {
