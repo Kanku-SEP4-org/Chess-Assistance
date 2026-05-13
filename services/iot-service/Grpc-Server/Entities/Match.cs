@@ -1,8 +1,18 @@
+using Microsoft.VisualBasic;
+
 namespace IoTGrpcServer;
 
-public class Room
+public class Match
 {
     public int Id {get; set;}
+
+    public DateOnly SessionDate {get; set;}
+
+    public DateInterval DurationFromPrevious {get; set;}
+
+    public Enum Status {get; set;}
+    
+    public int SessionId {get; set;}
 
     public int PlayerId {get; set;}
 

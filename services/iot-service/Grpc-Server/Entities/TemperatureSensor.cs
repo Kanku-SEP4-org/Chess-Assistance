@@ -2,13 +2,13 @@ using System.Text.RegularExpressions;
 
 namespace IoTGrpcServer;
 
-public class LightSensorEntity
+public class TemperatureSensor
 {
     public int Id {get; set;}
 
     public DateTime TimeStamp {get; set;}
 
-    public int Lumen {get; set;}
+    public int Celsius {get; set;}
 
     public Room Room {get; set;}
     public int RoomId {get; set;}

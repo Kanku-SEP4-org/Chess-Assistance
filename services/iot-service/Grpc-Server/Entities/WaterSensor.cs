@@ -2,13 +2,13 @@ using System.Text.RegularExpressions;
 
 namespace IoTGrpcServer;
 
-public class CO2SensorEntity
+public class WaterSensor
 {
     public int Id {get; set;}
 
     public DateTime TimeStamp {get; set;}
 
-    public int Ppm {get; set;}
+    public int Ml {get; set;}
 
     public Room Room {get; set;}
     public int RoomId {get; set;}
