@@ -6,12 +6,18 @@ namespace IoTGrpcServer;
 public class IoTStateStore : IIoTStateStore
 {
     private readonly ConcurrentDictionary<SensorKey, SensorState> _states = new();
+    private readonly HashSet<string> _allowedTypes = new() { "temp", "light", "water" };
     public void Update(int arduinoId, float value, long timestamp, string type)
     {
         var normalizedType = type.Trim().ToLowerInvariant();
 
         // does not rely on a key list, providing a vulnerability, which allows to create any new key by sending a new message type
-        // TODO: make key lists limiting what message types we handle
+        // DONE: make key lists limiting what message types we handle
+        if (!_allowedTypes.Contains(normalizedType))
+        {
+            Console.WriteLine($"Invalid sensor type: {normalizedType}");
+            return;
+        }
         var key = new SensorKey 
         {
             ArduinoId = arduinoId,
@@ -23,7 +29,7 @@ public class IoTStateStore : IIoTStateStore
             ArduinoId = arduinoId,
             Value = value,
             Timestamp = timestamp,
-            Type = type
+            Type = normalizedType
         };
     }
 

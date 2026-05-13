@@ -9,7 +9,16 @@ using Grpc_Server.Contracts;
 var builder = WebApplication.CreateBuilder(args);
 
 // RabbitMQ settings
-var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "rabbitmq";
+//var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "rabbitmq";
+
+// Look for an environment variable named RABBIT_HOST,
+// then check appsettings, then default to "localhost" for local dev safety.
+var rabbitHost = Environment.GetEnvironmentVariable("RABBIT_HOST")
+                 ?? builder.Configuration["RabbitMQ:Host"]
+                 ?? "localhost"; // Changed default from "rabbitmq" to "localhost"
+//after making sure the rabbitmq server works on http://localhost:15672
+//in console: $env:RabbitMQ__Host="localhost"
+//then you can build and run without docker
 var rabbitUser = builder.Configuration["RabbitMQ:User"] ?? "guest";
 var rabbitPass = builder.Configuration["RabbitMQ:Password"] ?? "guest";
 var requestQueue = builder.Configuration["RabbitMQ:RequestQueue"] ?? "sensor.requests";
