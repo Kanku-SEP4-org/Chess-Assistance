@@ -1,6 +1,6 @@
 
-import { useState, useRef, useEffect } from "react";
-import { Crown, User, History, Settings, TrendingUp } from "lucide-react";
+import { useState/*, useRef, useEffect*/ } from "react";
+// import { Crown, User, History, Settings, TrendingUp } from "lucide-react";
 import { Link } from 'react-router-dom'
 import heroImg from '../assets/chess-bg.png'
 import knightLogo from "../assets/knight-logo.png";
@@ -8,10 +8,10 @@ import '../App.css'
 
 function Home() {
   const [monitoringStarted, setMonitoringStarted] = useState(false)
-  const [username, setUsername] = useState('')
-  const [playerStats, setPlayerStats] = useState(null)
-  const [playerError, setPlayerError] = useState('')
-  const [playerLoading, setPlayerLoading] = useState(false)
+  // const [username, setUsername] = useState('')
+  // const [playerStats, setPlayerStats] = useState(null)
+  // const [playerError, setPlayerError] = useState('')
+  // const [playerLoading, setPlayerLoading] = useState(false)
   const [showSleepForm, setShowSleepForm] = useState(false)
   const [sleepTime, setSleepTime] = useState("")
   const [wakeTime, setWakeTime] = useState("")
@@ -38,35 +38,28 @@ function Home() {
 }
   
   
-  const handlePlayerSearch = async (e) => {
-  e.preventDefault()
-
-  if (!username.trim()) {
-    setPlayerError('Please enter a Chess.com username.')
-    return
-  }
-
-  setPlayerLoading(true)
-  setPlayerError('')
-  setPlayerStats(null)
-
-  try {
-    const response = await fetch(
-      `https://api.chess.com/pub/player/${username.trim().toLowerCase()}/stats`
-    )
-
-    if (!response.ok) {
-      throw new Error('Player not found')
-    }
-
-    const data = await response.json()
-    setPlayerStats(data)
-  } catch (error) {
-    setPlayerError('Could not find this Chess.com player.')
-  } finally {
-    setPlayerLoading(false)
-  }
-}
+  // const handlePlayerSearch = async (e) => {
+  //   e.preventDefault()
+  //   if (!username.trim()) {
+  //     setPlayerError('Please enter a Chess.com username.')
+  //     return
+  //   }
+  //   setPlayerLoading(true)
+  //   setPlayerError('')
+  //   setPlayerStats(null)
+  //   try {
+  //     const response = await fetch(
+  //       `https://api.chess.com/pub/player/${username.trim().toLowerCase()}/stats`
+  //     )
+  //     if (!response.ok) throw new Error('Player not found')
+  //     const data = await response.json()
+  //     setPlayerStats(data)
+  //   } catch (error) {
+  //     setPlayerError('Could not find this Chess.com player.')
+  //   } finally {
+  //     setPlayerLoading(false)
+  //   }
+  // }
 const [menuOpen, setMenuOpen] = useState(false);
   return (
     <main className="app" style={{ backgroundImage: `url(${heroImg})` }}>
