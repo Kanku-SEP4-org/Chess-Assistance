@@ -1,6 +1,6 @@
 
 import { useState, useRef, useEffect } from "react";
-import { Crown, User, History, Settings, TrendingUp } from "lucide-react";
+import { Crown, User, History, Settings, TrendingUp, TextAlignStart } from "lucide-react";
 import { Link } from 'react-router-dom'
 import heroImg from '../assets/chess-bg.png'
 import knightLogo from "../assets/knight-logo.png";
@@ -93,11 +93,11 @@ const [menuOpen, setMenuOpen] = useState(false);
 
   {menuOpen && (
     <div className="profile-dropdown">
-      <button>👤 My Profile</button>
-      <button>📈 View Sessions</button>
-      <Link to="/iot" onClick={() => setMenuOpen(false)}>📡 IoT Dashboard</Link>
-      <button>♟️ Elo Boosting</button>
-      <button>⚙️ Settings</button>
+      <Link to="/iot" style={{ display:"flex", justifyContent:"left" }} onClick={() => setMenuOpen(false)}>👤 My Profile</Link>
+      <Link to="/iot" style={{ display:"flex", justifyContent:"left" }} onClick={() => setMenuOpen(false)}>📈 View Sessions</Link>
+      <Link to="/iot" style={{ display:"flex", justifyContent:"left" }} onClick={() => setMenuOpen(false)}>📡 IoT Dashboard</Link>
+      <Link to="/preferences" style={{ display:"flex", justifyContent:"left" }} onClick={() => setMenuOpen(false)}>⚙️ Settings</Link>
+      
     </div>
   )}
 </div>
@@ -105,14 +105,9 @@ const [menuOpen, setMenuOpen] = useState(false);
       </nav>
 
       <section id="home" className="hero-section">
-    
-
         <div className="hero-content">
           <p className="eyebrow">Chess Performance Assistant</p>
           <h1>Track your environment. Improve your game.</h1>
-          
-
-
           <button
             className="start-btn"
             onClick={() => setMonitoringStarted(true)}
