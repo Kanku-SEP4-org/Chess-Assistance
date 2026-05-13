@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import '../App.css';
+import Header from '../components/Header';
+import heroImg from '../assets/chess-bg.png';
 
 function PlayerPreferences() {
   const [preferences, setPreferences] = useState({
@@ -26,7 +28,7 @@ function PlayerPreferences() {
     setMessage('');
 
     try {
-      // Assuming there's an API endpoint to save preferences
+      //idk havent checked if theres an endpoint like that
       const response = await fetch('/api/player-preferences', {
         method: 'POST',
         headers: {
@@ -59,125 +61,100 @@ function PlayerPreferences() {
   };
 
   return (
-    <main className="app" style={{ backgroundColor: '#f5f5f5', minHeight: '100vh' }}>
-      <nav className="navbar">
-        <div className="logo">ChessTrack™</div>
-        <div className="nav-links">
-          <Link to="/">Home</Link>
-          <Link to="/chesstrack">ChessTrack</Link>
-          <Link to="/iot">IoT Dashboard</Link>
+    <main className="min-vh-100 bg-dark text-white" style={{ backgroundImage: `url(${heroImg})`, backgroundSize: 'auto 115vh', backgroundPosition: 'right top', backgroundRepeat: 'no-repeat', backgroundAttachment: 'fixed' }}>
+      <Header />
+
+      <div className="container" style={{ maxWidth: '600px', marginTop: '2rem', marginBottom: '2rem' }}>
+        <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border border-white border-opacity-10 rounded-4 p-4 mb-5">
+          <h1 className="card-title text-center mb-4">Player Preferences</h1>
+
+            <form onSubmit={handleSubmit}>
+              <div className="mb-3">
+                <label htmlFor="daily_game_limit" className="form-label fw-bold text-white">
+                  Daily Game Limit:
+                </label>
+                <input
+                  type="number" 
+                  className="form-control bg-black bg-opacity-10 border border-white border-opacity-15 text-white rounded-3 px-3 py-2"
+                  id="daily_game_limit"
+                  name="daily_game_limit"
+                  value={preferences.daily_game_limit}
+                  onChange={handleChange}
+                  min="1"
+                  required
+                  placeholder="Enter maximum games per day"
+                />
+              </div>
+
+              <div className="mb-3">
+                <label htmlFor="daily_playtime_limit_min" className="form-label fw-bold text-white">
+                  Daily Playtime Limit (minutes):
+                </label>
+                <input
+                  type="number"
+                  className="form-control bg-black bg-opacity-10 border border-white border-opacity-15 text-white rounded-3 px-3 py-2"
+                  id="daily_playtime_limit_min"
+                  name="daily_playtime_limit_min"
+                  value={preferences.daily_playtime_limit_min}
+                  onChange={handleChange}
+                  min="1"
+                  required
+                  placeholder="Enter maximum playtime in minutes"
+                />
+              </div>
+
+              <div className="mb-3">
+                <label htmlFor="break_interval_min" className="form-label fw-bold text-white">
+                  Break Interval (minutes):
+                </label>
+                <input
+                  type="number"
+                  className="form-control bg-black bg-opacity-10 border border-white border-opacity-15 text-white rounded-3 px-3 py-2"
+                  id="break_interval_min"
+                  name="break_interval_min"
+                  value={preferences.break_interval_min}
+                  onChange={handleChange}
+                  min="1"
+                  required
+                  placeholder="Enter break interval in minutes"
+                />
+              </div>
+
+              <div className="mb-4">
+                <label htmlFor="recommend_rest_min" className="form-label fw-bold text-white">
+                  Recommended Rest (minutes):
+                </label>
+                <input
+                  type="number"
+                  className="form-control bg-black bg-opacity-10 border border-white border-opacity-15 text-white rounded-3 px-3 py-2"
+                  id="recommend_rest_min"
+                  name="recommend_rest_min"
+                  value={preferences.recommend_rest_min}
+                  onChange={handleChange}
+                  min="1"
+                  required
+                  placeholder="Enter recommended rest time in minutes"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className={`btn text-dark fw-bold px-4 py-3 rounded-pill border-0 w-100 text-black ${loading ? 'disabled' : ''}`}
+                style={{ background: 'linear-gradient(135deg, #d8aa55, #8f6425)' }}
+                disabled={loading}
+              >
+                {loading ? 'Saving...' : 'Save Preferences'}
+              </button>
+            </form>
+
+            {message && (
+              <div className={`alert mt-3 ${message.includes('successfully') ? 'alert-success bg-success bg-opacity-10 border border-success border-opacity-25 text-success' : 'alert-danger bg-danger bg-opacity-10 border border-danger border-opacity-25 text-danger'} rounded-3`}>
+                {message}
+              </div>
+            )}
+          </div>
         </div>
-      </nav>
 
-      <div className="container" style={{ maxWidth: '600px', margin: '2rem auto', padding: '2rem', backgroundColor: 'white', borderRadius: '8px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)' }}>
-        <h1 style={{ textAlign: 'center', marginBottom: '2rem', color: '#333' }}>Player Preferences</h1>
-
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label htmlFor="daily_game_limit" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#555' }}>
-              Daily Game Limit:
-            </label>
-            <input
-              type="number"
-              id="daily_game_limit"
-              name="daily_game_limit"
-              value={preferences.daily_game_limit}
-              onChange={handleChange}
-              min="1"
-              required
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '1rem' }}
-              placeholder="Enter maximum games per day"
-            />
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label htmlFor="daily_playtime_limit_min" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#555' }}>
-              Daily Playtime Limit (minutes):
-            </label>
-            <input
-              type="number"
-              id="daily_playtime_limit_min"
-              name="daily_playtime_limit_min"
-              value={preferences.daily_playtime_limit_min}
-              onChange={handleChange}
-              min="1"
-              required
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '1rem' }}
-              placeholder="Enter maximum playtime in minutes"
-            />
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label htmlFor="break_interval_min" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#555' }}>
-              Break Interval (minutes):
-            </label>
-            <input
-              type="number"
-              id="break_interval_min"
-              name="break_interval_min"
-              value={preferences.break_interval_min}
-              onChange={handleChange}
-              min="1"
-              required
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '1rem' }}
-              placeholder="Enter break interval in minutes"
-            />
-          </div>
-
-          <div style={{ marginBottom: '2rem' }}>
-            <label htmlFor="recommend_rest_min" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold', color: '#555' }}>
-              Recommended Rest (minutes):
-            </label>
-            <input
-              type="number"
-              id="recommend_rest_min"
-              name="recommend_rest_min"
-              value={preferences.recommend_rest_min}
-              onChange={handleChange}
-              min="1"
-              required
-              style={{ width: '100%', padding: '0.75rem', border: '1px solid #ddd', borderRadius: '4px', fontSize: '1rem' }}
-              placeholder="Enter recommended rest time in minutes"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              backgroundColor: loading ? '#ccc' : '#007bff',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              fontSize: '1rem',
-              cursor: loading ? 'not-allowed' : 'pointer'
-            }}
-          >
-            {loading ? 'Saving...' : 'Save Preferences'}
-          </button>
-        </form>
-
-        {message && (
-          <div style={{
-            marginTop: '1rem',
-            padding: '0.75rem',
-            borderRadius: '4px',
-            backgroundColor: message.includes('successfully') ? '#d4edda' : '#f8d7da',
-            color: message.includes('successfully') ? '#155724' : '#721c24',
-            border: `1px solid ${message.includes('successfully') ? '#c3e6cb' : '#f5c6cb'}`
-          }}>
-            {message}
-          </div>
-        )}
-
-        <div style={{ textAlign: 'center', marginTop: '2rem' }}>
-          <Link to="/" style={{ color: '#007bff', textDecoration: 'none' }}>
-            ← Back to Home
-          </Link>
-        </div>
-      </div>
     </main>
   );
 }

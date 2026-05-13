@@ -1,5 +1,7 @@
 import { useState } from 'react'
-import '../App.css'
+import { Link } from 'react-router-dom'
+import Header from '../components/Header'
+import heroImg from '../assets/chess-bg.png'
 
 function ChessTrack() {
   const [username, setUsername] = useState('')
@@ -77,93 +79,133 @@ function ChessTrack() {
   const bullet = getModeStats('chess_bullet')
 
   return (
-    <main className="track-page">
-      <section className="track-hero">
-        <p className="eyebrow">Chess.com Player Lookup</p>
-        <h1>Search player performance</h1>
-        <p>
-          Enter a Chess.com username to view public ratings, records and win ratios.
-        </p>
+    <main className="min-vh-100 bg-dark text-white" style={{ backgroundImage: `url(${heroImg})`, backgroundSize: 'auto 115vh', backgroundPosition: 'right top', backgroundRepeat: 'no-repeat', backgroundAttachment: 'fixed' }}>
+      <Header />
 
-        <form className="player-search" onSubmit={handlePlayerSearch}>
-          <input
-            type="text"
-            placeholder="Example: hikaru"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-          />
+      <section className="py-5" style={{ padding: '80px 64px' }}>
+        <div className="container-fluid">
+          <div className="row justify-content-center">
+            <div className="col-lg-8 col-xl-6 text-center">
+              <p className="text-warning text-uppercase fw-bold mb-3" style={{ letterSpacing: '2px', fontSize: '20px' }}>Chess.com Player Lookup</p>
+              <h1 className="display-4 fw-bold mb-4">Search player performance</h1>
+              <p className="text-white-70 mb-5 fs-5">
+                Enter a Chess.com username to view public ratings, records and win ratios.
+              </p>
 
-          <button type="submit">
-            {playerLoading ? 'Searching...' : 'Search Player'}
-          </button>
-        </form>
+              <form className="d-flex gap-3 justify-content-center mb-4" onSubmit={handlePlayerSearch}>
+                <input
+                  type="text"
+                  className="form-control bg-black bg-opacity-10 border border-white border-opacity-15 text-white rounded-pill px-4 py-3"
+                  style={{ minWidth: '300px' }}
+                  placeholder="Example: Hikaru"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                />
 
-        {playerError && <p className="player-error">{playerError}</p>}
+                <button
+                  type="submit"
+                  className="btn text-dark fw-bold px-4 py-3 rounded-pill border-0"
+                  style={{ background: 'linear-gradient(135deg, #d8aa55, #8f6425)' }}
+                >
+                  {playerLoading ? 'Searching...' : 'Search Player'}
+                </button>
+              </form>
+
+              {playerError && (
+                <div className="alert alert-danger bg-danger bg-opacity-10 border border-danger border-opacity-25 text-danger rounded-3">
+                  {playerError}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       </section>
 
       {playerStats && (
-        <section className="player-results">
-          <h2>{username} Stats</h2>
+        <section className="py-5" style={{ padding: '0 64px 80px' }}>
+          <div className="container-fluid">
+            <h2 className="h1 mb-5 text-center">{username} Stats</h2>
 
-          <div className="cards-grid">
-            <div className="metric-card">
-              <span>Rapid Rating</span>
-              <strong>{rapid.rating}</strong>
-              <p>Win Rate: {rapid.winRate}%</p>
-            </div>
-
-            <div className="metric-card">
-              <span>Blitz Rating</span>
-              <strong>{blitz.rating}</strong>
-              <p>Win Rate: {blitz.winRate}%</p>
-            </div>
-
-            <div className="metric-card">
-              <span>Bullet Rating</span>
-              <strong>{bullet.rating}</strong>
-              <p>Win Rate: {bullet.winRate}%</p>
-            </div>
-
-            <div className="metric-card">
-              <span>Total Rapid Games</span>
-              <strong>{rapid.wins + rapid.losses + rapid.draws}</strong>
-              <p>
-                {rapid.wins}W / {rapid.losses}L / {rapid.draws}D
-              </p>
-            </div>
-          </div>
-
-          <div className="session-card">
-            <div>
-              <p className="eyebrow">Player Summary</p>
-              <h2>Performance Overview</h2>
-              <p>
-                Public Chess.com stats loaded successfully. These values are fetched directly from the Chess.com PubAPI.
-              </p>
-            </div>
-
-            <div className="session-stats">
-              <div>
-                <span>Rapid WR</span>
-                <strong>{rapid.winRate}%</strong>
+            <div className="row g-4 mb-5">
+              <div className="col-lg-3 col-md-6">
+                <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border border-white border-opacity-10 rounded-4 p-4 h-100 text-center" >
+                  <span className="medium mb-3 d-block">Rapid Rating</span>
+                  <strong className="h2 mb-3 d-block">{rapid.rating}</strong>
+                  <p className="mb-0 lh-base">Win Rate: {rapid.winRate}%</p>
+                </div>
               </div>
-              <div>
-                <span>Blitz WR</span>
-                <strong>{blitz.winRate}%</strong>
+
+              <div className="col-lg-3 col-md-6">
+                <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border border-white border-opacity-10 rounded-4 p-4 h-100 text-center" >
+                  <span className="medium mb-3 d-block">Blitz Rating</span>
+                  <strong className="h2 mb-3 d-block">{blitz.rating}</strong>
+                  <p className="mb-0 lh-base">Win Rate: {blitz.winRate}%</p>
+                </div>
               </div>
-              <div>
-                <span>Bullet WR</span>
-                <strong>{bullet.winRate}%</strong>
+
+              <div className="col-lg-3 col-md-6">
+                <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border border-white border-opacity-10 rounded-4 p-4 h-100 text-center" >
+                  <span className="medium mb-3 d-block">Bullet Rating</span>
+                  <strong className="h2 mb-3 d-block">{bullet.rating}</strong>
+                  <p className="mb-0 lh-base">Win Rate: {bullet.winRate}%</p>
+                </div>
               </div>
-              <div>
-                <span>Best Rating</span>
-                <strong>
-                  {Math.max(
-                    rapid.rating === 'N/A' ? 0 : rapid.rating,
-                    blitz.rating === 'N/A' ? 0 : blitz.rating,
-                    bullet.rating === 'N/A' ? 0 : bullet.rating
-                  )}
-                </strong>
+
+              <div className="col-lg-3 col-md-6">
+                <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border border-white border-opacity-10 rounded-4 p-4 h-100 text-center" style={{ boxShadow: '0 20px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+                  <span className="medium mb-3 d-block">Total Bullet Games</span>
+                  <strong className="h2 mb-3 d-block">{bullet.wins + bullet.losses + bullet.draws}</strong>
+                  <p className="text-white-70 mb-0">
+                    {rapid.wins}W / {rapid.losses}L / {rapid.draws}D
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border-white border-opacity-10 rounded-4 p-4">
+              <div className="row g-4 align-items-center">
+                <div className="col-lg-6">
+                  <p className="text-uppercase fw-bold mb-2 small">Player Summary</p>
+                  <h2 className="h1 mb-3">Performance Overview</h2>
+                  <p className="text-white-70 lh-base">
+                    Public Chess.com stats loaded successfully. These values are fetched directly from the Chess.com PubAPI.
+                  </p>
+                </div>
+
+                <div className="col-lg-6">
+                  <div className="row g-4">
+                    <div className="col-3 text-center">
+                    <div className="card p-3 rounded-3 bg-transparent border border-white border-opacity-10 rounded-4 p-4">
+                      <span className="text-white">Rapid WR</span>
+                      <strong className="h3 text-white">{rapid.winRate}%</strong>
+                    </div>
+                  </div>
+                    <div className="col-3 text-center">
+                      <div className="card p-3 rounded-3 bg-transparent border border-white border-opacity-10 rounded-4 p-4">
+                        <span className="text-white">Blitz WR</span>
+                        <strong className="h4 text-white">{blitz.winRate}%</strong>
+                      </div>
+                    </div>
+                    <div className="col-3 text-center">
+                      <div className="card p-3 rounded-3 bg-transparent border border-white border-opacity-10 rounded-4 p-4">
+                        <span className="text-white">Bullet WR</span>
+                        <strong className="h4 text-white">{bullet.winRate}%</strong>
+                      </div>
+                    </div>
+                    <div className="col-3 text-center">
+                      <div className="card p-3 rounded-3 bg-transparent border border-white border-opacity-10 rounded-4 p-4">
+                        <span className="text-white">Best Rating</span>
+                        <strong className="h4 text-white">
+                          {Math.max(
+                            rapid.rating === 'N/A' ? 0 : rapid.rating,
+                            blitz.rating === 'N/A' ? 0 : blitz.rating,
+                            bullet.rating === 'N/A' ? 0 : bullet.rating
+                          )}
+                        </strong>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import '../App.css'
+import Header from '../components/Header'
+import heroImg from '../assets/chess-bg.png'
 
 const BASE_URL = 'http://localhost:3001'
 
@@ -55,101 +56,139 @@ function IotDashboard() {
   const rawJson = iotData ? JSON.stringify(iotData, null, 2) : ''
 
   return (
-    <main className="track-page">
-      <nav className="navbar">
-        <div className="logo">IoT Dashboard</div>
-        <div className="nav-links">
-          <Link to="/">Home</Link>
-          <Link to="/chesstrack">ChessTrack</Link>
-          <Link to="/iot">IoT Dashboard</Link>
+    <main className="min-vh-100 bg-dark text-white" style={{ backgroundImage: `url(${heroImg})`, backgroundSize: 'auto 115vh', backgroundPosition: 'right top', backgroundRepeat: 'no-repeat', backgroundAttachment: 'fixed' }}>
+      <Header />
+
+      <section className="py-5" style={{ padding: '80px 64px' }}>
+        <div className="container-fluid">
+          <div className="row justify-content-center">
+            <div className="col-lg-8 col-xl-6 text-center">
+              <p className="text-warning text-uppercase fw-bold mb-3" style={{ letterSpacing: '2px', fontSize: '20px' }}>IoT System Monitor</p>
+              <h1 className="display-4 fw-bold mb-4">Live IoT sensor data from your environment</h1>
+              <p className="text-white-70 mb-5 fs-5">
+                This dashboard pulls the latest data from the API gateway and the IoT service. It refreshes automatically every 10 seconds.
+              </p>
+
+              <div className="d-flex gap-3 justify-content-center mb-4">
+                <button
+                  className="btn text-dark fw-bold px-4 py-3 rounded-pill border-0 text-black"
+                  style={{ background: 'linear-gradient(135deg, #d8aa55, #8f6425)' }}
+                  onClick={fetchIotData}
+                >
+                  Refresh Data
+                </button>
+              </div>
+
+              {error && (
+                <div className="alert alert-danger bg-danger bg-opacity-10 border border-danger border-opacity-25 text-danger rounded-3">
+                  {error}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </nav>
-
-      <section className="track-hero">
-        <p className="eyebrow">IoT System Monitor</p>
-        <h1>Live IoT sensor data from your environment</h1>
-        <p>
-          This dashboard pulls the latest data from the API gateway and the IoT service. It refreshes automatically every 10 seconds.
-        </p>
-
-        <div className="player-search" style={{ marginTop: '24px', gap: '12px' }}>
-          <button className="sleep-toggle-btn" type="button" onClick={fetchIotData}>
-            Refresh Data
-          </button>
-          <Link to="/" className="sleep-toggle-btn" style={{ textDecoration: 'none' }}>
-            Back to Home
-          </Link>
-        </div>
-
-        {error && <p className="player-error">{error}</p>}
       </section>
 
-      <section className="dashboard">
-        <h2>Sensor Summary</h2>
-        <div className="cards-grid">
-          <div className="metric-card">
-            <span>Temperature</span>
-            <strong>{loading ? 'Loading…' : iotData?.value != null ? `${iotData.value.toFixed(1)}°C` : 'N/A'}</strong>
-            <p>Current reading for the connected temperature sensor.</p>
-          </div>
+      <section className="py-5" style={{ padding: '0 64px 80px' }}>
+        <div className="container-fluid">
+          <h2 className="h1 mb-5 text-center">Sensor Summary</h2>
 
-          <div className="metric-card">
-            <span>Sensor Type</span>
-            <strong>{iotData ? sensorTypeLabel(iotData.type) : 'N/A'}</strong>
-            <p>Detected IoT sensor type from the backend.</p>
-          </div>
-
-          <div className="metric-card">
-            <span>Last Update</span>
-            <strong>{loading ? '...' : lastSeen}</strong>
-            <p>Timestamp when the sensor data was last received.</p>
-          </div>
-
-          <div className="metric-card">
-            <span>Environment Status</span>
-            <strong>{loading ? '...' : comfortStatus(iotData?.value)}</strong>
-            <p>Basic comfort state based on temperature readings.</p>
-          </div>
-        </div>
-
-        <div className="session-card">
-          <div>
-            <p className="eyebrow">IoT Service</p>
-            <h2>Connected Device Health</h2>
-            <p>
-              The dashboard is connected to the API gateway at <strong>{BASE_URL}</strong> and displays the most recent sensor values from your IoT service.
-            </p>
-          </div>
-
-          <div className="session-stats">
-            <div>
-              <span>Success</span>
-              <strong>{iotData?.success ? 'Yes' : 'No'}</strong>
+          <div className="row g-4 mb-5">
+            <div className="col-lg-3 col-md-6">
+              <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border border-white border-opacity-10 rounded-4 p-4 h-100 text-center" >
+                <span className="medium mb-3 d-block">Rapid Rating</span>
+                <strong className="h2 mb-3 d-block">
+                  {loading ? 'Loading…' : iotData?.value != null ? `${iotData.value.toFixed(1)}°C` : 'N/A'}
+                </strong>
+                <p className="text-white-70 mb-0 lh-base">Current reading for the connected temperature sensor.</p>
+              </div>
             </div>
-            <div>
-              <span>Message</span>
-              <strong>{iotData?.message || 'No message'}</strong>
+
+            <div className="col-lg-3 col-md-6">
+              <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border border-white border-opacity-10 rounded-4 p-4 h-100 text-center" >
+                <span className="medium mb-3 d-block">Sensor Type</span>
+                <strong className="h2 mb-3 d-block">
+                  {iotData ? sensorTypeLabel(iotData.type) : 'N/A'}
+                </strong>
+                <p className="text-white-70 mb-0 lh-base">Detected IoT sensor type from the backend.</p>
+              </div>
             </div>
-            <div>
-              <span>Value Type</span>
-              <strong>{iotData?.type != null ? iotData.type : 'N/A'}</strong>
+
+            <div className="col-lg-3 col-md-6">
+              <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border border-white border-opacity-10 rounded-4 p-4 h-100 text-center" >
+                <span className="medium mb-3 d-block">Last Update</span>
+                <strong className="h2 mb-3 d-block">
+                  {loading ? '...' : lastSeen}
+                </strong>
+                <p className="text-white-70 mb-0 lh-base">Timestamp when the sensor data was last received.</p>
+              </div>
             </div>
-            <div>
-              <span>Data Age</span>
-              <strong>{iotData?.timestamp ? `${Math.max(0, Math.round((Date.now() - Number(iotData.timestamp)) / 1000))}s` : 'N/A'}</strong>
+
+            <div className="col-lg-3 col-md-6">
+              <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border border-white border-opacity-10 rounded-4 p-4 h-100 text-center" style={{ boxShadow: '0 20px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+                <span className="medium mb-3 d-block">Environment Status</span>
+                <strong className="h2 mb-3 d-block">
+                  {loading ? '...' : comfortStatus(iotData?.value)}
+                </strong>
+                <p className="text-white-70 mb-0 lh-base">Basic comfort state based on temperature readings.</p>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div className="session-card">
-          <div>
-            <p className="eyebrow">Full Backend Payload</p>
-            <h2>IoT Response JSON</h2>
-            <p>This shows the full response the backend sends to the frontend so the backend team can verify every field.</p>
+          <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border border-white border-opacity-10 rounded-4 p-4 mb-5" style={{ boxShadow: '0 20px 80px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.04)' }}>
+            <div className="row g-4 align-items-center">
+              <div className="col-lg-6">
+                <p className="text-warning text-uppercase fw-bold mb-2 small">IoT Service</p>
+                <h2 className="h1 mb-3">Connected Device Health</h2>
+                <p className="text-white-70 lh-base">
+                  The dashboard is connected to the API gateway at <strong>{BASE_URL}</strong> and displays the most recent sensor values from your IoT service.
+                </p>
+              </div>
+
+              <div className="col-lg-6">
+                <div className="row g-4">
+                  <div className="card bg-transparent border border-white border-opacity-10 rounded-4 p-4">
+                    <span className="text-white-50 small d-block">Success</span>
+                    <strong className="h4 text-white">{iotData?.success ? 'Yes' : 'No'}</strong>
+                  </div>
+              
+                  <div className="card bg-transparent border border-white border-opacity-10 rounded-4 p-4">
+                    <span className="text-white-50 small d-block">Message</span>
+                    <strong className="h4 text-white">{iotData?.message || 'No message'}</strong>
+                  </div>
+      
+                  <div className="card bg-transparent border border-white border-opacity-10 rounded-4 p-4">
+                    <span className="text-white-50 small d-block">Value Type</span>
+                    <strong className="h4 text-white">{iotData?.type || 'N/A'}</strong>
+                  </div>
+
+                  <div className="card bg-transparent border border-white border-opacity-10 rounded-4 p-4">
+                    <span className="text-white">Data Age</span>
+                    <strong className="h4 text-white">{iotData?.timestamp ? `${Math.max(0, Math.round((Date.now() - Number(iotData.timestamp)) / 1000))}s` : 'N/A'}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="json-card">
-            <pre>{loading ? 'Loading payload…' : rawJson || 'No payload available'}</pre>
+          <div className="card text-white bg-black bg-opacity-50 bg-dark.bg-gradient border border-white border-opacity-10 rounded-4 p-4 mb-5">
+            <div className="row g-4">
+              <div className="col-12">
+                <p className="text-warning text-uppercase fw-bold mb-2 small">Full Backend Payload</p>
+                <h2 className="h1 mb-3">IoT Response JSON</h2>
+                <p className="text-white-70 lh-base mb-4">
+                  This shows the full response the backend sends to the frontend so the backend team can verify every field.
+                </p>
+              </div>
+
+              <div className="col-12">
+                <div className="bg-dark bg-opacity-35 border border-white border-opacity-10 rounded-3 p-4">
+                  <pre className="text-white-70 mb-0 small" style={{ fontFamily: 'monospace' }}>
+                    {loading ? 'Loading payload…' : rawJson || 'No payload available'}
+                  </pre>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
