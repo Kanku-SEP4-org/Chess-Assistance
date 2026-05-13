@@ -10,3 +10,4 @@ void get_and_report_temperature(void);
 void get_and_report_temp_json(void);
 void get_and_report_humidity(void);
 void get_and_report_hum_json(void);
+void get_and_report_water(void);

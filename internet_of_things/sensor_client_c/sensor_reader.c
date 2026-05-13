@@ -72,12 +72,46 @@ int read_temperature(float *temperature)
 
     char *temp_pos = strstr(buffer, "TEMP:");
     if (temp_pos)
+    {
         sscanf(temp_pos, "TEMP:%f", temperature);
-
-    return 1;
+        return 1;
+    }
+    return 0;
 }
 
+int read_water(int *water)
+{
+    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
+    if (serial == -1)
+    {
+        printf("open_port: Unable to open\n");
+        return -1;
+    }
 
+    setup_serial(serial);
+
+    char buffer[100] = {0};
+
+    sleep(2);
+    tcflush(serial, TCIOFLUSH);
+
+    write(serial, "7\n", 2);
+
+    usleep(500000);
+
+    read(serial, buffer, sizeof(buffer) - 1);
+
+    close(serial);
+
+    char *water_pos = strstr(buffer, "WATER:");
+    if (water_pos)
+    {
+        sscanf(water_pos, "WATER:%d", water);
+        return 1;
+    }
+
+    return 0;
+}
 
 // in administrator powershell
 

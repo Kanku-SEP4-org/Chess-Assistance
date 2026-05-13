@@ -41,3 +41,37 @@ void create_temperature_response_message(char *responseMessage)
         );
     }
 }
+
+void create_water_message(char *responseMessage)
+{
+    int water = 0;
+    long timestamp = get_timestamp();
+
+    if (read_water(&water))
+    {
+        sprintf(
+            responseMessage,
+            "{"
+                "\"arduinoId\":1,"
+                "\"value\":%d,"
+                "\"type\":\"water\","
+                "\"timestamp\":%ld"
+            "}",
+            water,
+            timestamp
+        );
+    }
+    else
+    {
+        sprintf(
+            responseMessage,
+            "{"
+                "\"arduinoId\":1,"
+                "\"type\":\"water\","
+                "\"timestamp\":%ld,"
+                "\"value\": null"
+            "}",
+            timestamp
+        );
+    }
+}

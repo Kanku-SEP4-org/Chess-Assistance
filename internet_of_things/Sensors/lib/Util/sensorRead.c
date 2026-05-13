@@ -3,6 +3,9 @@
 #include "communication.h"
 #include <stdio.h>
 #include <stddef.h>
+#include "adc.h"
+#include <stdint.h>
+#include "soil.h"
 
 void get_and_report_temperature(void) {
     uint8_t h_int, h_dec, t_int, t_dec;
@@ -57,5 +60,17 @@ void get_and_report_hum_json(void) {
         transmit_data(buffer);
     } else {
         transmit_data("{\"error\": \"DHT11_READ_FAIL\"}\n");
+    }
+}
+
+void get_and_report_water(void) {
+    uint16_t water = soil_measure_raw(ADC_PK0);
+
+    if (water == UINT16_MAX) {
+        transmit_data("WATER:ERROR\n");
+    } else {
+        char buffer[32];
+        sprintf(buffer, "WATER:%u\n", water);
+        transmit_data(buffer);
     }
 }
