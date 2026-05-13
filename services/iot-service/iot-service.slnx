@@ -1,4 +1,5 @@
 <Solution>
+  <Project Path="Grpc-Server.Tests/Grpc-Server.Tests.csproj" />
   <Project Path="Grpc-Server/Grpc-Server.csproj" />
   <Project Path="Mock_IoT_Producer/Mock_IoT_Producer.csproj" />
 </Solution>
