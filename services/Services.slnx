@@ -1,5 +1,6 @@
 <Solution>
-  <Folder Name="/ModelServices/">
-    <Project Path="ModelServices/PredictService/PredictService.csproj" />
+  <Folder Name="/Services/">
+    <Project Path="ModelServices/PredictionService.grpc/PredictionService.grpc.csproj" />
+    <Project Path="iot-service/Grpc-Server/Grpc-Server.csproj" />
   </Folder>
 </Solution>
