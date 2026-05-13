@@ -24,7 +24,7 @@ public class IoTServiceImplTheoryTests
     [Theory]
     [InlineData("temp", 1)]
     [InlineData("light", 1)]
-    [InlineData("waterLevel", 1)]
+    [InlineData("water", 1)]
     //[InLineData("humidity", 1)]
     //etc
     public async Task GetSensorData_WhenStoreEmpty_ReturnsFailureStatus(string sensorTypeKey, int arduinoId)
