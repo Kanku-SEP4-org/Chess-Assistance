@@ -9,6 +9,8 @@ enum sensorType {
 }
 service iotService {
     rpc getTemperature(tempReq) returns (tempRes);
+    rpc startRecording(recReq) returns (Status);
+    rpc stopRecording(recReq) returns (Status);
 }
 
 message tempReq {
@@ -26,11 +28,13 @@ message Status {
 }
 
 message sensorReading {
-    float value = 1; //type might differ instead of 32. get back to it 
+    float value = 1;
     sensorType type = 2; //to identify the kind of sensor. possibly use an enum
     int64 timestamp = 3;
 }
 
-
+message recReq {
+    int32 arduinoId = 1;
+}
 
 
