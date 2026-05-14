@@ -267,6 +267,19 @@ body {
   text-align: left;
 }
 
+.test-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.test-icon {
+  width: 20px;
+  display: flex;
+  justify-content: center;
+}
+
 .profile-dropdown button:hover {
   background: rgba(201, 157, 74, 0.15);
   color: #d4a64f;

@@ -10,7 +10,7 @@ function AddUpdateTest() {
     threshold: ""
   });
 
-  // handle input changes
+  // Handle input changes
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -18,7 +18,7 @@ function AddUpdateTest() {
     });
   };
 
-  // submit form
+  // Handle form submit
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -30,7 +30,7 @@ function AddUpdateTest() {
 
       alert("Test Added Successfully");
 
-      // clear form
+      // Reset form
       setFormData({
         testName: "",
         description: "",
@@ -47,6 +47,7 @@ function AddUpdateTest() {
   };
 
   return (
+
     <div style={{ padding: "20px" }}>
 
       <h2>Add Test</h2>
@@ -114,6 +115,7 @@ function AddUpdateTest() {
         </button>
 
       </form>
+
     </div>
   );
 }

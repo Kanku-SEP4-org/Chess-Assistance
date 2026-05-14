@@ -96,9 +96,12 @@ const [menuOpen, setMenuOpen] = useState(false);
       <button>📈 View Sessions</button>
       <button>♟️ Elo Boosting</button>
       <button>⚙️ Settings</button>
-      <Link to="/tests"><button style={{ paddingLeft: "6px" }}>
-  📋 Add / Update Test
-</button></Link>
+      <Link to="/tests">
+      <button className="test-btn">
+  <span className="test-icon">📋</span>
+  Add / Update Test
+</button>
+      </Link>
     </div>
   )}
 </div>
