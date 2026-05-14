@@ -51,7 +51,6 @@ public class IoTServiceImpl : iotService.iotServiceBase
             }
         });
     }
-<<<<<<< HEAD
 
     public override Task<ProtoStatus> startRecording(recReq request, ServerCallContext context)
     {
@@ -82,6 +81,4 @@ public class IoTServiceImpl : iotService.iotServiceBase
             _ => sensorType.Temp
         };
     }
-=======
->>>>>>> af1c16b (Consumer now updates appropriate state)
 }
