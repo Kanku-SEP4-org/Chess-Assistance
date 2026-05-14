@@ -5,10 +5,10 @@ syntax = "proto3";
 package iotService;
 
 enum sensorType {
-    temp = 0;
-    light = 1;
-    water = 2;
-    error = 3; 
+    error = 0;
+    temp = 1;
+    light = 2;
+    water = 3;
 }
 service iotService {
     rpc getTemperature(tempReq) returns (tempRes);

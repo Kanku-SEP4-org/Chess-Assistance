@@ -28,11 +28,11 @@ public class IoTServiceImplTests
         {
             Value = 22.5f,
             Timestamp = 12345,
-            Type = "temp"
+            Type = sensorType.Temp,
         };
 
         // the mock must return the fake state when called with these specific arguments
-        _mockStore.Setup(s => s.GetLatest(arduinoId, "temp")).Returns(mockState);
+        _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Temp)).Returns(mockState);
 
         var request = new tempReq { ArduinoId = arduinoId };
 
@@ -51,7 +51,7 @@ public class IoTServiceImplTests
         // Arrange
         int arduinoId = 99;
         // Tell the mock to return null for this ID
-        _mockStore.Setup(s => s.GetLatest(arduinoId, "temp")).Returns((SensorState)null!);
+        _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Temp)).Returns((SensorState)null!);
 
         var request = new tempReq { ArduinoId = arduinoId };
 

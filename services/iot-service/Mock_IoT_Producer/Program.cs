@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json;
 using IoTGrpcServer.Contracts;
+using IotService;
 using RabbitMQ.Client;
 
 var rabbitUrl = Environment.GetEnvironmentVariable("RABBITMQ_URL")
@@ -22,16 +23,16 @@ await channel.QueueDeclareAsync(
 );
 
 Random rnd = new Random();
-string[] types = { "temp", "light", "water" }; // Add new types here
+sensorType[] types = { sensorType.Temp, sensorType.Light, sensorType.Water }; // Add new types here
 
 for (int i = 0; i < 15; i++)
 {
-    var sensorType = types[rnd.Next(types.Length)]; // Randomly pick a type
+    var selectedType = types[rnd.Next(types.Length)]; // Randomly pick a type
     var sensor = new SensorMessage
     {
         ArduinoId = rnd.Next(1, 5),
-        Value = (sensorType == "water") ? rnd.Next(0, 101) : rnd.Next(0, 256),
-        Type = sensorType,
+        Value = (selectedType == sensorType.Water) ? rnd.Next(0, 101) : rnd.Next(0, 256),
+        Type = selectedType,
         Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
     };
 
