@@ -51,6 +51,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
             }
         });
     }
+<<<<<<< HEAD
     public override async Task<lightRes> getLight(lightReq request, ServerCallContext context)
     {
         var latest = _stateStore.GetLatest(request.ArduinoId, "light");
@@ -126,6 +127,8 @@ public class IoTServiceImpl : iotService.iotServiceBase
             }
         };
     }
+=======
+>>>>>>> ff49ea0 (feat: added sample recording grpc)
 
     public override Task<ProtoStatus> startRecording(recReq request, ServerCallContext context)
     {
@@ -160,5 +163,4 @@ public class IoTServiceImpl : iotService.iotServiceBase
             //in the methods, camelcase must match the proto enum
         };
     }
-
 }
