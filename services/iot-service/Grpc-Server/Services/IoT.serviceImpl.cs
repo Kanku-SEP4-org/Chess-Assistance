@@ -51,7 +51,6 @@ public class IoTServiceImpl : iotService.iotServiceBase
             }
         });
     }
-<<<<<<< HEAD
     public override async Task<lightRes> getLight(lightReq request, ServerCallContext context)
     {
         var latest = _stateStore.GetLatest(request.ArduinoId, "light");
@@ -127,8 +126,27 @@ public class IoTServiceImpl : iotService.iotServiceBase
             }
         };
     }
-=======
->>>>>>> ff49ea0 (feat: added sample recording grpc)
+
+    public override Task<ProtoStatus> startRecording(recReq request, ServerCallContext context)
+    {
+        return Task.FromResult(
+            new ProtoStatus
+            {
+                Success = true,
+                Message = $"Recording for Arduino {request.ArduinoId} started"
+            }
+        );
+    }
+    public override Task<ProtoStatus> stopRecording(recReq request, ServerCallContext context)
+    {
+        return Task.FromResult(
+            new ProtoStatus
+            {
+                Success = true,
+                Message = $"Recording for Arduino {request.ArduinoId} stopped"
+            }
+        );
+    }
 
     public override Task<ProtoStatus> startRecording(recReq request, ServerCallContext context)
     {

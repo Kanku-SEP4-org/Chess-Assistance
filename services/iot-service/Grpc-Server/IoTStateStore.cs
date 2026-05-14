@@ -1,7 +1,10 @@
 using System.Collections.Concurrent;
 using IoTGrpcServer.Contracts;
+<<<<<<< HEAD
 using Microsoft.EntityFrameworkCore;
 using Microsoft.VisualBasic;
+=======
+>>>>>>> ff49ea01a66b5b18ae8b952a4ac111080f7af4fc
 
 namespace IoTGrpcServer;
 
