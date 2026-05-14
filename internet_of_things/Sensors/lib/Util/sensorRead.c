@@ -54,9 +54,9 @@ void get_and_report_water(ADC_Error_t water_sensor){
     char buffer[50];
 
     if(water_sensor == ADC_OK){
-        uint16_t light_level = water_measure_raw();
+        uint16_t water_level = soil_measure_raw(ADC_PK0);
 
-        sprintf(buffer,"WAT:%d\n", light_level);
+        sprintf(buffer,"WAT:%d\n", water_level);
     }else if (water_sensor == ADC_ERROR_INVALID_CHANNEL){
         sprintf(buffer, "ERROR:ADC_ERROR_INVALID_CHANNEL");
     }else if (water_sensor == ADC_ERROR_INVALID_REFERENCE){

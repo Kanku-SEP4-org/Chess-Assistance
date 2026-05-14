@@ -47,20 +47,20 @@ ADC_Error_t light_init_reference() {
 }
 
 // Fake water driver
-uint16_t water_measure_raw() {
+uint16_t soil_measure_raw(ADC_Channel_t channel) {
     return 460;
 }
 
-ADC_Error_t water_init() {
+ADC_Error_t soil_init(ADC_Channel_t channel) {
     return ADC_OK;
 }
 
 // Additional inits for errors
-ADC_Error_t water_init_channel() {
+ADC_Error_t soil_init_channel(ADC_Channel_t channel) {
     return ADC_ERROR_INVALID_CHANNEL;
 }
 
-ADC_Error_t water_init_reference() {
+ADC_Error_t soil_init_reference(ADC_Channel_t channel) {
     return ADC_ERROR_INVALID_REFERENCE;
 }
 
@@ -129,7 +129,7 @@ void test_report_light_error_reference(void){
 
 void test_report_water_format(void){
     // set up fake water sensor
-    ADC_Error_t water = water_init();
+    ADC_Error_t water = soil_init(ADC_PK0);
 
     get_and_report_water(water);
 
@@ -138,7 +138,7 @@ void test_report_water_format(void){
 
 void test_report_water_error_channel(void){
     // set up error
-    ADC_Error_t water = water_init_channel();
+    ADC_Error_t water = soil_init_channel(ADC_PK0);
 
     get_and_report_water(water);    
     
@@ -147,7 +147,7 @@ void test_report_water_error_channel(void){
 
 void test_report_water_error_reference(void){
     // set up error
-    ADC_Error_t water = water_init_reference();
+    ADC_Error_t water = soil_init_reference(ADC_PK0);
 
     get_and_report_water(water);    
     
@@ -160,5 +160,11 @@ int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_report_temperature_normal_format);
     RUN_TEST(test_report_humidity_fail);
+    RUN_TEST(test_report_light_format);
+    RUN_TEST(test_report_light_error_channel);
+    RUN_TEST(test_report_light_error_reference);
+    RUN_TEST(test_report_water_format);
+    RUN_TEST(test_report_water_error_channel);
+    RUN_TEST(test_report_water_error_reference);
     return UNITY_END();
 }

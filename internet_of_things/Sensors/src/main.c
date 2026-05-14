@@ -26,7 +26,7 @@ int main(void) {
 
     //initialize ADC sensors
     ADC_Error_t light = light_init();
-    ADC_Error_t water = water_init();
+    ADC_Error_t water = soil_init(ADC_PK0);
 
     while (1) {
         // Wait for a prompt from the PC/RabbitMQ Producer
