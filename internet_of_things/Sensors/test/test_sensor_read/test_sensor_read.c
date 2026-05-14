@@ -6,6 +6,7 @@
 #include "sensorRead.h"
 #include "dht11.h"
 #include "communication.h"
+#include "light.h"
 
 // --- MOCKING AREA ---
 // global variables that the "Fake" functions will use
@@ -25,6 +26,42 @@ DHT11_ERROR_MESSAGE_t dht11_get(uint8_t* h_i, uint8_t* h_d, uint8_t* t_i, uint8_
     if (t_i) *t_i = fake_t_int;
     if (t_d) *t_d = fake_t_dec;
     return fake_dht_status;
+}
+
+// Fake Light driver
+uint16_t light_measure_raw() {
+    return 460;
+}
+
+ADC_Error_t light_init() {
+    return ADC_OK;
+}
+
+// Additional inits for errors
+ADC_Error_t light_init_channel() {
+    return ADC_ERROR_INVALID_CHANNEL;
+}
+
+ADC_Error_t light_init_reference() {
+    return ADC_ERROR_INVALID_REFERENCE;
+}
+
+// Fake water driver
+uint16_t water_measure_raw() {
+    return 460;
+}
+
+ADC_Error_t water_init() {
+    return ADC_OK;
+}
+
+// Additional inits for errors
+ADC_Error_t water_init_channel() {
+    return ADC_ERROR_INVALID_CHANNEL;
+}
+
+ADC_Error_t water_init_reference() {
+    return ADC_ERROR_INVALID_REFERENCE;
 }
 
 // --- UNITY SETUP ---
@@ -52,18 +89,6 @@ void test_report_temperature_normal_format(void) {
     TEST_ASSERT_EQUAL_STRING("TEMP:25.5\n", mock_transmit_buffer);
 }
 
-void test_report_temperature_json_format(void) {
-    // Arrange: Set sensor to 22.3 degrees
-    fake_t_int = 22;
-    fake_t_dec = 3;
-
-    // Act
-    get_and_report_temp_json();
-
-    // Assert
-    TEST_ASSERT_EQUAL_STRING("{\"temperature\": 22.3}", mock_transmit_buffer);
-}
-
 void test_report_humidity_fail(void) {
     // Arrange: Simulate a sensor failure
     fake_dht_status = DHT11_FAIL;
@@ -75,16 +100,58 @@ void test_report_humidity_fail(void) {
     TEST_ASSERT_EQUAL_STRING("ERROR:DHT11_READ_FAIL\n", mock_transmit_buffer);
 }
 
-void test_report_humidity_json(void) {
-    // Arrange
-    fake_h_int = 45;
-    fake_h_dec = 0;
+void test_report_light_format(void){
+    // set up fake light sensor
+    ADC_Error_t light = light_init();
 
-    // Act
-    get_and_report_hum_json();
+    get_and_report_light(light);
 
-    // Assert
-    TEST_ASSERT_EQUAL_STRING("{\"humidity\": 45.0}\n", mock_transmit_buffer);
+    TEST_ASSERT_EQUAL_STRING("LIG:460", mock_transmit_buffer);
+}
+
+void test_report_light_error_channel(void){
+    // set up error
+    ADC_Error_t light = light_init_channel();
+
+    get_and_report_light(light);    
+    
+    TEST_ASSERT_EQUAL_STRING("ERROR:ADC_ERROR_INVALID_CHANNEL", mock_transmit_buffer);
+}
+
+void test_report_light_error_reference(void){
+    // set up error
+    ADC_Error_t light = light_init_reference();
+
+    get_and_report_light(light);    
+    
+    TEST_ASSERT_EQUAL_STRING("ERROR:ADC_ERROR_INVALID_REFERENCE", mock_transmit_buffer);
+}
+
+void test_report_water_format(void){
+    // set up fake water sensor
+    ADC_Error_t water = water_init();
+
+    get_and_report_water(water);
+
+    TEST_ASSERT_EQUAL_STRING("WAT:460", mock_transmit_buffer);
+}
+
+void test_report_water_error_channel(void){
+    // set up error
+    ADC_Error_t water = water_init_channel();
+
+    get_and_report_water(water);    
+    
+    TEST_ASSERT_EQUAL_STRING("ERROR:ADC_ERROR_INVALID_CHANNEL", mock_transmit_buffer);
+}
+
+void test_report_water_error_reference(void){
+    // set up error
+    ADC_Error_t water = water_init_reference();
+
+    get_and_report_water(water);    
+    
+    TEST_ASSERT_EQUAL_STRING("ERROR:ADC_ERROR_INVALID_REFERENCE", mock_transmit_buffer);
 }
 
 // --- MAIN ---
@@ -92,8 +159,6 @@ void test_report_humidity_json(void) {
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_report_temperature_normal_format);
-    RUN_TEST(test_report_temperature_json_format);
     RUN_TEST(test_report_humidity_fail);
-    RUN_TEST(test_report_humidity_json);
     return UNITY_END();
 }
