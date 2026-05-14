@@ -1,0 +1,90 @@
+using LichessApiService.Grpc.Data.Entities;
+using LichessApiService.Grpc.Data.Enums;
+using Microsoft.EntityFrameworkCore;
+
+namespace LichessApiService.Grpc.Data;
+
+public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbContext(options)
+{
+    public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<Match> Matches => Set<Match>();
+    public DbSet<Game> Games => Set<Game>();
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        modelBuilder.HasPostgresEnum<SessionStatus>("public", "session_status");
+        modelBuilder.HasPostgresEnum<TimeControlType>("public", "time_control_type");
+        modelBuilder.HasPostgresEnum<GameResultType>("public", "game_result_type");
+
+        modelBuilder.Entity<Session>(entity =>
+        {
+            entity.ToTable("session");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.StartedAt).HasColumnName("started_at");
+            entity.Property(e => e.EndedAt).HasColumnName("ended_at");
+            entity.Property(e => e.TotalDuration).HasColumnName("total_duration")
+                .ValueGeneratedOnAddOrUpdate();
+            entity.Property(e => e.GameCount).HasColumnName("game_count").HasDefaultValue(0);
+            entity.Property(e => e.TotalWaterMl).HasColumnName("total_water_ml").HasDefaultValue(0);
+            entity.Property(e => e.PlayerId).HasColumnName("player_id");
+
+            entity.HasIndex(e => e.PlayerId)
+                .HasFilter("ended_at IS NULL")
+                .IsUnique()
+                .HasDatabaseName("uq_one_active_session");
+        });
+
+        modelBuilder.Entity<Match>(entity =>
+        {
+            entity.ToTable("match");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.MatchDate).HasColumnName("match_date");
+            entity.Property(e => e.Status).HasColumnName("status").HasDefaultValue(SessionStatus.Pending);
+            entity.Property(e => e.DurationFromPrevMatch).HasColumnName("duration_from_prev_match");
+            entity.Property(e => e.SessionId).HasColumnName("session_id");
+            entity.Property(e => e.PlayerId).HasColumnName("player_id");
+
+            entity.HasOne(e => e.Session)
+                .WithMany(s => s.Matches)
+                .HasForeignKey(e => e.SessionId);
+
+            entity.HasOne(e => e.Game)
+                .WithOne(g => g.Match)
+                .HasForeignKey<Game>(g => g.MatchId);
+        });
+
+        modelBuilder.Entity<Game>(entity =>
+        {
+            entity.ToTable("game");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.LichessGameId).HasColumnName("lichess_game_id").HasMaxLength(8);
+            entity.Property(e => e.TimeControl).HasColumnName("time_control");
+            entity.Property(e => e.IsTimeIncrease).HasColumnName("is_time_increase");
+            entity.Property(e => e.TimeIncreaseSec).HasColumnName("time_increase_sec");
+            entity.Property(e => e.IsRated).HasColumnName("is_rated");
+            entity.Property(e => e.IsBerserk).HasColumnName("is_berserk");
+            entity.Property(e => e.Source).HasColumnName("source").HasMaxLength(50);
+            entity.Property(e => e.EcoCode).HasColumnName("eco_code").HasMaxLength(3);
+            entity.Property(e => e.OpeningName).HasColumnName("opening_name").HasMaxLength(100);
+            entity.Property(e => e.TotalPly).HasColumnName("total_ply");
+            entity.Property(e => e.OpeningPly).HasColumnName("opening_ply");
+            entity.Property(e => e.PlayerMoveCount).HasColumnName("player_move_count");
+            entity.Property(e => e.OpponentMoveCount).HasColumnName("opponent_move_count");
+            entity.Property(e => e.UserRating).HasColumnName("user_rating");
+            entity.Property(e => e.OppRating).HasColumnName("opp_rating");
+            entity.Property(e => e.RatingDiff).HasColumnName("rating_diff");
+            entity.Property(e => e.IsPlayerPieceBlack).HasColumnName("is_player_piece_black");
+            entity.Property(e => e.Result).HasColumnName("result");
+            entity.Property(e => e.TerminationType).HasColumnName("termination_type").HasMaxLength(50);
+            entity.Property(e => e.StartedAt).HasColumnName("started_at");
+            entity.Property(e => e.EndedAt).HasColumnName("ended_at");
+            entity.Property(e => e.DurationMin).HasColumnName("duration_min");
+            entity.Property(e => e.MatchId).HasColumnName("match_id");
+
+            entity.HasIndex(e => e.MatchId).IsUnique();
+        });
+    }
+}
