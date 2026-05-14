@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using Grpc_Server.Messaging;
+using Moq;
 using Xunit;
 using Grpc_Server.Services;
 using IoTGrpcServer;
@@ -11,12 +12,14 @@ namespace Grpc_Test;
 public class IoTServiceImplTests
 {
     private readonly Mock<IIoTStateStore> _mockStore;
+    private readonly Mock<IMessageQueue> _mockQueue;
     private readonly IoTServiceImpl _service;
 
     public IoTServiceImplTests()
     {
         _mockStore = new Mock<IIoTStateStore>();
-        _service = new IoTServiceImpl(_mockStore.Object);
+        _mockQueue = new Mock<IMessageQueue>();
+        _service = new IoTServiceImpl(_mockStore.Object, _mockQueue.Object);
     }
 
     [Fact]

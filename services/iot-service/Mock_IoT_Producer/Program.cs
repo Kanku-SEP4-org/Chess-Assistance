@@ -3,6 +3,7 @@ using System.Text.Json;
 using IoTGrpcServer.Contracts;
 using IotService;
 using RabbitMQ.Client;
+using RabbitMQ.Client.Events;
 
 var rabbitUrl = Environment.GetEnvironmentVariable("RABBITMQ_URL")
                 ?? "amqp://guest:guest@localhost:5672/"; //fallback for running without docker
@@ -14,18 +15,32 @@ var conFactory = new ConnectionFactory { Uri = uri };
 using var connection = await conFactory.CreateConnectionAsync();
 using var channel = await connection.CreateChannelAsync();
 
-await channel.QueueDeclareAsync(
-    queue: "sensor.responses", //queue name
-    durable: true, //if false, messages dont persist through server restart
-    exclusive: false, //whether queue is exclusive to this connection
-    autoDelete: false, //if true, deletes queue if no subcribers exist
-    arguments: null
-);
+// Declare both queues
+await channel.QueueDeclareAsync("sensor.responses", true, false, false, null);
+await channel.QueueDeclareAsync("sensor.requests", true, false, false, null);
 
+// Consumer to "Listen" for commands (like fillCup)
+//since commands are sent to the sensor.requests queue, the consumer will only react to
+//active commands, like fillcup and, future openWindow
+var consumer = new AsyncEventingBasicConsumer(channel);
+consumer.ReceivedAsync += async (model, ea) =>
+{
+    var body = ea.Body.ToArray();
+    var message = JsonSerializer.Deserialize<JsonElement>(body); // Flexible read
+
+    Console.WriteLine($"\n[ACTUATOR] Received Command: {message}");
+
+    await channel.BasicAckAsync(ea.DeliveryTag, false);
+};
+
+await channel.BasicConsumeAsync("sensor.requests", false, consumer);
+
+
+//for the sensors we keep this
 Random rnd = new Random();
 sensorType[] types = { sensorType.Temp, sensorType.Light, sensorType.Water }; // Add new types here
 
-for (int i = 0; i < 15; i++)
+for (int i = 0; i < 20; i++)
 {
     var selectedType = types[rnd.Next(types.Length)]; // Randomly pick a type
     var sensor = new SensorMessage
@@ -48,5 +63,5 @@ for (int i = 0; i < 15; i++)
 
     Console.WriteLine($"Sent: {JsonSerializer.Serialize(sensor)}");
 
-    await Task.Delay(2000);
+    await Task.Delay(5000); //making it wait a bit longer
 }

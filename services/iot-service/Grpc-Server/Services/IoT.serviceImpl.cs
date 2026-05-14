@@ -1,3 +1,4 @@
+using Grpc_Server.Messaging;
 using Grpc.Core;
 using IotService;
 using IoTGrpcServer;
@@ -9,12 +10,15 @@ namespace Grpc_Server.Services;
 public class IoTServiceImpl : iotService.iotServiceBase
 {
     private readonly IIoTStateStore _stateStore;
+    private readonly IMessageQueue _messageQueue;
 
-    public IoTServiceImpl(IIoTStateStore stateStore)
+    public IoTServiceImpl(IIoTStateStore stateStore, IMessageQueue messageQueue)
     {
         _stateStore = stateStore;
+        _messageQueue = messageQueue;//for sending commands
     }
 
+    //SENSOR READINGS
     public override async Task<tempRes> getTemperature(tempReq request, ServerCallContext context)
     {
         var latest = _stateStore.GetLatest(request.ArduinoId, sensorType.Temp);
@@ -47,15 +51,30 @@ public class IoTServiceImpl : iotService.iotServiceBase
         };
     }
 
+    //COMMANDS
+    public override async Task<fillCupRes> fillCup(fillCupReq req, ServerCallContext ctx)
+    {
+        var payload = new {
+            //TODO: determine if we set the default here, in the arduino code
+            //or if we want to have it stored from previous commands
+            Amount = req.HasAmount ? req.Amount : 200.0f,//if not specified, default to 200ml
+            Action = "Fill"
+        };
 
-//private helper methods to quell repetition
+        var status = await SendCommandAsync(req.ArduinoId, sensorType.FillCup, payload);
+
+        return new fillCupRes { Status = status };
+    }
+
+
+// HELPER methods
 
     private sensorReading BuildReading(SensorState? state, sensorType defaultType)
     {
         return new sensorReading
         {
             Value = state?.Value ?? 0,
-            // If state exists, map its string type to enum, otherwise use defaultType
+            // If state exists, map its string type to enum, otherwise use defaultType (Error)
             Type = state?.Type ?? defaultType,
             Timestamp = state?.Timestamp ?? 0
         };
@@ -71,6 +90,36 @@ public class IoTServiceImpl : iotService.iotServiceBase
                 ? $"Latest {sensorName} reading for Arduino {id} retrieved successfully."
                 : $"No {sensorName} reading available yet for Arduino {id}."
         };
+    }
+
+    private async Task<ProtoStatus> SendCommandAsync(int id, sensorType type, object data)
+    {
+        try
+        {
+            // Standardized command envelope
+            var command = new {
+                ArduinoId = id,
+                Type = type, // Use the Enum
+                Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+                Payload = data
+            };
+
+            // One single place where we talk to RabbitMQ
+            await _messageQueue.PublishAsync("sensor.requests", command);
+
+            return new ProtoStatus {
+                Success = true,
+                Message = $"Command {type} successfully queued for Arduino {id}."
+            };
+        }
+        catch (Exception ex)
+        {
+            // Centralized error handling for all commands
+            return new ProtoStatus {
+                Success = false,
+                Message = $"Failed to dispatch {type} command: {ex.Message}"
+            };
+        }
     }
 
 
