@@ -1,10 +1,10 @@
 
 import { useState, useRef, useEffect } from "react";
 import { Crown, User, History, Settings, TrendingUp } from "lucide-react";
-import { Link } from 'react-router-dom'
-import heroImg from '../assets/chess-bg.png'
+import { Link } from 'react-router-dom';
+import heroImg from '../assets/chess-bg.png';
 import knightLogo from "../assets/knight-logo.png";
-import '../App.css'
+import '../App.css';
 
 function Home() {
   const [monitoringStarted, setMonitoringStarted] = useState(false)
@@ -96,6 +96,9 @@ const [menuOpen, setMenuOpen] = useState(false);
       <button>📈 View Sessions</button>
       <button>♟️ Elo Boosting</button>
       <button>⚙️ Settings</button>
+      <Link to="/tests"><button style={{ paddingLeft: "6px" }}>
+  📋 Add / Update Test
+</button></Link>
     </div>
   )}
 </div>
