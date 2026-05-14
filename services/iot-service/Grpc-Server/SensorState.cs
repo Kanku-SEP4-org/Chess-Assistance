@@ -6,4 +6,5 @@ public class SensorState
     public float Value { get; set; }
     public long Timestamp { get; set; }
     public string Type { get; set; } = string.Empty;
+    public bool Recording { get; set; } = false;
 }

@@ -127,9 +127,6 @@ public class IoTServiceImpl : iotService.iotServiceBase
         };
     }
 
-
-
-
     public override Task<ProtoStatus> startRecording(recReq request, ServerCallContext context)
     {
         return Task.FromResult(
