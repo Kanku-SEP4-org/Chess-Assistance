@@ -1,0 +1,49 @@
+syntax = "proto3";
+
+package lichess_api;
+
+option csharp_namespace = "LichessApiService.Grpc.Protos";
+
+// Implemented by LichessApiService.grpc (gRPC SERVER)
+// Called by api-gateway
+service LichessService {
+  rpc StartSession(StartSessionRequest) returns (StartSessionResponse);
+  rpc EndSession(EndSessionRequest) returns (EndSessionResponse);
+}
+
+// Implemented by IoT gRPC service (gRPC SERVER)
+// Called by LichessApiService.grpc as CLIENT
+service SensorFeedService {
+  rpc StartSensorFeed(SensorFeedRequest) returns (SensorFeedResponse);
+  rpc StopSensorFeed(SensorFeedRequest) returns (SensorFeedResponse);
+}
+
+message StartSessionRequest {
+  int32 player_id = 1;
+  string player_username = 2;
+  string lichess_token = 3;
+}
+
+message StartSessionResponse {
+  int32 session_id = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message EndSessionRequest {
+  int32 session_id = 1;
+}
+
+message EndSessionResponse {
+  bool success = 1;
+  string message = 2;
+}
+
+message SensorFeedRequest {
+  int32 match_id = 1;
+}
+
+message SensorFeedResponse {
+  bool success = 1;
+  string message = 2;
+}
