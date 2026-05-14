@@ -148,27 +148,6 @@ public class IoTServiceImpl : iotService.iotServiceBase
         );
     }
 
-    public override Task<ProtoStatus> startRecording(recReq request, ServerCallContext context)
-    {
-        return Task.FromResult(
-            new ProtoStatus
-            {
-                Success = true,
-                Message = $"Recording for Arduino {request.ArduinoId} started"
-            }
-        );
-    }
-    public override Task<ProtoStatus> stopRecording(recReq request, ServerCallContext context)
-    {
-        return Task.FromResult(
-            new ProtoStatus
-            {
-                Success = true,
-                Message = $"Recording for Arduino {request.ArduinoId} stopped"
-            }
-        );
-    }
-
     private static sensorType MapSensorType(string type)
     {
         return type.ToLower() switch
