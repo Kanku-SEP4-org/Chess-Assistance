@@ -59,8 +59,8 @@ BEGIN
     RAISE NOTICE 'match status after game: %', v_status;
 
     RAISE NOTICE '=== TEST: insert sleep_record ===';
-    INSERT INTO sleep_record (sleep_time, awaken_time, match_id)
-    VALUES ('2026-05-12 00:00:00', '2026-05-12 07:30:00', v_match_id);
+    INSERT INTO sleep_record (sleep_time, awaken_time, session_id)
+    VALUES ('2026-05-12 00:00:00', '2026-05-12 07:30:00', v_session_id);
 
     SELECT status INTO v_status FROM match WHERE id = v_match_id;
     RAISE NOTICE 'match status after sleep: %', v_status;

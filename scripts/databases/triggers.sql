@@ -67,7 +67,7 @@ CREATE TRIGGER trg_update_opening_stats
 
 -- ============================================================
 -- Trigger 1: try_complete_match
--- Fires after INSERT on sensor tables, game, or sleep_record.
+-- Fires after INSERT on sensor tables or game.
 -- When all required data is present for a match, marks it
 -- 'complete'.
 -- ============================================================
@@ -76,6 +76,7 @@ CREATE OR REPLACE FUNCTION fn_try_complete_match()
 RETURNS TRIGGER AS $$
 DECLARE
     v_match_id        INTEGER;
+    v_session_id      INTEGER;
     v_has_light       BOOLEAN;
     v_has_temperature BOOLEAN;
     v_has_water       BOOLEAN;
@@ -87,12 +88,14 @@ BEGIN
 
     v_match_id := NEW.match_id;
 
+    SELECT session_id INTO v_session_id FROM match WHERE id = v_match_id;
+
     SELECT EXISTS (SELECT 1 FROM light_sensor       WHERE match_id = v_match_id) INTO v_has_light;
     SELECT EXISTS (SELECT 1 FROM temperature_sensor  WHERE match_id = v_match_id) INTO v_has_temperature;
     SELECT EXISTS (SELECT 1 FROM water_sensor        WHERE match_id = v_match_id) INTO v_has_water;
     SELECT EXISTS (SELECT 1 FROM co2_sensor          WHERE match_id = v_match_id) INTO v_has_co2;
     SELECT EXISTS (SELECT 1 FROM game                WHERE match_id = v_match_id) INTO v_has_game;
-    SELECT EXISTS (SELECT 1 FROM sleep_record        WHERE match_id = v_match_id) INTO v_has_sleep;
+    SELECT EXISTS (SELECT 1 FROM sleep_record        WHERE session_id = v_session_id) INTO v_has_sleep;
 
     IF v_has_light AND v_has_temperature AND v_has_water AND v_has_co2 AND v_has_game AND v_has_sleep THEN
         UPDATE match SET status = 'complete' WHERE id = v_match_id;
@@ -126,9 +129,53 @@ CREATE TRIGGER trg_complete_match_on_game
     AFTER INSERT ON game
     FOR EACH ROW EXECUTE FUNCTION fn_try_complete_match();
 
+
+-- ============================================================
+-- Trigger 1b: try_complete_matches_on_sleep
+-- Fires after INSERT on sleep_record. Since sleep_record
+-- references session (not match), this iterates over all
+-- pending matches in the session and checks completeness.
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION fn_try_complete_matches_on_sleep()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_match RECORD;
+    v_has_light       BOOLEAN;
+    v_has_temperature BOOLEAN;
+    v_has_water       BOOLEAN;
+    v_has_co2         BOOLEAN;
+    v_has_game        BOOLEAN;
+BEGIN
+    SET search_path TO chess_assistant;
+
+    FOR v_match IN
+        SELECT id FROM match
+         WHERE session_id = NEW.session_id
+           AND status = 'pending'
+    LOOP
+        SELECT EXISTS (SELECT 1 FROM light_sensor       WHERE match_id = v_match.id) INTO v_has_light;
+        SELECT EXISTS (SELECT 1 FROM temperature_sensor  WHERE match_id = v_match.id) INTO v_has_temperature;
+        SELECT EXISTS (SELECT 1 FROM water_sensor        WHERE match_id = v_match.id) INTO v_has_water;
+        SELECT EXISTS (SELECT 1 FROM co2_sensor          WHERE match_id = v_match.id) INTO v_has_co2;
+        SELECT EXISTS (SELECT 1 FROM game                WHERE match_id = v_match.id) INTO v_has_game;
+
+        IF v_has_light AND v_has_temperature AND v_has_water AND v_has_co2 AND v_has_game THEN
+            UPDATE match SET status = 'complete' WHERE id = v_match.id;
+            RAISE NOTICE 'match % marked complete — all data present (triggered by sleep_record)', v_match.id;
+        ELSE
+            RAISE NOTICE 'match % still pending — light=%, temp=%, water=%, co2=%, game=%',
+                v_match.id, v_has_light, v_has_temperature, v_has_water, v_has_co2, v_has_game;
+        END IF;
+    END LOOP;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TRIGGER trg_complete_match_on_sleep
     AFTER INSERT ON sleep_record
-    FOR EACH ROW EXECUTE FUNCTION fn_try_complete_match();
+    FOR EACH ROW EXECUTE FUNCTION fn_try_complete_matches_on_sleep();
 
 
 -- ============================================================
@@ -236,7 +283,8 @@ BEGIN
         g.is_player_piece_black, g.termination_type, g.result,
         v_opening_win_rate, v_opening_game_count
     FROM game g
-    JOIN sleep_record sr ON sr.match_id = g.match_id
+    JOIN match m ON m.id = g.match_id
+    JOIN sleep_record sr ON sr.session_id = m.session_id
     WHERE g.match_id = v_match_id
     ON CONFLICT (match_id) DO NOTHING;
 
