@@ -5,8 +5,8 @@ import pandas as pd
 
 app = FastAPI(title="Chess Asistance Models API")
 
-MODEL_PATH  = os.getenv("MODEL_PATH", "../trainer/models/model.pkl")
-SCALER_PATH = os.getenv("SCALER_PATH", "../trainer/models/scaler.pkl")
+MODEL_PATH  = os.getenv("MODEL_PATH", "../trainers/trainer-winrate/models/model.pkl")
+SCALER_PATH = os.getenv("SCALER_PATH", "../trainers/trainer-winrate/models/scaler.pkl")
 
 if not os.path.exists(MODEL_PATH):
     raise RuntimeError("model.pkl not found in /models/")
