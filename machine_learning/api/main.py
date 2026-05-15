@@ -5,14 +5,12 @@ import pandas as pd
 
 app = FastAPI(title="Chess Asistance Models API")
 
-MODEL_PATH  = os.getenv("MODEL_PATH", "../trainers/trainer-winrate/models/model.pkl")
-SCALER_PATH = os.getenv("SCALER_PATH", "../trainers/trainer-winrate/models/scaler.pkl")
+MODEL_PATH = os.getenv("MODEL_PATH", "../trainers/trainer-winrate/models/model.pkl")
 
 if not os.path.exists(MODEL_PATH):
-    raise RuntimeError("model.pkl not found in /models/")
+    raise RuntimeError(f"model.pkl not found at {MODEL_PATH}")
 
-model  = joblib.load(MODEL_PATH)
-scaler = joblib.load(SCALER_PATH)
+pipeline = joblib.load(MODEL_PATH)
 
 class ChanceWinrateFeatures(BaseModel):
     minutes_slept: float
@@ -24,7 +22,6 @@ class ChanceWinrateFeatures(BaseModel):
 @app.post("/predict")
 def predict(data: ChanceWinrateFeatures):
 
-    #compute env_score
     temp_dist = abs(data.temperature_celsius - 20)
     co2_norm = (data.co2 - 400) / 1600
     env_score = 1 - (co2_norm * 0.7 + (temp_dist / 5)* 0.3)
@@ -35,11 +32,7 @@ def predict(data: ChanceWinrateFeatures):
     env_score,
     data.light
     ]], columns=['minutes_slept','minutes_awake', 'env_score','light'])
-    X_scaled = pd.DataFrame(
-        scaler.transform(X),
-        columns=X.columns
-    )
-    prediction_proba = model.predict_proba(X_scaled)
+    prediction_proba = pipeline.predict_proba(X)
     return {
         "prediction": prediction_proba[0][1]
     }

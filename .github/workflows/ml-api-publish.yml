@@ -28,10 +28,10 @@ jobs:
       - name: Install trainer dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r machine_learning/trainer/requirements.txt
+          pip install -r machine_learning/trainers/trainer-winrate/requirements.txt
 
       - name: Run training pipeline (generate model artifacts)
-        working-directory: machine_learning/trainer
+        working-directory: machine_learning/trainers/trainer-winrate
         run: python run_pipeline.py
 
       - name: Log in to GitHub Container Registry
