@@ -3,13 +3,32 @@
 
 services:
 
-  frontend:
+ frontend:
     image: ghcr.io/kanku-sep4-org/chess-assistance/frontend:latest
     container_name: chess-frontend
     networks:
       - caddy_net
     depends_on:
       - api-gateway
+ 
+ postgres:
+    image: postgres:17
+    container_name: chess-postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/databases/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - ./scripts/databases/triggers.sql:/docker-entrypoint-initdb.d/02_triggers.sql:ro
+    networks:
+      - chess_internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
     restart: unless-stopped
 
   api-gateway:
@@ -46,6 +65,29 @@ services:
     networks:
       - chess_internal
     restart: unless-stopped
+
+  lichess-api:
+    build:
+      context: .
+      dockerfile: services/LichessApiService.grpc/Dockerfile
+    container_name: chess-lichess-api
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8082
+      - CONNECTIONSTRINGS__DEFAULTCONNECTION=${CONNECTIONSTRINGS__DEFAULTCONNECTION}
+      - IOT__GRPCHOST=chess-iot-service
+      - IOT__GRPCPORT=8080
+    networks:
+      - chess_internal
+    depends_on:
+      iot-service:
+        condition: service_started
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
 
 networks:
   caddy_net:
