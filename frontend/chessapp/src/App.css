@@ -267,6 +267,15 @@ body {
   text-align: left;
 }
 
+.profile-dropdown a {
+  text-decoration: none;
+  width: 100%;
+}
+
+.profile-dropdown a button {
+  width: 100%;
+}
+
 .profile-dropdown button:hover {
   background: rgba(201, 157, 74, 0.15);
   color: #d4a64f;

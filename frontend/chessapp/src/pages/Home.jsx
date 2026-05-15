@@ -89,6 +89,9 @@ const [menuOpen, setMenuOpen] = useState(false);
       <button>📈 View Sessions</button>
       <button>♟️ Elo Boosting</button>
       <button>⚙️ Settings</button>
+      <Link to="/tests">
+  <button>📋 Add / Update Test</button>
+</Link>
     </div>
   )}
 </div>
