@@ -18,7 +18,7 @@ This directory contains everything needed to deploy Chess-Assistance to producti
               │                         │
       ┌───────┴───────┐        ┌───────┴────────┐
       │   frontend    │        │  api-gateway   │
-      │  (nginx :80)  │        │ (Express :3001)│
+      │  (caddy :80)  │        │ (Express :3001)│
       └───────────────┘        └───────┬────────┘
                                        │ gRPC
                                ┌───────┴────────┐
