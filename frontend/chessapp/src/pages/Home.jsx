@@ -89,6 +89,9 @@ const [menuOpen, setMenuOpen] = useState(false);
       <button>📈 View Sessions</button>
       <button>♟️ Elo Boosting</button>
       <button>⚙️ Settings</button>
+       <Link to="/iot-dashboard">
+    <button>🌐 IoT Dashboard</button>
+  </Link>
     </div>
   )}
 </div>
