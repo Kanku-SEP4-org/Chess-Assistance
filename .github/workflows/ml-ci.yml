@@ -35,11 +35,11 @@ jobs:
           pip install fastapi
 
       - name: Run training pipeline
-        working-directory: machine_learning/trainer
+        working-directory: machine_learning/trainers/trainer-winrate
         run: python run_pipeline.py
 
       - name: Verify pipeline artifacts
-        working-directory: machine_learning/trainer
+        working-directory: machine_learning/trainers/trainer-winrate
         run: |
           echo "Checking pipeline artifacts..."
           test -f models/scaler.pkl        || { echo "FAIL: models/scaler.pkl not found";        exit 1; }
