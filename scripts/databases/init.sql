@@ -130,8 +130,8 @@ CREATE TABLE sleep_record (
     awaken_time    TIMESTAMP NOT NULL,
     sleep_duration INTERVAL GENERATED ALWAYS AS (awaken_time - sleep_time) STORED,
     record_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    match_id       INTEGER NOT NULL UNIQUE,
-    FOREIGN KEY (match_id) REFERENCES match(id),
+    session_id     INTEGER NOT NULL UNIQUE,
+    FOREIGN KEY (session_id) REFERENCES session(id),
     CONSTRAINT chk_sleep_order CHECK (awaken_time > sleep_time)
 );
 
