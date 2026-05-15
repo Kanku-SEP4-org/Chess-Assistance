@@ -51,6 +51,7 @@ services:
       - ASPNETCORE_URLS=http://+:8082
       - IOT__GRPCHOST=iot-service
       - IOT__GRPCPORT=8080
+      - CONNECTIONSTRINGS__DEFAULTCONNECTION=${CONNECTIONSTRINGS__DEFAULTCONNECTION}
     depends_on:
       postgres:
         condition: service_healthy
