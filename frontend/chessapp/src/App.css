@@ -295,11 +295,6 @@ body {
   margin-bottom: 48px;
 }
 
-.min-vh-100 .row {
-  margin-left: 0 !important;
-  margin-right: 0 !important;
-}
-
 .player-search {
   display: flex;
   gap: 12px;
