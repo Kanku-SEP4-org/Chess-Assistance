@@ -262,7 +262,7 @@ BEGIN
     INSERT INTO dataset (
         match_id,
         avg_lumen, avg_celsius, avg_ppm, avg_ml,
-        sleep_duration,
+        sleep_duration, awake_duration,
         eco_code, total_ply, opening_ply,
         player_move_count, opponent_move_count,
         time_control, is_time_increase, time_increase_sec, is_berserk,
@@ -274,7 +274,7 @@ BEGIN
     SELECT
         v_match_id,
         v_avg_lumen, v_avg_celsius, v_avg_ppm, v_avg_ml,
-        sr.sleep_duration,
+        sr.sleep_duration, sr.awake_duration,
         g.eco_code, g.total_ply, g.opening_ply,
         g.player_move_count, g.opponent_move_count,
         g.time_control, g.is_time_increase, g.time_increase_sec, g.is_berserk,

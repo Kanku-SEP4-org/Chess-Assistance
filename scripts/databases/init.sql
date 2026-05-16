@@ -125,14 +125,17 @@ CREATE TABLE game (
 );
 
 CREATE TABLE sleep_record (
-    id             SERIAL PRIMARY KEY,
-    sleep_time     TIMESTAMP NOT NULL,
-    awaken_time    TIMESTAMP NOT NULL,
-    sleep_duration INTERVAL GENERATED ALWAYS AS (awaken_time - sleep_time) STORED,
-    record_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    session_id     INTEGER NOT NULL UNIQUE,
+    id              SERIAL PRIMARY KEY,
+    sleep_time      TIMESTAMP NOT NULL,
+    awaken_time     TIMESTAMP NOT NULL,
+    sleep_duration  INTERVAL GENERATED ALWAYS AS (awaken_time - sleep_time) STORED,
+    confirmed_at    TIMESTAMP NOT NULL,
+    awake_duration  INTERVAL GENERATED ALWAYS AS (confirmed_at - awaken_time) STORED,
+    record_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    session_id      INTEGER NOT NULL UNIQUE,
     FOREIGN KEY (session_id) REFERENCES session(id),
-    CONSTRAINT chk_sleep_order CHECK (awaken_time > sleep_time)
+    CONSTRAINT chk_sleep_order CHECK (awaken_time > sleep_time),
+    CONSTRAINT chk_awake_order CHECK (confirmed_at > awaken_time)
 );
 
 CREATE TABLE player_opening_stat (
@@ -162,6 +165,7 @@ CREATE TABLE dataset (
     avg_ppm                    NUMERIC(6,2),
     avg_ml                     NUMERIC(6,2),
     sleep_duration             INTERVAL,
+    awake_duration             INTERVAL,
     eco_code                   VARCHAR(3),
     total_ply                  INTEGER,
     opening_ply                INTEGER,
