@@ -1,3 +1,4 @@
+using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using LichessApiService.Grpc.Data;
 using LichessApiService.Grpc.Data.Entities;
@@ -42,15 +43,22 @@ public class GrpcServiceTests : IDisposable
     private static ServerCallContext CreateTestContext() =>
         new FakeServerCallContext();
 
-    [Fact]
-    public async Task StartSession_ValidRequest_CreatesSession()
+    private static StartSessionRequest CreateValidRequest(int playerId = 1) => new()
     {
-        var request = new StartSessionRequest
-        {
-            PlayerId = 1,
-            PlayerUsername = "testplayer",
-            LichessToken = "lip_test_token_123"
-        };
+        PlayerId = playerId,
+        PlayerUsername = "testplayer",
+        LichessToken = "lip_test_token_123",
+        SleepTime = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-9)),
+        AwakenTime = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-1.5)),
+        ConfirmedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5))
+    };
+
+    // --- StartSession: core flow ---
+
+    [Fact]
+    public async Task StartSession_ValidRequest_CreatesSessionAndHealthRecord()
+    {
+        var request = CreateValidRequest();
 
         var response = await _service.StartSession(request, CreateTestContext());
 
@@ -61,17 +69,21 @@ public class GrpcServiceTests : IDisposable
         Assert.NotNull(session);
         Assert.Equal(1, session.PlayerId);
         Assert.Null(session.EndedAt);
+
+        var sleepRecord = await _db.HealthRecords.FirstOrDefaultAsync(s => s.SessionId == response.SessionId);
+        Assert.NotNull(sleepRecord);
+        Assert.Equal(request.SleepTime.ToDateTime(), sleepRecord.SleepTime);
+        Assert.Equal(request.AwakenTime.ToDateTime(), sleepRecord.AwakenTime);
+        Assert.Equal(request.ConfirmedAt.ToDateTime(), sleepRecord.ConfirmedAt);
     }
+
+    // --- StartSession: validation ---
 
     [Fact]
     public async Task StartSession_MissingUsername_ReturnsFalse()
     {
-        var request = new StartSessionRequest
-        {
-            PlayerId = 1,
-            PlayerUsername = "",
-            LichessToken = "lip_test_token_123"
-        };
+        var request = CreateValidRequest();
+        request.PlayerUsername = "";
 
         var response = await _service.StartSession(request, CreateTestContext());
 
@@ -82,17 +94,75 @@ public class GrpcServiceTests : IDisposable
     [Fact]
     public async Task StartSession_MissingToken_ReturnsFalse()
     {
-        var request = new StartSessionRequest
-        {
-            PlayerId = 1,
-            PlayerUsername = "testplayer",
-            LichessToken = ""
-        };
+        var request = CreateValidRequest();
+        request.LichessToken = "";
 
         var response = await _service.StartSession(request, CreateTestContext());
 
         Assert.False(response.Success);
         Assert.Contains("lichess_token", response.Message);
+    }
+
+    [Fact]
+    public async Task StartSession_MissingSleepTime_ReturnsFalse()
+    {
+        var request = CreateValidRequest();
+        request.SleepTime = null;
+
+        var response = await _service.StartSession(request, CreateTestContext());
+
+        Assert.False(response.Success);
+        Assert.Contains("sleep_time", response.Message);
+    }
+
+    [Fact]
+    public async Task StartSession_MissingAwakenTime_ReturnsFalse()
+    {
+        var request = CreateValidRequest();
+        request.AwakenTime = null;
+
+        var response = await _service.StartSession(request, CreateTestContext());
+
+        Assert.False(response.Success);
+        Assert.Contains("awaken_time", response.Message);
+    }
+
+    [Fact]
+    public async Task StartSession_MissingConfirmedAt_ReturnsFalse()
+    {
+        var request = CreateValidRequest();
+        request.ConfirmedAt = null;
+
+        var response = await _service.StartSession(request, CreateTestContext());
+
+        Assert.False(response.Success);
+        Assert.Contains("confirmed_at", response.Message);
+    }
+
+    [Fact]
+    public async Task StartSession_AwakenBeforeSleep_ReturnsFalse()
+    {
+        var request = CreateValidRequest();
+        request.SleepTime = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-2));
+        request.AwakenTime = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-5));
+
+        var response = await _service.StartSession(request, CreateTestContext());
+
+        Assert.False(response.Success);
+        Assert.Contains("awaken_time must be after sleep_time", response.Message);
+    }
+
+    [Fact]
+    public async Task StartSession_ConfirmedAtBeforeAwaken_ReturnsFalse()
+    {
+        var request = CreateValidRequest();
+        request.AwakenTime = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-1));
+        request.ConfirmedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-2));
+
+        var response = await _service.StartSession(request, CreateTestContext());
+
+        Assert.False(response.Success);
+        Assert.Contains("confirmed_at must be after awaken_time", response.Message);
     }
 
     [Fact]
@@ -105,17 +175,24 @@ public class GrpcServiceTests : IDisposable
         });
         await _db.SaveChangesAsync();
 
-        var request = new StartSessionRequest
-        {
-            PlayerId = 1,
-            PlayerUsername = "testplayer",
-            LichessToken = "lip_test_token_123"
-        };
+        var request = CreateValidRequest();
 
         var response = await _service.StartSession(request, CreateTestContext());
 
         Assert.False(response.Success);
         Assert.Contains("active session", response.Message);
+    }
+
+    [Fact]
+    public async Task StartSession_NoHealthRecordCreated_WhenValidationFails()
+    {
+        var request = CreateValidRequest();
+        request.PlayerUsername = "";
+
+        await _service.StartSession(request, CreateTestContext());
+
+        Assert.Empty(await _db.Sessions.ToListAsync());
+        Assert.Empty(await _db.HealthRecords.ToListAsync());
     }
 
     [Fact]
