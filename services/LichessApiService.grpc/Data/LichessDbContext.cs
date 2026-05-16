@@ -9,11 +9,14 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Match> Matches => Set<Match>();
     public DbSet<Game> Games => Set<Game>();
-    public DbSet<SleepRecord> SleepRecords => Set<SleepRecord>();
+    public DbSet<HealthRecord> HealthRecords => Set<HealthRecord>();
+    public DbSet<Room> Rooms => Set<Room>();
+    public DbSet<Sensor> Sensors => Set<Sensor>();
+    public DbSet<Dataset> Datasets => Set<Dataset>();
+    public DbSet<PlayerOpeningStat> PlayerOpeningStats => Set<PlayerOpeningStat>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.HasPostgresEnum<SessionStatus>("public", "session_status");
         modelBuilder.HasPostgresEnum<TimeControlType>("public", "time_control_type");
         modelBuilder.HasPostgresEnum<GameResultType>("public", "game_result_type");
 
@@ -42,7 +45,6 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.MatchDate).HasColumnName("match_date");
-            entity.Property(e => e.Status).HasColumnName("status").HasDefaultValue(SessionStatus.Pending);
             entity.Property(e => e.DurationFromPrevMatch).HasColumnName("duration_from_prev_match");
             entity.Property(e => e.SessionId).HasColumnName("session_id");
             entity.Property(e => e.PlayerId).HasColumnName("player_id");
@@ -54,9 +56,13 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.HasOne(e => e.Game)
                 .WithOne(g => g.Match)
                 .HasForeignKey<Game>(g => g.MatchId);
+
+            entity.HasOne(e => e.Dataset)
+                .WithOne(d => d.Match)
+                .HasForeignKey<Dataset>(d => d.MatchId);
         });
 
-        modelBuilder.Entity<SleepRecord>(entity =>
+        modelBuilder.Entity<HealthRecord>(entity =>
         {
             entity.ToTable("sleep_record");
             entity.HasKey(e => e.Id);
@@ -68,6 +74,7 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.Property(e => e.ConfirmedAt).HasColumnName("confirmed_at");
             entity.Property(e => e.AwakeDuration).HasColumnName("awake_duration")
                 .ValueGeneratedOnAddOrUpdate();
+            entity.Property(e => e.WaterIntakeMl).HasColumnName("water_intake_ml");
             entity.Property(e => e.RecordAt).HasColumnName("record_at")
                 .HasDefaultValueSql("CURRENT_TIMESTAMP");
             entity.Property(e => e.SessionId).HasColumnName("session_id");
@@ -75,8 +82,8 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.HasIndex(e => e.SessionId).IsUnique();
 
             entity.HasOne(e => e.Session)
-                .WithOne(s => s.SleepRecord)
-                .HasForeignKey<SleepRecord>(e => e.SessionId);
+                .WithOne(s => s.HealthRecord)
+                .HasForeignKey<HealthRecord>(e => e.SessionId);
         });
 
         modelBuilder.Entity<Game>(entity =>
@@ -109,6 +116,90 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.Property(e => e.MatchId).HasColumnName("match_id");
 
             entity.HasIndex(e => e.MatchId).IsUnique();
+        });
+
+        modelBuilder.Entity<Room>(entity =>
+        {
+            entity.ToTable("room");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.Perimeter).HasColumnName("perimeter");
+            entity.Property(e => e.PlayerId).HasColumnName("player_id");
+        });
+
+        modelBuilder.Entity<Sensor>(entity =>
+        {
+            entity.ToTable("sensor");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.RoomId).HasColumnName("room_id");
+            entity.Property(e => e.Type).HasColumnName("type").HasConversion<string>();
+            entity.Property(e => e.Value).HasColumnName("value");
+            entity.Property(e => e.TimeStamp).HasColumnName("time_stamp")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+            entity.HasIndex(e => new { e.RoomId, e.TimeStamp });
+
+            entity.HasOne(e => e.Room).WithMany().HasForeignKey(e => e.RoomId);
+        });
+
+        modelBuilder.Entity<Dataset>(entity =>
+        {
+            entity.ToTable("dataset");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.MatchId).HasColumnName("match_id");
+            entity.Property(e => e.AvgLux).HasColumnName("avg_lux");
+            entity.Property(e => e.AvgCelsius).HasColumnName("avg_celsius");
+            entity.Property(e => e.AvgPpm).HasColumnName("avg_ppm");
+            entity.Property(e => e.WaterIntakeMl).HasColumnName("water_intake_ml");
+            entity.Property(e => e.SleepDuration).HasColumnName("sleep_duration");
+            entity.Property(e => e.AwakeDuration).HasColumnName("awake_duration");
+            entity.Property(e => e.EcoCode).HasColumnName("eco_code").HasMaxLength(3);
+            entity.Property(e => e.TotalPly).HasColumnName("total_ply");
+            entity.Property(e => e.OpeningPly).HasColumnName("opening_ply");
+            entity.Property(e => e.PlayerMoveCount).HasColumnName("player_move_count");
+            entity.Property(e => e.OpponentMoveCount).HasColumnName("opponent_move_count");
+            entity.Property(e => e.TimeControl).HasColumnName("time_control");
+            entity.Property(e => e.IsTimeIncrease).HasColumnName("is_time_increase");
+            entity.Property(e => e.TimeIncreaseSec).HasColumnName("time_increase_sec");
+            entity.Property(e => e.IsBerserk).HasColumnName("is_berserk");
+            entity.Property(e => e.DurationMin).HasColumnName("duration_min");
+            entity.Property(e => e.UserRating).HasColumnName("user_rating");
+            entity.Property(e => e.OppRating).HasColumnName("opp_rating");
+            entity.Property(e => e.RatingDiff).HasColumnName("rating_diff");
+            entity.Property(e => e.IsPlayerPieceBlack).HasColumnName("is_player_piece_black");
+            entity.Property(e => e.TerminationType).HasColumnName("termination_type").HasMaxLength(50);
+            entity.Property(e => e.Result).HasColumnName("result");
+            entity.Property(e => e.PlayerOpeningWinRate).HasColumnName("player_opening_win_rate");
+            entity.Property(e => e.PlayerOpeningGameCount).HasColumnName("player_opening_game_count");
+
+            entity.HasIndex(e => e.MatchId).IsUnique();
+        });
+
+        modelBuilder.Entity<PlayerOpeningStat>(entity =>
+        {
+            entity.ToTable("player_opening_stat");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.PlayerId).HasColumnName("player_id");
+            entity.Property(e => e.EcoCode).HasColumnName("eco_code").HasMaxLength(3);
+            entity.Property(e => e.OpeningName).HasColumnName("opening_name").HasMaxLength(100);
+            entity.Property(e => e.PlayerAsWhite).HasColumnName("player_as_white");
+            entity.Property(e => e.PlayerAsBlack).HasColumnName("player_as_black");
+            entity.Property(e => e.PlayerWins).HasColumnName("player_wins");
+            entity.Property(e => e.PlayerLosses).HasColumnName("player_losses");
+            entity.Property(e => e.PlayerDraws).HasColumnName("player_draws");
+            entity.Property(e => e.OppAsWhite).HasColumnName("opp_as_white");
+            entity.Property(e => e.OppAsBlack).HasColumnName("opp_as_black");
+            entity.Property(e => e.OppWins).HasColumnName("opp_wins");
+            entity.Property(e => e.OppLosses).HasColumnName("opp_losses");
+            entity.Property(e => e.TotalGames).HasColumnName("total_games")
+                .ValueGeneratedOnAddOrUpdate();
+
+            entity.HasIndex(e => new { e.PlayerId, e.EcoCode })
+                .IsUnique()
+                .HasDatabaseName("uq_player_opening");
         });
     }
 }
