@@ -2,7 +2,6 @@ CREATE SCHEMA chess_assistant;
 SET search_path TO chess_assistant;
 
 -- Enums
-CREATE TYPE session_status    AS ENUM ('pending', 'complete', 'exported');
 CREATE TYPE time_control_type AS ENUM ('bullet', 'blitz', 'rapid', 'classical');
 CREATE TYPE game_result_type  AS ENUM ('win', 'loss', 'draw');
 
@@ -48,7 +47,6 @@ CREATE TABLE player_preference (
 CREATE TABLE match (
     id                       SERIAL PRIMARY KEY,
     match_date               DATE NOT NULL,
-    status                   session_status NOT NULL DEFAULT 'pending',
     duration_from_prev_match INTERVAL,
     session_id               INTEGER NOT NULL,
     player_id                INTEGER NOT NULL,
@@ -56,45 +54,16 @@ CREATE TABLE match (
     FOREIGN KEY (player_id)  REFERENCES player(id)
 );
 
-CREATE TABLE light_sensor (
+CREATE TABLE sensor (
     id         SERIAL PRIMARY KEY,
-    time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    lumen      NUMERIC(4,2),
     room_id    INTEGER NOT NULL,
-    match_id   INTEGER NOT NULL,
-    FOREIGN KEY (room_id)  REFERENCES room(id),
-    FOREIGN KEY (match_id) REFERENCES match(id)
+    type       VARCHAR(20) NOT NULL,
+    value      DOUBLE PRECISION NOT NULL,
+    time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (room_id) REFERENCES room(id)
 );
 
-CREATE TABLE temperature_sensor (
-    id         SERIAL PRIMARY KEY,
-    time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    celsius    INTEGER,
-    room_id    INTEGER NOT NULL,
-    match_id   INTEGER NOT NULL,
-    FOREIGN KEY (room_id)  REFERENCES room(id),
-    FOREIGN KEY (match_id) REFERENCES match(id)
-);
-
-CREATE TABLE water_sensor (
-    id         SERIAL PRIMARY KEY,
-    time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ml         INTEGER,
-    room_id    INTEGER NOT NULL,
-    match_id   INTEGER NOT NULL,
-    FOREIGN KEY (room_id)  REFERENCES room(id),
-    FOREIGN KEY (match_id) REFERENCES match(id)
-);
-
-CREATE TABLE co2_sensor (
-    id         SERIAL PRIMARY KEY,
-    time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ppm        INTEGER,
-    room_id    INTEGER NOT NULL,
-    match_id   INTEGER NOT NULL,
-    FOREIGN KEY (room_id)  REFERENCES room(id),
-    FOREIGN KEY (match_id) REFERENCES match(id)
-);
+CREATE INDEX idx_sensor_room_timestamp ON sensor (room_id, time_stamp);
 
 CREATE TABLE game (
     id                    SERIAL PRIMARY KEY,
@@ -131,6 +100,7 @@ CREATE TABLE sleep_record (
     sleep_duration  INTERVAL GENERATED ALWAYS AS (awaken_time - sleep_time) STORED,
     confirmed_at    TIMESTAMP NOT NULL,
     awake_duration  INTERVAL GENERATED ALWAYS AS (confirmed_at - awaken_time) STORED,
+    water_intake_ml INTEGER,
     record_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     session_id      INTEGER NOT NULL UNIQUE,
     FOREIGN KEY (session_id) REFERENCES session(id),
@@ -160,10 +130,10 @@ CREATE TABLE player_opening_stat (
 CREATE TABLE dataset (
     id                         SERIAL PRIMARY KEY,
     match_id                   INTEGER NOT NULL UNIQUE,
-    avg_lumen                  NUMERIC(6,2),
+    avg_lux                    NUMERIC(6,2),
     avg_celsius                NUMERIC(6,2),
     avg_ppm                    NUMERIC(6,2),
-    avg_ml                     NUMERIC(6,2),
+    water_intake_ml            INTEGER,
     sleep_duration             INTERVAL,
     awake_duration             INTERVAL,
     eco_code                   VARCHAR(3),
