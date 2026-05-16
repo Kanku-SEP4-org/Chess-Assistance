@@ -13,13 +13,6 @@ service LichessService {
   rpc EndSession(EndSessionRequest) returns (EndSessionResponse);
 }
 
-// Implemented by IoT gRPC service (gRPC SERVER)
-// Called by LichessApiService.grpc as CLIENT
-service SensorFeedService {
-  rpc StartSensorFeed(SensorFeedRequest) returns (SensorFeedResponse);
-  rpc StopSensorFeed(SensorFeedRequest) returns (SensorFeedResponse);
-}
-
 message StartSessionRequest {
   int32 player_id = 1;
   string player_username = 2;
@@ -37,18 +30,10 @@ message StartSessionResponse {
 
 message EndSessionRequest {
   int32 session_id = 1;
+  int32 water_drunk_during_session_ml = 2;
 }
 
 message EndSessionResponse {
-  bool success = 1;
-  string message = 2;
-}
-
-message SensorFeedRequest {
-  int32 match_id = 1;
-}
-
-message SensorFeedResponse {
   bool success = 1;
   string message = 2;
 }
