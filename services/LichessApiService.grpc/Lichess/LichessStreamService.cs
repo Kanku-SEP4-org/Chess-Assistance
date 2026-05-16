@@ -3,7 +3,6 @@ using LichessApiService.Grpc.Data;
 using LichessApiService.Grpc.Data.DTOs;
 using LichessApiService.Grpc.Data.Entities;
 using LichessApiService.Grpc.Data.Enums;
-using LichessApiService.Grpc.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace LichessApiService.Grpc.Lichess;
@@ -109,7 +108,6 @@ public class LichessStreamService(
     {
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LichessDbContext>();
-        var iotClient = scope.ServiceProvider.GetRequiredService<LichessApiClient>();
 
         var prevMatch = await db.Matches
             .Where(m => m.SessionId == sessionId)
@@ -119,7 +117,6 @@ public class LichessStreamService(
         var match = new Match
         {
             MatchDate = DateOnly.FromDateTime(DateTime.UtcNow),
-            Status = SessionStatus.Pending,
             DurationFromPrevMatch = prevMatch != null
                 ? DateTime.UtcNow - prevMatch.MatchDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc)
                 : null,
@@ -133,16 +130,6 @@ public class LichessStreamService(
         logger.LogInformation(
             "Match {MatchId} created for session {SessionId}", match.Id, sessionId);
 
-        try
-        {
-            await iotClient.StartSensorFeedAsync(match.Id);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex,
-                "Failed to start sensor feed for match {MatchId} — IoT service may not be available", match.Id);
-        }
-
         return match.Id;
     }
 
@@ -151,20 +138,8 @@ public class LichessStreamService(
     {
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LichessDbContext>();
-        var iotClient = scope.ServiceProvider.GetRequiredService<LichessApiClient>();
         var gameFetcher = scope.ServiceProvider.GetRequiredService<LichessGameFetcher>();
 
-        try
-        {
-            await iotClient.StopSensorFeedAsync(matchId);
-        }
-        catch (Exception ex)
-        {
-            logger.LogWarning(ex,
-                "Failed to stop sensor feed for match {MatchId} — IoT service may not be available", matchId);
-        }
-
-        // Small delay to ensure Lichess API has the finished game data
         await Task.Delay(TimeSpan.FromSeconds(2), ct);
 
         var lichessGame = await gameFetcher.FetchLatestGameAsync(playerUsername, lichessToken, ct);
@@ -180,5 +155,80 @@ public class LichessStreamService(
 
         logger.LogInformation(
             "Game {LichessGameId} inserted for match {MatchId}", lichessGame.Id, matchId);
+
+        await CreateDatasetAsync(db, gameEntity, matchId, ct);
+    }
+
+    private async Task CreateDatasetAsync(
+        LichessDbContext db, Game game, int matchId, CancellationToken ct)
+    {
+        var match = await db.Matches.FirstAsync(m => m.Id == matchId, ct);
+
+        var room = await db.Rooms.FirstOrDefaultAsync(r => r.PlayerId == match.PlayerId, ct);
+
+        var sensorAverages = new Dictionary<SensorType, decimal>();
+
+        if (room != null && game.StartedAt.HasValue && game.EndedAt.HasValue)
+        {
+            var start = game.StartedAt.Value;
+            var end = game.EndedAt.Value;
+
+            sensorAverages = await db.Sensors
+                .Where(s => s.RoomId == room.Id && s.TimeStamp >= start && s.TimeStamp <= end)
+                .GroupBy(s => s.Type)
+                .Select(g => new { Type = g.Key, Avg = (decimal)g.Average(s => s.Value) })
+                .ToDictionaryAsync(x => x.Type, x => x.Avg, ct);
+        }
+
+        var healthRecord = await db.HealthRecords
+            .FirstOrDefaultAsync(hr => hr.SessionId == match.SessionId, ct);
+
+        // Trigger already incremented TotalGames, so subtract 1 for pre-game snapshot
+        var openingStat = game.EcoCode != null
+            ? await db.PlayerOpeningStats
+                .FirstOrDefaultAsync(s => s.PlayerId == match.PlayerId && s.EcoCode == game.EcoCode, ct)
+            : null;
+
+        var openingGameCount = openingStat != null ? openingStat.TotalGames - 1 : 0;
+        var openingWinRate = openingGameCount > 0
+            ? (decimal)openingStat!.PlayerWins / openingGameCount
+            : (decimal?)null;
+
+        var session = await db.Sessions.FirstAsync(s => s.Id == match.SessionId, ct);
+        session.GameCount += 1;
+
+        var dataset = new Dataset
+        {
+            MatchId = matchId,
+            AvgLux = sensorAverages.ContainsKey(SensorType.Light) ? sensorAverages[SensorType.Light] : null,
+            AvgCelsius = sensorAverages.ContainsKey(SensorType.Temperature) ? sensorAverages[SensorType.Temperature] : null,
+            AvgPpm = sensorAverages.ContainsKey(SensorType.Co2) ? sensorAverages[SensorType.Co2] : null,
+            WaterIntakeMl = (healthRecord?.WaterIntakeMl ?? 0) + session.TotalWaterMl,
+            SleepDuration = healthRecord?.SleepDuration,
+            AwakeDuration = healthRecord?.AwakeDuration,
+            EcoCode = game.EcoCode,
+            TotalPly = game.TotalPly,
+            OpeningPly = game.OpeningPly,
+            PlayerMoveCount = game.PlayerMoveCount,
+            OpponentMoveCount = game.OpponentMoveCount,
+            TimeControl = game.TimeControl,
+            IsTimeIncrease = game.IsTimeIncrease,
+            TimeIncreaseSec = game.TimeIncreaseSec,
+            IsBerserk = game.IsBerserk,
+            DurationMin = game.DurationMin,
+            UserRating = game.UserRating,
+            OppRating = game.OppRating,
+            RatingDiff = game.RatingDiff,
+            IsPlayerPieceBlack = game.IsPlayerPieceBlack,
+            TerminationType = game.TerminationType,
+            Result = game.Result,
+            PlayerOpeningWinRate = openingWinRate,
+            PlayerOpeningGameCount = openingGameCount > 0 ? openingGameCount : null
+        };
+
+        db.Datasets.Add(dataset);
+        await db.SaveChangesAsync(ct);
+
+        logger.LogInformation("Dataset created for match {MatchId}", matchId);
     }
 }
