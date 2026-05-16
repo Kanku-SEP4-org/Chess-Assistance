@@ -89,7 +89,7 @@ public class LichessApiGrpcService(
         db.Sessions.Add(session);
         await db.SaveChangesAsync();
 
-        var sleepRecord = new SleepRecord
+        var sleepRecord = new HealthRecord
         {
             SleepTime = sleepTime,
             AwakenTime = awakenTime,
@@ -97,7 +97,7 @@ public class LichessApiGrpcService(
             SessionId = session.Id
         };
 
-        db.SleepRecords.Add(sleepRecord);
+        db.HealthRecords.Add(sleepRecord);
         await db.SaveChangesAsync();
 
         logger.LogInformation(
@@ -162,6 +162,7 @@ public class LichessApiGrpcService(
         }
 
         session.EndedAt = DateTime.UtcNow;
+        session.TotalWaterMl = request.WaterDrunkDuringSessionMl;
         await db.SaveChangesAsync();
 
         logger.LogInformation("Session {SessionId} ended", request.SessionId);
