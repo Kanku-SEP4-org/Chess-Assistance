@@ -137,6 +137,8 @@ CREATE TABLE dataset (
     sleep_duration             INTERVAL,
     awake_duration             INTERVAL,
     eco_code                   VARCHAR(3),
+    opening_name               VARCHAR(100),
+    is_rated                   BOOLEAN,
     total_ply                  INTEGER,
     opening_ply                INTEGER,
     player_move_count          INTEGER,
