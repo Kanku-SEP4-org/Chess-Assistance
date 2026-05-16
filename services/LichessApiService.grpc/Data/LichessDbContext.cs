@@ -156,6 +156,8 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.Property(e => e.SleepDuration).HasColumnName("sleep_duration");
             entity.Property(e => e.AwakeDuration).HasColumnName("awake_duration");
             entity.Property(e => e.EcoCode).HasColumnName("eco_code").HasMaxLength(3);
+            entity.Property(e => e.OpeningName).HasColumnName("opening_name").HasMaxLength(100);
+            entity.Property(e => e.IsRated).HasColumnName("is_rated");
             entity.Property(e => e.TotalPly).HasColumnName("total_ply");
             entity.Property(e => e.OpeningPly).HasColumnName("opening_ply");
             entity.Property(e => e.PlayerMoveCount).HasColumnName("player_move_count");

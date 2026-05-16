@@ -207,6 +207,8 @@ public class LichessStreamService(
             SleepDuration = healthRecord?.SleepDuration,
             AwakeDuration = healthRecord?.AwakeDuration,
             EcoCode = game.EcoCode,
+            OpeningName = game.OpeningName,
+            IsRated = game.IsRated,
             TotalPly = game.TotalPly,
             OpeningPly = game.OpeningPly,
             PlayerMoveCount = game.PlayerMoveCount,

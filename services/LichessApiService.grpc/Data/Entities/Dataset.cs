@@ -13,6 +13,8 @@ public class Dataset
     public TimeSpan? SleepDuration { get; set; }
     public TimeSpan? AwakeDuration { get; set; }
     public string? EcoCode { get; set; }
+    public string? OpeningName { get; set; }
+    public bool? IsRated { get; set; }
     public int? TotalPly { get; set; }
     public int? OpeningPly { get; set; }
     public int? PlayerMoveCount { get; set; }
