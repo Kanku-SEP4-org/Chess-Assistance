@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package lichess_api;
 
+import "google/protobuf/timestamp.proto";
+
 option csharp_namespace = "LichessApiService.Grpc.Protos";
 
 // Implemented by LichessApiService.grpc (gRPC SERVER)
@@ -22,6 +24,9 @@ message StartSessionRequest {
   int32 player_id = 1;
   string player_username = 2;
   string lichess_token = 3;
+  google.protobuf.Timestamp sleep_time = 4;
+  google.protobuf.Timestamp awaken_time = 5;
+  google.protobuf.Timestamp confirmed_at = 6;
 }
 
 message StartSessionResponse {

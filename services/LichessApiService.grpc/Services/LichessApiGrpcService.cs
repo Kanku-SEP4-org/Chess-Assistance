@@ -37,6 +37,37 @@ public class LichessApiGrpcService(
             };
         }
 
+        if (request.SleepTime == null || request.AwakenTime == null || request.ConfirmedAt == null)
+        {
+            return new StartSessionResponse
+            {
+                Success = false,
+                Message = "sleep_time, awaken_time, and confirmed_at are required"
+            };
+        }
+
+        var sleepTime = request.SleepTime.ToDateTime();
+        var awakenTime = request.AwakenTime.ToDateTime();
+        var confirmedAt = request.ConfirmedAt.ToDateTime();
+
+        if (awakenTime <= sleepTime)
+        {
+            return new StartSessionResponse
+            {
+                Success = false,
+                Message = "awaken_time must be after sleep_time"
+            };
+        }
+
+        if (confirmedAt <= awakenTime)
+        {
+            return new StartSessionResponse
+            {
+                Success = false,
+                Message = "confirmed_at must be after awaken_time"
+            };
+        }
+
         var existingSession = await db.Sessions
             .FirstOrDefaultAsync(s => s.PlayerId == request.PlayerId && s.EndedAt == null);
 
@@ -58,8 +89,19 @@ public class LichessApiGrpcService(
         db.Sessions.Add(session);
         await db.SaveChangesAsync();
 
+        var sleepRecord = new SleepRecord
+        {
+            SleepTime = sleepTime,
+            AwakenTime = awakenTime,
+            ConfirmedAt = confirmedAt,
+            SessionId = session.Id
+        };
+
+        db.SleepRecords.Add(sleepRecord);
+        await db.SaveChangesAsync();
+
         logger.LogInformation(
-            "Session {SessionId} created for player {PlayerId} ({Username})",
+            "Session {SessionId} created for player {PlayerId} ({Username}) with sleep record",
             session.Id, request.PlayerId, request.PlayerUsername);
 
         var cts = new CancellationTokenSource();

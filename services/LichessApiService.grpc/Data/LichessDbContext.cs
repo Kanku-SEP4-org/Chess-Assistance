@@ -9,6 +9,7 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Match> Matches => Set<Match>();
     public DbSet<Game> Games => Set<Game>();
+    public DbSet<SleepRecord> SleepRecords => Set<SleepRecord>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -53,6 +54,29 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.HasOne(e => e.Game)
                 .WithOne(g => g.Match)
                 .HasForeignKey<Game>(g => g.MatchId);
+        });
+
+        modelBuilder.Entity<SleepRecord>(entity =>
+        {
+            entity.ToTable("sleep_record");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.SleepTime).HasColumnName("sleep_time");
+            entity.Property(e => e.AwakenTime).HasColumnName("awaken_time");
+            entity.Property(e => e.SleepDuration).HasColumnName("sleep_duration")
+                .ValueGeneratedOnAddOrUpdate();
+            entity.Property(e => e.ConfirmedAt).HasColumnName("confirmed_at");
+            entity.Property(e => e.AwakeDuration).HasColumnName("awake_duration")
+                .ValueGeneratedOnAddOrUpdate();
+            entity.Property(e => e.RecordAt).HasColumnName("record_at")
+                .HasDefaultValueSql("CURRENT_TIMESTAMP");
+            entity.Property(e => e.SessionId).HasColumnName("session_id");
+
+            entity.HasIndex(e => e.SessionId).IsUnique();
+
+            entity.HasOne(e => e.Session)
+                .WithOne(s => s.SleepRecord)
+                .HasForeignKey<SleepRecord>(e => e.SessionId);
         });
 
         modelBuilder.Entity<Game>(entity =>
