@@ -11,5 +11,5 @@ public class Session
     public int PlayerId { get; set; }
 
     public ICollection<Match> Matches { get; set; } = [];
-    public SleepRecord? SleepRecord { get; set; }
+    public HealthRecord? HealthRecord { get; set; }
 }
