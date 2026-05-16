@@ -67,13 +67,9 @@ services:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8082
       - CONNECTIONSTRINGS__DEFAULTCONNECTION=${CONNECTIONSTRINGS__DEFAULTCONNECTION}
-      - IOT__GRPCHOST=chess-iot-service
-      - IOT__GRPCPORT=8080
     networks:
       - chess_internal
     depends_on:
-      iot-service:
-        condition: service_started
       postgres:
         condition: service_healthy
     restart: unless-stopped
