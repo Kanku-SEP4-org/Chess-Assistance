@@ -9,7 +9,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import Pipeline
 
 
-df = pd.read_csv("data/features.csv")
+df = pd.read_csv("data/train_val.csv")
 
 X = df.drop("target", axis="columns")
 y = (df['target'] == 1).astype(int)
@@ -31,7 +31,7 @@ accuracy = accuracy_score(y_val, y_pred)
 
 
 os.makedirs("models", exist_ok=True)
-joblib.dump(pipeline, "models/model.pkl")
+joblib.dump(pipeline, "models/model_pipeline.pkl")
 
 metrics = {
     "model_type": "Logistic Regression",

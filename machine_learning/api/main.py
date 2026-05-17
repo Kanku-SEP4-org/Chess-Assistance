@@ -5,12 +5,12 @@ import pandas as pd
 
 app = FastAPI(title="Chess Asistance Models API")
 
-MODEL_PATH = os.getenv("MODEL_PATH", "../trainers/trainer-winrate/models/model.pkl")
+PIPELINE_PATH = os.getenv("PIPELINE_PATH", "../trainer/models/model_pipeline.pkl")
 
-if not os.path.exists(MODEL_PATH):
-    raise RuntimeError(f"model.pkl not found at {MODEL_PATH}")
+if not os.path.exists(PIPELINE_PATH):
+    raise RuntimeError("model_pipeline.pkl not found in /models/")
 
-pipeline = joblib.load(MODEL_PATH)
+pipeline = joblib.load(PIPELINE_PATH)
 
 class ChanceWinrateFeatures(BaseModel):
     minutes_slept: float
@@ -22,6 +22,7 @@ class ChanceWinrateFeatures(BaseModel):
 @app.post("/predict")
 def predict(data: ChanceWinrateFeatures):
 
+    #compute env_score
     temp_dist = abs(data.temperature_celsius - 20)
     co2_norm = (data.co2 - 400) / 1600
     env_score = 1 - (co2_norm * 0.7 + (temp_dist / 5)* 0.3)
