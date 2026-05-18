@@ -1,43 +1,49 @@
-
-import { useState/*, useRef, useEffect*/ } from "react";
+import { useState, useEffect } from "react";
 // import { Crown, User, History, Settings, TrendingUp } from "lucide-react";
-import { Link } from 'react-router-dom'
-import heroImg from '../assets/chess-bg.png'
+import { Link } from "react-router-dom";
+import heroImg from "../assets/chess-bg.png";
 import knightLogo from "../assets/knight-logo.png";
-import '../App.css'
+import "../App.css";
 
 function Home() {
-  const [monitoringStarted, setMonitoringStarted] = useState(false)
-  // const [username, setUsername] = useState('')
-  // const [playerStats, setPlayerStats] = useState(null)
-  // const [playerError, setPlayerError] = useState('')
-  // const [playerLoading, setPlayerLoading] = useState(false)
-  const [showSleepForm, setShowSleepForm] = useState(false)
-  const [sleepTime, setSleepTime] = useState("")
-  const [wakeTime, setWakeTime] = useState("")
-  const [sleepResult, setSleepResult] = useState("")
+  const [monitoringStarted, setMonitoringStarted] = useState(false);
+  const [showSleepForm, setShowSleepForm] = useState(false);
+  const [sleepTime, setSleepTime] = useState("");
+  const [wakeTime, setWakeTime] = useState("");
+  const [sleepResult, setSleepResult] = useState("");
+  const heroTexts = ["Track your environment.", "Improve your game."];
+
+  const [heroIndex, setHeroIndex] = useState(0);
+  const heroText = heroTexts[heroIndex];
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setHeroIndex((prev) => (prev === heroTexts.length - 1 ? 0 : prev + 1));
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   const calculateSleepTime = () => {
-  if (!sleepTime || !wakeTime) return
+    if (!sleepTime || !wakeTime) return;
 
-  const [sleepHour, sleepMinute] = sleepTime.split(":").map(Number)
-  const [wakeHour, wakeMinute] = wakeTime.split(":").map(Number)
+    const [sleepHour, sleepMinute] = sleepTime.split(":").map(Number);
+    const [wakeHour, wakeMinute] = wakeTime.split(":").map(Number);
 
-  let sleepTotal = sleepHour * 60 + sleepMinute
-  let wakeTotal = wakeHour * 60 + wakeMinute
+    let sleepTotal = sleepHour * 60 + sleepMinute;
+    let wakeTotal = wakeHour * 60 + wakeMinute;
 
-  if (wakeTotal <= sleepTotal) {
-    wakeTotal += 24 * 60
-  }
+    if (wakeTotal <= sleepTotal) {
+      wakeTotal += 24 * 60;
+    }
 
-  const totalMinutes = wakeTotal - sleepTotal
-  const hours = Math.floor(totalMinutes / 60)
-  const minutes = totalMinutes % 60
+    const totalMinutes = wakeTotal - sleepTotal;
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
 
-  setSleepResult(`${hours}h ${minutes}m`)
-}
-  
-  
+    setSleepResult(`${hours}h ${minutes}m`);
+  };
+
   // const handlePlayerSearch = async (e) => {
   //   e.preventDefault()
   //   if (!username.trim()) {
@@ -60,52 +66,74 @@ function Home() {
   //     setPlayerLoading(false)
   //   }
   // }
-const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
     <main className="app" style={{ backgroundImage: `url(${heroImg})` }}>
       <nav className="navbar">
         <div className="logo">ChessTrack™</div>
 
         <div className="nav-links">
-        <Link to="/">Home</Link>
-        <a href="#about">About</a>
-        <Link to="/chesstrack">ChessTrack</Link>
-        
-        <div className="profile-menu-container">
-  <button
-    className="settings-btn"
-    onClick={() => setMenuOpen(!menuOpen)}
-  >
-    <img
-      src={knightLogo}
-      alt="Knight Menu"
-      className="knight-icon"
-    />
-  </button>
+          <Link to="/">Home</Link>
+          <a href="#about">About</a>
+          <Link to="/chesstrack">ChessTrack</Link>
 
-  {menuOpen && (
-    <div className="profile-dropdown">
-      <button>👤 My Profile</button>
-      <button>📈 View Sessions</button>
-      <button>♟️ Elo Boosting</button>
-      <button>⚙️ Settings</button>
-       <Link to="/iot-dashboard">
-    <button>🌐 IoT Dashboard</button>
-  </Link>
-    </div>
-  )}
-</div>
+          <div className="profile-menu-container">
+            <button
+              className="settings-btn"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              <img src={knightLogo} alt="Knight Menu" className="knight-icon" />
+            </button>
+
+            {menuOpen && (
+              <div className="profile-dropdown">
+                <button>👤 My Profile</button>
+                <button>📈 View Sessions</button>
+                <button>♟️ Elo Boosting</button>
+                <button>⚙️ Settings</button>
+                <Link to="/iot-dashboard">
+                  <button>🌐 IoT Dashboard</button>
+                </Link>
+              </div>
+            )}
+          </div>
         </div>
       </nav>
 
       <section id="home" className="hero-section">
-    
-
         <div className="hero-content">
           <p className="eyebrow">Chess Performance Assistant</p>
-          <h1>Track your environment. Improve your game.</h1>
-          
+          <h1 className="hero-title-split">
+            <span className="hero-line-wrapper">
+              <span
+                className={heroIndex === 0 ? "hero-line active" : "hero-line"}
+              >
+                Track
+              </span>
 
+              <span
+                className={heroIndex === 1 ? "hero-line active" : "hero-line"}
+              >
+                Improve
+              </span>
+            </span>
+
+            <span className="hero-static-line">Your</span>
+
+            <span className="hero-line-wrapper">
+              <span
+                className={heroIndex === 0 ? "hero-line active" : "hero-line"}
+              >
+                Environment.
+              </span>
+
+              <span
+                className={heroIndex === 1 ? "hero-line active" : "hero-line"}
+              >
+                Game.
+              </span>
+            </span>
+          </h1>
 
           <button
             className="start-btn"
@@ -117,51 +145,49 @@ const [menuOpen, setMenuOpen] = useState(false);
       </section>
 
       {showSleepForm && (
-  <section className="sleep-card">
-    <h2>Sleep Tracker</h2>
+        <section className="sleep-card">
+          <h2>Sleep Tracker</h2>
 
-    <div className="sleep-inputs">
-      <div>
-        <p>Time you went to sleep</p>
-        <input
-          type="time"
-          value={sleepTime}
-          onChange={(e) => setSleepTime(e.target.value)}
-        />
-      </div>
+          <div className="sleep-inputs">
+            <div>
+              <p>Time you went to sleep</p>
+              <input
+                type="time"
+                value={sleepTime}
+                onChange={(e) => setSleepTime(e.target.value)}
+              />
+            </div>
 
-      <div>
-        <p>Time you woke up</p>
-        <input
-          type="time"
-          value={wakeTime}
-          onChange={(e) => setWakeTime(e.target.value)}
-        />
-      </div>
+            <div>
+              <p>Time you woke up</p>
+              <input
+                type="time"
+                value={wakeTime}
+                onChange={(e) => setWakeTime(e.target.value)}
+              />
+            </div>
 
-      <button onClick={calculateSleepTime}>
-        Calculate Sleep
-      </button>
-    </div>
+            <button onClick={calculateSleepTime}>Calculate Sleep</button>
+          </div>
 
-    {sleepResult && (
-      <p>
-        You slept for: <strong>{sleepResult}</strong>
-      </p>
-    )}
-  </section>
-)}
-      
+          {sleepResult && (
+            <p>
+              You slept for: <strong>{sleepResult}</strong>
+            </p>
+          )}
+        </section>
+      )}
+
       {monitoringStarted && (
         <section id="track" className="dashboard">
-            {monitoringStarted && (
-           <button
-             className="sleep-toggle-btn"
-             onClick={() => setShowSleepForm(!showSleepForm)}
-           >
-            How much time did I sleep?
-           </button>
-)}
+          {monitoringStarted && (
+            <button
+              className="sleep-toggle-btn"
+              onClick={() => setShowSleepForm(!showSleepForm)}
+            >
+              How much time did I sleep?
+            </button>
+          )}
           <h2>Live Metrics</h2>
 
           <div className="cards-grid">
@@ -198,16 +224,28 @@ const [menuOpen, setMenuOpen] = useState(false);
             </div>
 
             <div className="session-stats">
-              <div><span>Games</span><strong>5</strong></div>
-              <div><span>Wins</span><strong>3</strong></div>
-              <div><span>Losses</span><strong>2</strong></div>
-              <div><span>Win Rate</span><strong>60%</strong></div>
+              <div>
+                <span>Games</span>
+                <strong>5</strong>
+              </div>
+              <div>
+                <span>Wins</span>
+                <strong>3</strong>
+              </div>
+              <div>
+                <span>Losses</span>
+                <strong>2</strong>
+              </div>
+              <div>
+                <span>Win Rate</span>
+                <strong>60%</strong>
+              </div>
             </div>
           </div>
         </section>
       )}
     </main>
-  )
+  );
 }
 
-export default Home
+export default Home;

@@ -88,7 +88,7 @@ body {
 .hero-content {
   position: relative;
   z-index: 2;
-  max-width: 650px;
+  max-width: 7200px;
   margin-left: 120px;
 }
 
@@ -389,4 +389,50 @@ body {
   color: #111;
   font-weight: 800;
   cursor: pointer;
+}
+
+.hero-title-split {
+  margin: 0 0 30px;
+  font-size: clamp(48px, 7vw, 92px);
+  line-height: 0.95;
+}
+
+.hero-line-wrapper {
+  position: relative;
+  display: block;
+  height: 1em;
+  overflow: visible;
+}
+
+.hero-static-line {
+  display: block;
+  color: #d8aa55;
+}
+
+.hero-line {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(-30px);
+  transition:
+    opacity 0.3s ease,
+    transform 0.8s ease;
+}
+
+.hero-line.active {
+  opacity: 1;
+  transform: translateY(0);
+  animation: heroTextRise 0.8s ease;
+}
+
+@keyframes heroTextRise {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
