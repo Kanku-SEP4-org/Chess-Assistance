@@ -47,11 +47,11 @@ void tearDown(void)
 }
 
 //Tests if a valid temp reading creates the correct JSON message containing the expected ARDUINO values(type, value, etc)
-void test_create_temperature_response_message_success(void)
+void test_create_temperature_message_success(void)
 {
     char buffer[512] = {0};
 
-    create_temperature_response_message(buffer);
+    create_temperature_message(buffer);
 
     TEST_ASSERT_NOT_NULL(strstr(buffer, "\"arduinoId\":1"));
     TEST_ASSERT_NOT_NULL(strstr(buffer, "\"type\":\"temp\""));
@@ -60,12 +60,12 @@ void test_create_temperature_response_message_success(void)
 }
 
 // Test that a failed temperature read creates a fallback JSON message with type temp and value set to null
-void test_create_temperature_response_message_failure(void)
+void test_create_temperature_message_failure(void)
 {
     char buffer[512] = {0};
     mock_temp_result = 0;
 
-    create_temperature_response_message(buffer);
+    create_temperature_message(buffer);
 
     TEST_ASSERT_NOT_NULL(strstr(buffer, "\"arduinoId\":1"));
     TEST_ASSERT_NOT_NULL(strstr(buffer, "\"type\":\"temp\""));
@@ -103,8 +103,8 @@ int main(void)
 {
     UNITY_BEGIN();
 
-    RUN_TEST(test_create_temperature_response_message_success);
-    RUN_TEST(test_create_temperature_response_message_failure);
+    RUN_TEST(test_create_temperature_message_success);
+    RUN_TEST(test_create_temperature_message_failure);
     RUN_TEST(test_create_water_message_success);
     RUN_TEST(test_create_water_message_failure);
 
