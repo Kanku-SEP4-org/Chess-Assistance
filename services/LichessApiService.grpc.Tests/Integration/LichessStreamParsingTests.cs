@@ -59,7 +59,22 @@ public class LichessStreamParsingTests : IDisposable
     private async Task<int> SeedSessionAsync()
     {
         var db = CreateDb();
-        var session = new Session { StartedAt = DateTime.UtcNow, PlayerId = 1 };
+        var healthRecord = new HealthRecord
+        {
+            SleepTime = DateTime.UtcNow.AddHours(-8),
+            AwakenTime = DateTime.UtcNow.AddHours(-1),
+            ConfirmedAt = DateTime.UtcNow,
+            PlayerId = 1
+        };
+        db.HealthRecords.Add(healthRecord);
+        await db.SaveChangesAsync();
+
+        var session = new Session
+        {
+            StartedAt = DateTime.UtcNow,
+            PlayerId = 1,
+            HealthRecordId = healthRecord.Id
+        };
         db.Sessions.Add(session);
         await db.SaveChangesAsync();
         return session.Id;
@@ -236,7 +251,24 @@ public class LichessStreamParsingTests : IDisposable
     public async Task GameFinish_WithSensorData_CreatesDataset()
     {
         var db = CreateDb();
-        var session = new Session { StartedAt = DateTime.UtcNow, PlayerId = 1 };
+
+        var healthRecord = new HealthRecord
+        {
+            SleepTime = DateTime.UtcNow.AddHours(-8),
+            AwakenTime = DateTime.UtcNow.AddHours(-1),
+            ConfirmedAt = DateTime.UtcNow,
+            WaterIntakeMl = 500,
+            PlayerId = 1
+        };
+        db.HealthRecords.Add(healthRecord);
+        await db.SaveChangesAsync();
+
+        var session = new Session
+        {
+            StartedAt = DateTime.UtcNow,
+            PlayerId = 1,
+            HealthRecordId = healthRecord.Id
+        };
         db.Sessions.Add(session);
         await db.SaveChangesAsync();
 
@@ -253,16 +285,6 @@ public class LichessStreamParsingTests : IDisposable
             new Sensor { RoomId = room.Id, Type = SensorType.Temperature, Value = 24, TimeStamp = gameStart.AddMinutes(6) },
             new Sensor { RoomId = room.Id, Type = SensorType.Co2, Value = 400, TimeStamp = gameStart.AddMinutes(3) },
             new Sensor { RoomId = room.Id, Type = SensorType.Co2, Value = 500, TimeStamp = gameStart.AddMinutes(7) });
-
-        var healthRecord = new HealthRecord
-        {
-            SleepTime = DateTime.UtcNow.AddHours(-8),
-            AwakenTime = DateTime.UtcNow.AddHours(-1),
-            ConfirmedAt = DateTime.UtcNow,
-            WaterIntakeMl = 500,
-            SessionId = session.Id
-        };
-        db.HealthRecords.Add(healthRecord);
         await db.SaveChangesAsync();
 
         var ndjson = """

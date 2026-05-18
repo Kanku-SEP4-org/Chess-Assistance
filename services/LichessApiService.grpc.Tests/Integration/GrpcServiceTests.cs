@@ -43,6 +43,20 @@ public class GrpcServiceTests : IDisposable
     private static ServerCallContext CreateTestContext() =>
         new FakeServerCallContext();
 
+    private async Task<HealthRecord> SeedHealthRecordAsync(int playerId = 1)
+    {
+        var hr = new HealthRecord
+        {
+            SleepTime = DateTime.UtcNow.AddHours(-8),
+            AwakenTime = DateTime.UtcNow.AddHours(-1),
+            ConfirmedAt = DateTime.UtcNow.AddMinutes(-5),
+            PlayerId = playerId
+        };
+        _db.HealthRecords.Add(hr);
+        await _db.SaveChangesAsync();
+        return hr;
+    }
+
     private static StartSessionRequest CreateValidRequest(int playerId = 1) => new()
     {
         PlayerId = playerId,
@@ -50,8 +64,78 @@ public class GrpcServiceTests : IDisposable
         LichessToken = "lip_test_token_123",
         SleepTime = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-9)),
         AwakenTime = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-1.5)),
-        ConfirmedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5))
+        ConfirmedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddMinutes(-5)),
+        WaterIntakeInitialMl = 500
     };
+
+    // --- RegisterPlayer ---
+
+    [Fact]
+    public async Task RegisterPlayer_NewPlayer_CreatesAndReturnsIsNewTrue()
+    {
+        var request = new RegisterPlayerRequest
+        {
+            LichessId = "lichess123",
+            Username = "testplayer"
+        };
+
+        var response = await _service.RegisterPlayer(request, CreateTestContext());
+
+        Assert.True(response.IsNew);
+        Assert.True(response.PlayerId > 0);
+
+        var player = await _db.Players.FindAsync(response.PlayerId);
+        Assert.NotNull(player);
+        Assert.Equal("lichess123", player.LichessId);
+        Assert.Equal("testplayer", player.Username);
+    }
+
+    [Fact]
+    public async Task RegisterPlayer_ExistingPlayer_UpdatesUsernameAndReturnsIsNewFalse()
+    {
+        _db.Players.Add(new Player
+        {
+            LichessId = "lichess123",
+            Username = "oldname"
+        });
+        await _db.SaveChangesAsync();
+
+        var request = new RegisterPlayerRequest
+        {
+            LichessId = "lichess123",
+            Username = "newname"
+        };
+
+        var response = await _service.RegisterPlayer(request, CreateTestContext());
+
+        Assert.False(response.IsNew);
+
+        var player = await _db.Players.FindAsync(response.PlayerId);
+        Assert.NotNull(player);
+        Assert.Equal("newname", player.Username);
+
+        Assert.Equal(1, await _db.Players.CountAsync());
+    }
+
+    [Theory]
+    [InlineData("", "testplayer")]
+    [InlineData("lichess123", "")]
+    [InlineData("", "")]
+    [InlineData("  ", "testplayer")]
+    public async Task RegisterPlayer_MissingFields_ThrowsInvalidArgument(
+        string lichessId, string username)
+    {
+        var request = new RegisterPlayerRequest
+        {
+            LichessId = lichessId,
+            Username = username
+        };
+
+        var ex = await Assert.ThrowsAsync<RpcException>(
+            () => _service.RegisterPlayer(request, CreateTestContext()));
+
+        Assert.Equal(StatusCode.InvalidArgument, ex.StatusCode);
+    }
 
     // --- StartSession: core flow ---
 
@@ -70,11 +154,15 @@ public class GrpcServiceTests : IDisposable
         Assert.Equal(1, session.PlayerId);
         Assert.Null(session.EndedAt);
 
-        var sleepRecord = await _db.HealthRecords.FirstOrDefaultAsync(s => s.SessionId == response.SessionId);
-        Assert.NotNull(sleepRecord);
-        Assert.Equal(request.SleepTime.ToDateTime(), sleepRecord.SleepTime);
-        Assert.Equal(request.AwakenTime.ToDateTime(), sleepRecord.AwakenTime);
-        Assert.Equal(request.ConfirmedAt.ToDateTime(), sleepRecord.ConfirmedAt);
+        Assert.True(session.HealthRecordId > 0);
+
+        var healthRecord = await _db.HealthRecords.FindAsync(session.HealthRecordId);
+        Assert.NotNull(healthRecord);
+        Assert.Equal(1, healthRecord.PlayerId);
+        Assert.Equal(request.SleepTime.ToDateTime(), healthRecord.SleepTime);
+        Assert.Equal(request.AwakenTime.ToDateTime(), healthRecord.AwakenTime);
+        Assert.Equal(request.ConfirmedAt.ToDateTime(), healthRecord.ConfirmedAt);
+        Assert.Equal(500, healthRecord.WaterIntakeMl);
     }
 
     // --- StartSession: validation ---
@@ -168,10 +256,12 @@ public class GrpcServiceTests : IDisposable
     [Fact]
     public async Task StartSession_DuplicateActiveSession_ReturnsFalse()
     {
+        var hr = await SeedHealthRecordAsync();
         _db.Sessions.Add(new Session
         {
             StartedAt = DateTime.UtcNow.AddMinutes(-10),
-            PlayerId = 1
+            PlayerId = 1,
+            HealthRecordId = hr.Id
         });
         await _db.SaveChangesAsync();
 
@@ -196,12 +286,42 @@ public class GrpcServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task StartSession_SecondSessionSameDay_ReusesHealthRecord()
+    {
+        var request1 = CreateValidRequest();
+        var response1 = await _service.StartSession(request1, CreateTestContext());
+        Assert.True(response1.Success);
+
+        var session1 = await _db.Sessions.FindAsync(response1.SessionId);
+        Assert.NotNull(session1);
+
+        session1.EndedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        var request2 = CreateValidRequest();
+        request2.WaterIntakeInitialMl = 750;
+        var response2 = await _service.StartSession(request2, CreateTestContext());
+        Assert.True(response2.Success);
+
+        var session2 = await _db.Sessions.FindAsync(response2.SessionId);
+        Assert.NotNull(session2);
+
+        Assert.Equal(session1.HealthRecordId, session2.HealthRecordId);
+
+        var healthRecords = await _db.HealthRecords.ToListAsync();
+        Assert.Single(healthRecords);
+        Assert.Equal(750, healthRecords[0].WaterIntakeMl);
+    }
+
+    [Fact]
     public async Task EndSession_ValidSession_SetsEndedAt()
     {
+        var hr = await SeedHealthRecordAsync();
         var session = new Session
         {
             StartedAt = DateTime.UtcNow.AddMinutes(-10),
-            PlayerId = 1
+            PlayerId = 1,
+            HealthRecordId = hr.Id
         };
         _db.Sessions.Add(session);
         await _db.SaveChangesAsync();
@@ -230,11 +350,13 @@ public class GrpcServiceTests : IDisposable
     [Fact]
     public async Task EndSession_AlreadyEnded_ReturnsFalse()
     {
+        var hr = await SeedHealthRecordAsync();
         _db.Sessions.Add(new Session
         {
             StartedAt = DateTime.UtcNow.AddMinutes(-30),
             EndedAt = DateTime.UtcNow.AddMinutes(-5),
-            PlayerId = 1
+            PlayerId = 1,
+            HealthRecordId = hr.Id
         });
         await _db.SaveChangesAsync();
 
