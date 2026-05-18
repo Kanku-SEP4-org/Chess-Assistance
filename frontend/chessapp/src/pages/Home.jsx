@@ -1,5 +1,5 @@
 
-import { useState/*, useRef, useEffect*/ } from "react";
+import { useEffect, useState } from "react";
 // import { Crown, User, History, Settings, TrendingUp } from "lucide-react";
 import { Link } from 'react-router-dom'
 import heroImg from '../assets/chess-bg.png'
@@ -60,6 +60,22 @@ function Home() {
   //     setPlayerLoading(false)
   //   }
   // }
+
+const [lichessUser, setLichessUser] = useState(null)
+
+useEffect(() => {
+  const savedUser = localStorage.getItem('lichess_user')
+
+  if (savedUser) {
+    setLichessUser(JSON.parse(savedUser))
+  }
+}, [])
+
+const handleLogout = () => {
+  localStorage.removeItem('lichess_user')
+  setLichessUser(null)
+}
+
 const [menuOpen, setMenuOpen] = useState(false);
   return (
     <main className="app" style={{ backgroundImage: `url(${heroImg})` }}>
@@ -85,13 +101,28 @@ const [menuOpen, setMenuOpen] = useState(false);
 
   {menuOpen && (
     <div className="profile-dropdown">
-      <button>👤 My Profile</button>
+      {lichessUser ? (
+        <>
+          <button>
+            👤 {lichessUser.player_username}
+          </button>
+        </>
+      ) : (
+        <Link to="/login">
+          <button>👤 Login</button>
+        </Link>
+      )}
       <button>📈 View Sessions</button>
       <button>♟️ Elo Boosting</button>
       <button>⚙️ Settings</button>
        <Link to="/iot-dashboard">
-    <button>🌐 IoT Dashboard</button>
-  </Link>
+         <button>🌐 IoT Dashboard</button>
+       </Link>
+       {lichessUser && (
+        <button onClick={handleLogout}>
+         🚪 Logout
+        </button>
+       )}
     </div>
   )}
 </div>
