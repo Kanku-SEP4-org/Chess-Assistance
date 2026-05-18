@@ -246,6 +246,15 @@ body {
   z-index: 1000;
 }
 
+.profile-dropdown a {
+  text-decoration: none;
+  width: 100%;
+}
+
+.profile-dropdown a button {
+  width: 100%;
+}
+
 .profile-dropdown button {
   background: transparent;
   border: none;
