@@ -1,8 +1,0 @@
-scikit-learn
-pandas
-numpy
-mlflow
-joblib
-uvicorn
-kagglehub
-seaborn
