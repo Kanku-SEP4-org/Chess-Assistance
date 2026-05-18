@@ -4,6 +4,8 @@ import heroImg from "../assets/chess-bg.png";
 import knightLogo from "../assets/knight-logo.png";
 import "../App.css";
 
+const heroTexts = ["Track your environment.", "Improve your game."]
+
 function Home() {
   const [monitoringStarted, setMonitoringStarted] = useState(false);
   const [showSleepForm, setShowSleepForm] = useState(false);
@@ -11,7 +13,6 @@ function Home() {
   const [wakeTime, setWakeTime] = useState("");
   const [sleepResult, setSleepResult] = useState("");
 
-  const heroTexts = ["Track your environment.", "Improve your game."];
   const [heroIndex, setHeroIndex] = useState(0);
 
   useEffect(() => {
