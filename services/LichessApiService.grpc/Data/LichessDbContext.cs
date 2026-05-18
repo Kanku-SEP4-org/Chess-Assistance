@@ -6,6 +6,7 @@ namespace LichessApiService.Grpc.Data;
 
 public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbContext(options)
 {
+    public DbSet<Player> Players => Set<Player>();
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Match> Matches => Set<Match>();
     public DbSet<Game> Games => Set<Game>();
@@ -20,6 +21,18 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
         modelBuilder.HasPostgresEnum<TimeControlType>("public", "time_control_type");
         modelBuilder.HasPostgresEnum<GameResultType>("public", "game_result_type");
 
+        modelBuilder.Entity<Player>(entity =>
+        {
+            entity.ToTable("player");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.LichessId).HasColumnName("lichess_id").HasMaxLength(50);
+            entity.Property(e => e.Username).HasColumnName("username").HasMaxLength(255);
+
+            entity.HasIndex(e => e.LichessId).IsUnique();
+            entity.HasIndex(e => e.Username).IsUnique();
+        });
+
         modelBuilder.Entity<Session>(entity =>
         {
             entity.ToTable("session");
@@ -32,11 +45,16 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.Property(e => e.GameCount).HasColumnName("game_count").HasDefaultValue(0);
             entity.Property(e => e.TotalWaterMl).HasColumnName("total_water_ml").HasDefaultValue(0);
             entity.Property(e => e.PlayerId).HasColumnName("player_id");
+            entity.Property(e => e.HealthRecordId).HasColumnName("health_record_id");
 
             entity.HasIndex(e => e.PlayerId)
                 .HasFilter("ended_at IS NULL")
                 .IsUnique()
                 .HasDatabaseName("uq_one_active_session");
+
+            entity.HasOne(e => e.HealthRecord)
+                .WithMany(hr => hr.Sessions)
+                .HasForeignKey(e => e.HealthRecordId);
         });
 
         modelBuilder.Entity<Match>(entity =>
@@ -64,7 +82,7 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
 
         modelBuilder.Entity<HealthRecord>(entity =>
         {
-            entity.ToTable("sleep_record");
+            entity.ToTable("health_record");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.SleepTime).HasColumnName("sleep_time");
@@ -75,15 +93,7 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.Property(e => e.AwakeDuration).HasColumnName("awake_duration")
                 .ValueGeneratedOnAddOrUpdate();
             entity.Property(e => e.WaterIntakeMl).HasColumnName("water_intake_ml");
-            entity.Property(e => e.RecordAt).HasColumnName("record_at")
-                .HasDefaultValueSql("CURRENT_TIMESTAMP");
-            entity.Property(e => e.SessionId).HasColumnName("session_id");
-
-            entity.HasIndex(e => e.SessionId).IsUnique();
-
-            entity.HasOne(e => e.Session)
-                .WithOne(s => s.HealthRecord)
-                .HasForeignKey<HealthRecord>(e => e.SessionId);
+            entity.Property(e => e.PlayerId).HasColumnName("player_id");
         });
 
         modelBuilder.Entity<Game>(entity =>
