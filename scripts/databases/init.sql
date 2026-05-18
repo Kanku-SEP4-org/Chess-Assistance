@@ -18,7 +18,7 @@ CREATE TABLE room (
     FOREIGN KEY (player_id) REFERENCES player(id)
 );
 
-CREATE TABLE sleep_record (
+CREATE TABLE health_record (
     id              SERIAL PRIMARY KEY,
     sleep_time      TIMESTAMP NOT NULL,
     awaken_time     TIMESTAMP NOT NULL,
@@ -33,7 +33,7 @@ CREATE TABLE sleep_record (
 );
 
 CREATE UNIQUE INDEX uq_one_health_record_per_day
-ON sleep_record (player_id, (confirmed_at::date));
+ON health_record (player_id, (confirmed_at::date));
 
 -- "session" replaces the old "play_block" table
 CREATE TABLE session (
@@ -46,7 +46,7 @@ CREATE TABLE session (
     player_id      INTEGER NOT NULL,
     health_record_id INTEGER NOT NULL,
     FOREIGN KEY (player_id) REFERENCES player(id),
-    FOREIGN KEY (health_record_id) REFERENCES sleep_record(id)
+    FOREIGN KEY (health_record_id) REFERENCES health_record(id)
 );
 
 CREATE UNIQUE INDEX uq_one_active_session
