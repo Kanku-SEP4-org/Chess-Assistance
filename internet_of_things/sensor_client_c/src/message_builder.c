@@ -18,10 +18,10 @@ void create_temperature_message(char *message)
         sprintf(
             message,
             "{"
-                "\"arduinoId\":1,"
-                "\"value\":%.2f,"
-                "\"type\":\"temp\","
-                "\"timestamp\":%ld"
+                "\"ArduinoId\":1,"
+                "\"Value\":%.2f,"
+                "\"Type\":\"temp\","
+                "\"Timestamp\":%ld"
             "}",
             temperature,
             timestamp
@@ -32,10 +32,10 @@ void create_temperature_message(char *message)
         sprintf(
             message,
             "{"
-                "\"arduinoId\":1,"
-                "\"type\":\"temp\","
-                "\"timestamp\":%ld,"
-                "\"value\": null"
+                "\"ArduinoId\":1,"
+                "\"Type\":\"temp\","
+                "\"Timestamp\":%ld,"
+                "\"Value\": 0.00"
             "}",
             timestamp
         );
@@ -52,10 +52,10 @@ void create_light_message(char *message)
         sprintf(
             message,
             "{"
-                "\"arduinoId\":1,"
-                "\"value\":%d,"
-                "\"type\":\"light\","
-                "\"timestamp\":%ld"
+                "\"ArduinoId\":1,"
+                "\"Value\":%d,"
+                "\"Type\":\"light\","
+                "\"Timestamp\":%ld"
             "}",
             light,
             timestamp
@@ -66,10 +66,10 @@ void create_light_message(char *message)
         sprintf(
             message,
             "{"
-                "\"arduinoId\":1,"
-                "\"type\":\"light\","
-                "\"timestamp\":%ld,"
-                "\"value\": null"
+                "\"ArduinoId\":1,"
+                "\"Type\":\"light\","
+                "\"Timestamp\":%ld,"
+                "\"Value\": 0.00"
             "}",
             timestamp
         );
