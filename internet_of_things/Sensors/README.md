@@ -1,4 +1,19 @@
-Drivers library and demo for SEP4 Hardware kit
+IoT component for the Semester Project of subgroup 2, class Y, semester 4 (SEP4)
+VIA University College, 2026
+IoT team:
+ - Ana-Maria Patriche
+ - Vanessa
+ - Natalia
+ - Dawid
+
+This component handles training the Arduino board to use modules for:
+- collecting and distributing environmental data (temperature, light, humidity, CO2 levels, etc)
+- automatising environmental elements (opening window, refilling water cup)
+
+
+Based on:
+
+Drivers library SEP4 Hardware kit
 By Erland Larsen, March 2026
 VIA UNIVERSITY COLLEGE, Software Technology Engineering
 -----------------------------------------------------------

@@ -7,16 +7,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Protobuf Include="Protos\IoT.proto" GrpcServices="Server" />
+    <Protobuf Include=".\proto\IoT.proto" GrpcServices="Server" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.64.0" />
     <PackageReference Include="RabbitMQ.Client" Version="7.2.1" />
+    <!--
+    We test in a separate test project, so we don't need to include the testing framework here.
+    <PackageReference Include="xunit" Version="1.7.0.1540" />
+    -->
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Messaging\" />
+    <Folder Include="SensorStateStores\" />
   </ItemGroup>
 
 </Project>
