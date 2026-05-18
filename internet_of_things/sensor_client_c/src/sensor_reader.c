@@ -84,10 +84,11 @@ int read_temperature(float *temperature)
     close(serial);
 
     char *temp_pos = strstr(buffer, "TEMP:");
-    if (temp_pos)
-        sscanf(temp_pos, "TEMP:%f", temperature);
+    if (temp_pos && sscanf(temp_pos, "TEMP:%f", temperature) == 1){
+        return 1;
+    }
 
-    return 1;
+    return 0;
 #else
     // --- WINDOWS CLOUD MOCK ---
     // This allows testing the Message Builder/RabbitMQ without an Arduino
@@ -123,10 +124,11 @@ int read_light(short *light)
     close(serial);
 
     char *light_pos = strstr(buffer, "LIG:");
-    if (light_pos)
-        sscanf(light_pos, "LIG:%hd", light);
+    if (light_pos && sscanf(light_pos, "LIG:%hd", light) == 1){
+        return 1;
+    }
 
-    return 1;
+    return 0;
 #else
     // --- WINDOWS CLOUD MOCK ---
     // This allows testing the Message Builder/RabbitMQ without an Arduino
