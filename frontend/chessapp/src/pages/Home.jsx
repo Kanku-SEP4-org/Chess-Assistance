@@ -85,7 +85,9 @@ const [menuOpen, setMenuOpen] = useState(false);
 
   {menuOpen && (
     <div className="profile-dropdown">
-      <button>👤 My Profile</button>
+      <Link to="/login">
+       <button>👤 Login</button>
+      </Link>
       <button>📈 View Sessions</button>
       <button>♟️ Elo Boosting</button>
       <button>⚙️ Settings</button>
