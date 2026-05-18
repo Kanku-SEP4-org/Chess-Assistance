@@ -4,3 +4,5 @@ numpy
 mlflow
 joblib
 uvicorn
+kagglehub
+seaborn

@@ -7,10 +7,13 @@ package iotService;
 enum sensorType {
     temp = 0;
     light = 1;
+    water = 2;
+    error = 3; 
 }
 service iotService {
     rpc getTemperature(tempReq) returns (tempRes);
     rpc getLight(lightReq) returns (lightRes);
+    rpc getWaterLevel(waterLevelReq) returns (waterLevelRes);
 
 }
 
@@ -28,6 +31,14 @@ message lightReq {
 }
 
 message lightRes {
+    sensorReading reading =1;
+    Status status = 2;
+}
+
+message waterLevelReq {
+    int32 arduinoId = 1;
+}
+message waterLevelRes {
     sensorReading reading =1;
     Status status = 2;
 }
