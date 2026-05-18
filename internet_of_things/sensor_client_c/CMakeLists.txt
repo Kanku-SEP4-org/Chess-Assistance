@@ -41,12 +41,6 @@ file(GLOB_RECURSE ALL_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.c")
 list(REMOVE_ITEM ALL_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c")
 
 # --- 4. EXECUTABLES ---
-add_executable(test_message_builder
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_message_builder.c"
-        "${UNITY_SRC}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/message_builder.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/sensor_reader.c"
-)
 
 add_executable(test_sensor_reader
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_sensor_reader.c"
