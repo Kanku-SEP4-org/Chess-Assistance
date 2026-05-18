@@ -129,6 +129,9 @@ public class IoTServiceImpl : iotService.iotServiceBase
 
     public override Task<ProtoStatus> startRecording(recReq request, ServerCallContext context)
     {
+        //TODO: error handling
+        _stateStore.Record(request.ArduinoId, true);
+
         return Task.FromResult(
             new ProtoStatus
             {
@@ -139,6 +142,9 @@ public class IoTServiceImpl : iotService.iotServiceBase
     }
     public override Task<ProtoStatus> stopRecording(recReq request, ServerCallContext context)
     {
+        //TODO: error handling
+        _stateStore.Record(request.ArduinoId, false);
+
         return Task.FromResult(
             new ProtoStatus
             {

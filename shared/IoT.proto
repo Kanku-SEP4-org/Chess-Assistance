@@ -54,20 +54,7 @@ message sensorReading {
     sensorType type = 2; //to identify the kind of sensor. possibly use an enum
     int64 timestamp = 3;
 }
-<<<<<<< HEAD
-=======
 
 message recReq {
     int32 arduinoId = 1;
 }
-
-<<<<<<< HEAD
-
->>>>>>> c53d174 (feat: added simple grpc recording requests)
-=======
-message recReq {
-    int32 arduinoId = 1;
-}
-
-
->>>>>>> ff49ea01a66b5b18ae8b952a4ac111080f7af4fc

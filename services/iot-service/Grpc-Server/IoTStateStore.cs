@@ -48,20 +48,13 @@ public class IoTStateStore : IIoTStateStore
         // currently i am at my wits end tho :(
         if (_states[key].Recording)
         {
-            dbContext.Add(new TemperatureSensor
+            dbContext.Add(new Sensor
             {
-                Celsius = (int)value,
+                Value = value,
                 Room = new Room
                 {
                     PlayerId = 1,
                     Perimeter = 20
-                },
-                Match = new Match
-                {
-                    SessionDate = DateOnly.MaxValue,
-                    DurationFromPrevious = new DateInterval(),
-                    SessionId = 1,
-                    PlayerId = 1
                 }
             });
         }
@@ -86,6 +79,18 @@ public class IoTStateStore : IIoTStateStore
 
         return null;
         
+    }
+
+    public void Record(int arduinoId, bool isRecording)
+    {
+        var sensors = _states
+            .Where(kvp => kvp.Key.ArduinoId == arduinoId)
+            .Select(kvp => kvp.Value);
+        
+        foreach(var s in sensors)
+        {
+            s.Recording = isRecording;
+        }
     }
 }
 
