@@ -84,9 +84,8 @@ int read_temperature(float *temperature)
     close(serial);
 
     char *temp_pos = strstr(buffer, "TEMP:");
-    if (temp_pos)
+    if (temp_pos && sscanf(temp_pos, "TEMP:%f", temperature) == 1)
     {
-        sscanf(temp_pos, "TEMP:%f", temperature);
         return 1;
     }
     return 0;
@@ -110,6 +109,26 @@ int read_water(int *water)
     }
 
     setup_serial(serial);
+
+    char buffer[100] = {0};
+
+    sleep(2); // arduino may reset when port opens
+    tcflush(serial, TCIOFLUSH); // clear old data
+
+    write(serial, "4\n", 2);
+
+    usleep(500000);
+
+    read(serial, buffer, sizeof(buffer) - 1);
+
+    close(serial);
+
+    char *water_pos = strstr(buffer, "WAT:");
+    if (water_pos && sscanf(water_pos, "WAT:%f", water) == 1)
+    {
+        return 1;
+    }
+    return 0;
 
     return 1;
 #else
@@ -139,8 +158,7 @@ int read_light(short *light)
     sleep(2);
     tcflush(serial, TCIOFLUSH);
 
-    write(serial, "7\n", 2);
-    write(serial, "5\n", 2);
+    write(serial, "3\n", 2);
 
     usleep(500000);
 
@@ -148,19 +166,13 @@ int read_light(short *light)
 
     close(serial);
 
-    char *water_pos = strstr(buffer, "WATER:");
-    if (water_pos)
+    char *light_pos = strstr(buffer, "LIG:");
+    if (light_pos && sscanf(light_pos, "LIG:%d", light) == 1)
     {
-        sscanf(water_pos, "WATER:%d", water);
         return 1;
     }
 
     return 0;
-    char *light_pos = strstr(buffer, "LIG:");
-    if (light_pos)
-        sscanf(light_pos, "LIG:%hd", light);
-
-    return 1;
 #else
     // --- WINDOWS CLOUD MOCK ---
     // This allows testing the Message Builder/RabbitMQ without an Arduino
