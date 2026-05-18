@@ -167,7 +167,7 @@ int read_light(short *light)
     close(serial);
 
     char *light_pos = strstr(buffer, "LIG:");
-    if (light_pos && sscanf(light_pos, "LIG:%d", light) == 1)
+    if (light_pos && sscanf(light_pos, "LIG:%hd", light) == 1)
     {
         return 1;
     }
