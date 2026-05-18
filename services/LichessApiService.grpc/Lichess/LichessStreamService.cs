@@ -180,8 +180,10 @@ public class LichessStreamService(
                 .ToDictionaryAsync(x => x.Type, x => x.Avg, ct);
         }
 
-        var healthRecord = await db.HealthRecords
-            .FirstOrDefaultAsync(hr => hr.SessionId == match.SessionId, ct);
+        var session = await db.Sessions
+            .Include(s => s.HealthRecord)
+            .FirstAsync(s => s.Id == match.SessionId, ct);
+        var healthRecord = session.HealthRecord;
 
         // Trigger already incremented TotalGames, so subtract 1 for pre-game snapshot
         var openingStat = game.EcoCode != null
@@ -194,7 +196,6 @@ public class LichessStreamService(
             ? (decimal)openingStat!.PlayerWins / openingGameCount
             : (decimal?)null;
 
-        var session = await db.Sessions.FirstAsync(s => s.Id == match.SessionId, ct);
         session.GameCount += 1;
 
         var dataset = new Dataset
