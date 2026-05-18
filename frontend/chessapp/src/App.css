@@ -125,6 +125,7 @@ body {
   font-weight: 800;
   cursor: pointer;
   box-shadow: 0 20px 60px rgba(216, 170, 85, 0.22);
+  margin-top: -20px;
 }
 
 .dashboard {
@@ -389,4 +390,52 @@ body {
   color: #111;
   font-weight: 800;
   cursor: pointer;
+}
+
+.hero-title-split {
+  display: flex;
+  flex-direction: column;
+  font-size: 6rem;
+  font-weight: 700;
+  line-height: 0.95;
+  margin-bottom: 250px;
+}
+
+.hero-line-wrapper {
+  position: relative;
+  height: 110px;
+  overflow: visible;
+}
+
+.hero-line {
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  transform: translateY(-30px);
+  transition:
+    opacity 0.3s ease,
+    transform 0.8s ease;
+}
+
+.hero-line.active {
+  opacity: 1;
+  transform: translateY(0);
+  animation: heroTextRise 0.8s ease;
+}
+
+.hero-static-line {
+  color: #d8aa55;
+}
+
+@keyframes heroTextRise {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
