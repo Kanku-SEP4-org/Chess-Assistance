@@ -3,7 +3,15 @@
 
 services:
 
-  postgres:
+ frontend:
+    image: ghcr.io/kanku-sep4-org/chess-assistance/frontend:latest
+    container_name: chess-frontend
+    networks:
+      - caddy_net
+    depends_on:
+      - api-gateway
+ 
+ postgres:
     image: postgres:17
     container_name: chess-postgres
     environment:
