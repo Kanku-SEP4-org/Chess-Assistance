@@ -6,8 +6,9 @@ CREATE TYPE time_control_type AS ENUM ('bullet', 'blitz', 'rapid', 'classical');
 CREATE TYPE game_result_type  AS ENUM ('win', 'loss', 'draw');
 
 CREATE TABLE player (
-    id       SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL
+    id         SERIAL PRIMARY KEY,
+    lichess_id VARCHAR(50) NOT NULL UNIQUE,
+    username   VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE room (
@@ -16,6 +17,23 @@ CREATE TABLE room (
     player_id INTEGER NOT NULL,
     FOREIGN KEY (player_id) REFERENCES player(id)
 );
+
+CREATE TABLE sleep_record (
+    id              SERIAL PRIMARY KEY,
+    sleep_time      TIMESTAMP NOT NULL,
+    awaken_time     TIMESTAMP NOT NULL,
+    sleep_duration  INTERVAL GENERATED ALWAYS AS (awaken_time - sleep_time) STORED,
+    confirmed_at    TIMESTAMP NOT NULL,
+    awake_duration  INTERVAL GENERATED ALWAYS AS (confirmed_at - awaken_time) STORED,
+    water_intake_ml INTEGER,
+    player_id       INTEGER NOT NULL,
+    FOREIGN KEY (player_id) REFERENCES player(id),
+    CONSTRAINT chk_sleep_order CHECK (awaken_time > sleep_time),
+    CONSTRAINT chk_awake_order CHECK (confirmed_at > awaken_time)
+);
+
+CREATE UNIQUE INDEX uq_one_health_record_per_day
+ON sleep_record (player_id, (confirmed_at::date));
 
 -- "session" replaces the old "play_block" table
 CREATE TABLE session (
@@ -26,7 +44,9 @@ CREATE TABLE session (
     game_count     INTEGER DEFAULT 0,
     total_water_ml INTEGER DEFAULT 0,
     player_id      INTEGER NOT NULL,
-    FOREIGN KEY (player_id) REFERENCES player(id)
+    health_record_id INTEGER NOT NULL,
+    FOREIGN KEY (player_id) REFERENCES player(id),
+    FOREIGN KEY (health_record_id) REFERENCES sleep_record(id)
 );
 
 CREATE UNIQUE INDEX uq_one_active_session
@@ -91,21 +111,6 @@ CREATE TABLE game (
     duration_min          INTEGER,
     match_id              INTEGER NOT NULL UNIQUE,
     FOREIGN KEY (match_id) REFERENCES match(id)
-);
-
-CREATE TABLE sleep_record (
-    id              SERIAL PRIMARY KEY,
-    sleep_time      TIMESTAMP NOT NULL,
-    awaken_time     TIMESTAMP NOT NULL,
-    sleep_duration  INTERVAL GENERATED ALWAYS AS (awaken_time - sleep_time) STORED,
-    confirmed_at    TIMESTAMP NOT NULL,
-    awake_duration  INTERVAL GENERATED ALWAYS AS (confirmed_at - awaken_time) STORED,
-    water_intake_ml INTEGER,
-    record_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    session_id      INTEGER NOT NULL UNIQUE,
-    FOREIGN KEY (session_id) REFERENCES session(id),
-    CONSTRAINT chk_sleep_order CHECK (awaken_time > sleep_time),
-    CONSTRAINT chk_awake_order CHECK (confirmed_at > awaken_time)
 );
 
 CREATE TABLE player_opening_stat (
