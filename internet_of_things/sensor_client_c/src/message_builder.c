@@ -42,6 +42,26 @@ void create_temperature_message(char *message)
     }
 }
 
+void create_water_message(char *responseMessage)
+{
+    int water = 0;
+    long timestamp = get_timestamp();
+
+    if (read_water(&water))
+    {
+        sprintf(
+            responseMessage,
+            "{"
+                "\"arduinoId\":1,"
+                "\"value\":%d,"
+                "\"type\":\"water\","
+                "\"timestamp\":%ld"
+            "}",
+            water,
+            timestamp
+        );
+    }
+}
 void create_light_message(char *message)
 {
     short light = 0;
@@ -64,6 +84,7 @@ void create_light_message(char *message)
     else
     {
         sprintf(
+          
             message,
             "{"
                 "\"arduinoId\":1,"

@@ -85,9 +85,11 @@ int read_temperature(float *temperature)
 
     char *temp_pos = strstr(buffer, "TEMP:");
     if (temp_pos)
+    {
         sscanf(temp_pos, "TEMP:%f", temperature);
-
-    return 1;
+        return 1;
+    }
+    return 0;
 #else
     // --- WINDOWS CLOUD MOCK ---
     // This allows testing the Message Builder/RabbitMQ without an Arduino
@@ -95,6 +97,29 @@ int read_temperature(float *temperature)
     return 1;
 #endif
 }
+
+int read_water(int *water)
+{   
+#if !defined(_WIN32) && !defined(UNIT_TESTING)
+
+    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
+    if (serial == -1)
+    {
+        printf("open_port: Unable to open\n");
+        return -1;
+    }
+
+    setup_serial(serial);
+
+    return 1;
+#else
+    // --- WINDOWS CLOUD MOCK ---
+    // This allows testing the Message Builder/RabbitMQ without an Arduino
+    *water = 500;
+    return 1;
+#endif
+}
+
 
 int read_light(short *light)
 {
@@ -114,6 +139,7 @@ int read_light(short *light)
     sleep(2);
     tcflush(serial, TCIOFLUSH);
 
+    write(serial, "7\n", 2);
     write(serial, "5\n", 2);
 
     usleep(500000);
@@ -122,6 +148,14 @@ int read_light(short *light)
 
     close(serial);
 
+    char *water_pos = strstr(buffer, "WATER:");
+    if (water_pos)
+    {
+        sscanf(water_pos, "WATER:%d", water);
+        return 1;
+    }
+
+    return 0;
     char *light_pos = strstr(buffer, "LIG:");
     if (light_pos)
         sscanf(light_pos, "LIG:%hd", light);
@@ -147,4 +181,3 @@ int read_light(short *light)
 // ls /dev/ttyUSB* /dev/ttyACM* 2>/dev/null - This checks which Arduino serial port exists in WSL.
 
 // sudo chmod a+rw /dev/ttyACM0 - This gives permission to read and write to the Arduino port.
-

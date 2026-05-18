@@ -15,21 +15,22 @@ int main()
 
     setup_rabbitmq_queues(connection);
 
-    printf("Producing temperature messages every 5 seconds...\n");
+    printf("Producing temperature and water messages every 5 seconds...\n");
 
     while (1)
     {
         char lightMessage[MESSAGE_SIZE];
         char tempMessage[MESSAGE_SIZE];
+        char waterMessage[MESSAGE_SIZE];
+        
+        create_temperature_response_message(tempMessage);
+        send_response(connection, tempMessage);
 
+        create_water_message(waterMessage);
+        send_response(connection, waterMessage);
         create_light_message(lightMessage);
 
         send_response(connection, lightMessage);
-
-        create_temperature_message(tempMessage);
-
-        send_response(connection, tempMessage);
-
         sleep(5);
     }
 
