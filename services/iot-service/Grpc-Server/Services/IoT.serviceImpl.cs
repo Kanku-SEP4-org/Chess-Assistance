@@ -127,6 +127,44 @@ public class IoTServiceImpl : iotService.iotServiceBase
         };
     }
 
+    public override Task<co2Res> getCO2(co2Req request, ServerCallContext context)
+    {
+        var latest = _stateStore.GetLatest(request.ArduinoId, "co2");
+
+        if (latest == null)
+        {
+            return Task.FromResult(new co2Res
+            {
+                Reading = new sensorReading
+                {
+                    Value = 0,
+                    Type = sensorType.Co2,
+                    Timestamp = 0
+                },
+                Status = new ProtoStatus
+                {
+                    Success = false,
+                    Message = $"No CO2 reading available yet for Arduino {request.ArduinoId}."
+                }
+            });
+        }
+
+        return Task.FromResult(new co2Res
+        {
+            Reading = new sensorReading
+            {
+                Value = latest.Value,
+                Type = MapSensorType(latest.Type),
+                Timestamp = latest.Timestamp
+            },
+            Status = new ProtoStatus
+            {
+                Success = true,
+                Message = $"Latest CO2 reading for Arduino {request.ArduinoId} retrieved successfully."
+            }
+        });
+    }
+
 
 
 
@@ -137,6 +175,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
             "temp" => sensorType.Temp,
             "light" => sensorType.Light,
             "water" => sensorType.Water,
+            "co2" => sensorType.Co2,
             _ => sensorType.Error // default case, should not happen if we control the input types properly
             //!!! all cases must be added lowercase in declaration too, so the unit tests pass without a hitch
             //in the methods, camelcase must match the proto enum

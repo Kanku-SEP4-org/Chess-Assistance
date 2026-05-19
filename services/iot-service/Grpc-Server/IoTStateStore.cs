@@ -6,7 +6,7 @@ namespace IoTGrpcServer;
 public class IoTStateStore : IIoTStateStore
 {
     private readonly ConcurrentDictionary<SensorKey, SensorState> _states = new();
-    private readonly HashSet<string> _allowedTypes = new() { "temp", "light", "water" };
+    private readonly HashSet<string> _allowedTypes = new() { "temp", "light", "water", "co2" };
     public void Update(int arduinoId, float value, long timestamp, string type)
     {
         var normalizedType = type.Trim().ToLowerInvariant();
