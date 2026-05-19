@@ -49,6 +49,9 @@ int main(void) {
             case '7':
                 fill_and_report_done();
                 break;
+            case '7':
+                fill_and_report_done();
+                break;
 
             default:
                 transmit_data("Invalid input. Please enter 1 - 7.\n");
