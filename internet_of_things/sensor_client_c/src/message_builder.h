@@ -3,5 +3,6 @@
 
 void create_temperature_message(char *message);
 void create_light_message(char *message);
+void create_water_message(char *responseMessage);
 
 #endif
