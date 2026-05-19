@@ -135,7 +135,7 @@ app.post("/auth/lichess/callback", async (req, res) => {
 
   const clientId = process.env.LICHESS_CLIENT_ID || "chess-assistance";
   const redirectUri =
-    process.env.LICHESS_REDIRECT_URI || "http://localhost:3000/callback";
+    process.env.LICHESS_REDIRECT_URI || "http://localhost:5173/callback";
 
   if (!code || !code_verifier) {
     return res.status(400).json({
