@@ -115,7 +115,7 @@ int read_light(short *light)
     sleep(2);
     tcflush(serial, TCIOFLUSH);
 
-    write(serial, "5\n", 2);
+    write(serial, "3\n", 2);
 
     usleep(500000);
 
