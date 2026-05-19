@@ -15,7 +15,7 @@ public class LichessGameFetcher(IHttpClientFactory httpClientFactory)
         var client = httpClientFactory.CreateClient("Lichess"); 
 
         using var request = new HttpRequestMessage(HttpMethod.Get,
-            $"/api/games/user/{username}?max=1&sort=dateDesc&pgnInJson=true&opening=true");
+            $"/api/games/user/{username}?max=1&sort=dateDesc&pgnInJson=true&opening=true&evals=true");
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", lichessToken);
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/x-ndjson"));
 
