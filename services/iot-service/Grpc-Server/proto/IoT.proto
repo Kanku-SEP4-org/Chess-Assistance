@@ -51,7 +51,8 @@ message co2Req {
 message co2Res {
     sensorReading reading = 1;
     Status status = 2;
-    
+}
+
 message Status {
     bool success = 1;
     string message = 2;
