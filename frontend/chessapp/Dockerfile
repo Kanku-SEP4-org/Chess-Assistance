@@ -13,7 +13,7 @@ RUN npm run build
 # Step 2: Serve with Caddy
 FROM caddy:alpine
 
-COPY --from=build /app/build /srv
+COPY --from=build /app/dist /srv
 COPY Caddyfile /etc/caddy/Caddyfile
 
 EXPOSE 80
