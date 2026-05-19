@@ -44,6 +44,14 @@ message waterLevelRes {
     Status status = 2;
 }
 
+message co2Req {
+    int32 arduinoId = 1;
+}
+
+message co2Res {
+    sensorReading reading = 1;
+    Status status = 2;
+    
 message Status {
     bool success = 1;
     string message = 2;
