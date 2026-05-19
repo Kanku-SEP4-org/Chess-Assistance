@@ -11,6 +11,13 @@ function Home() {
   const [sleepTime, setSleepTime] = useState("");
   const [wakeTime, setWakeTime] = useState("");
   const [sleepResult, setSleepResult] = useState("");
+
+  //water-intake
+
+  const [showWaterForm, setShowWaterForm] = useState(false);
+  const [waterIntake, setWaterIntake] = useState("");
+  const [waterResult, setWaterResult] = useState("");
+
   const [heroIndex, setHeroIndex] = useState(0);
 
   useEffect(() => {
@@ -39,6 +46,12 @@ function Home() {
 
     setSleepResult(`${hours}h ${minutes}m`);
   };
+
+const calculateWaterIntake = () => {
+  if (!waterIntake) return;
+
+  setWaterResult(`You drank ${waterIntake} ml of water today.`);
+};
 
   return (
     <main className="app" style={{ backgroundImage: `url(${heroImg})` }}>
@@ -112,6 +125,35 @@ function Home() {
         </section>
       )}
 
+      {showWaterForm && (
+        <section className="sleep-card">
+        <h2>Water Intake Tracker</h2>
+
+      <div className="sleep-inputs">
+       <div>
+        <p>Water Intake (ml)</p>
+
+        <input
+          type="number"
+          value={waterIntake}
+          onChange={(e) => setWaterIntake(e.target.value)}
+          placeholder="Enter water amount"
+        />
+       </div>
+
+      <button onClick={calculateWaterIntake}>
+        Save Water Intake
+      </button>
+     </div>
+
+    {waterResult && (
+      <p>
+        <strong>{waterResult}</strong>
+      </p>
+     )}
+    </section>
+   )}
+
       {monitoringStarted && (
         <section id="track" className="dashboard">
           <button
@@ -120,6 +162,12 @@ function Home() {
           >
             How much time did I sleep?
           </button>
+
+          <button
+            className="sleep-toggle-btn"
+            onClick={() => setShowWaterForm(!showWaterForm)}>
+            Track Water Intake
+         </button>
 
           <h2>Live Metrics</h2>
 
