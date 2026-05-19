@@ -124,7 +124,7 @@ int read_water(int *water)
     close(serial);
 
     char *water_pos = strstr(buffer, "WAT:");
-    if (water_pos && sscanf(water_pos, "WAT:%f", water) == 1)
+    if (water_pos && sscanf(water_pos, "WAT:%d", water) == 1)
     {
         return 1;
     }
@@ -198,7 +198,7 @@ int read_pump_status(int *success)
     sleep(2);
     tcflush(serial, TCIOFLUSH);
 
-    write(serial, "7\n", 2);
+    write(serial, "5\n", 2);
 
     usleep(500000);
 
