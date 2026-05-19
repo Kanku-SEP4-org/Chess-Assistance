@@ -2,7 +2,7 @@ import React from 'react'
 import './Login.css'
 
 const CLIENT_ID = 'chess-assistance'
-const REDIRECT_URI = 'http://localhost:3000/callback'
+const REDIRECT_URI = 'http://localhost:5173/callback'
 
 function generateCodeVerifier() {
   const array = new Uint8Array(64)
