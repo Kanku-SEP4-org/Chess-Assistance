@@ -37,12 +37,16 @@ services:
       dockerfile: api-gateway/Dockerfile
     container_name: chess-api-gateway
     environment:
-      - GRPC_HOST=chess-grpc-service
+      - IOT_GRPC_HOST=chess-iot-service
+      - IOT_GRPC_PORT=8080
+      - PREDICTION_GRPC_HOST=chess-prediction-service
+      - PREDICTION_GRPC_PORT=5283
     networks:
       - caddy_net
       - chess_internal
     depends_on:
-      - grpc-service
+      - iot-service
+      - prediction-service-grpc
     restart: unless-stopped
 
   ml-api:
