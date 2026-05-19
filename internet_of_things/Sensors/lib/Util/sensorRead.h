@@ -40,3 +40,5 @@ void get_and_report_light(ADC_Error_t light_sensor);
  * Format: "{"light":431}"
  */
 void get_and_report_light_json(ADC_Error_t light_sensor);
+
+void fill_and_report_done(void);

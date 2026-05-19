@@ -92,3 +92,9 @@ void get_and_report_light_json(ADC_Error_t light_sensor){
 
     transmit_data(buffer);
 }
+
+void fill_and_report_done(void) {
+    // Dummy implementation until real pump driver exists
+    // Simulates a successful filling operation, for now
+    transmit_data("PUMP:DONE\n");
+}

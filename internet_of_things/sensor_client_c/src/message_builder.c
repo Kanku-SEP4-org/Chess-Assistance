@@ -75,3 +75,37 @@ void create_light_message(char *message)
         );
     }
 }
+
+void create_pump_response_message(char *message)
+{
+    int success = 0;
+    long timestamp = get_timestamp();
+
+    if (read_pump_status(&success))
+    {
+        sprintf(
+            message,
+            "{"
+                "\"arduinoId\":1,"
+                "\"type\":\"pump\","
+                "\"status\":\"%s\","
+                "\"timestamp\":%ld"
+            "}",
+            success ? "done" : "fail",
+            timestamp
+        );
+    }
+    else
+    {
+        sprintf(
+            message,
+            "{"
+                "\"arduinoId\":1,"
+                "\"type\":\"pump\","
+                "\"status\":\"error\","
+                "\"timestamp\":%ld"
+            "}",
+            timestamp
+        );
+    }
+}

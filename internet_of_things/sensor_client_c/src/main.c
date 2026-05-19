@@ -21,6 +21,8 @@ int main()
     {
         char lightMessage[MESSAGE_SIZE];
         char tempMessage[MESSAGE_SIZE];
+        char pumpMessage[MESSAGE_SIZE];
+
 
         create_light_message(lightMessage);
 
@@ -29,6 +31,10 @@ int main()
         create_temperature_message(tempMessage);
 
         send_response(connection, tempMessage);
+
+        create_pump_response_message(pumpMessage);
+
+        send_response(connection, pumpMessage);
 
         sleep(5);
     }
