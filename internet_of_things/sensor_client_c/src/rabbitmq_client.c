@@ -3,6 +3,7 @@
 #include "rabbitmq_client.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/time.h>
 
 
 void fail_on_amqp_error(amqp_rpc_reply_t reply, const char *message)
@@ -122,16 +123,19 @@ int wait_for_request(amqp_connection_state_t connection)
 
     amqp_maybe_release_buffers(connection);
 
+    struct timeval timeout;
+    timeout.tv_sec = 0;
+    timeout.tv_usec = 100000; // wait max 0.1 second
+
     amqp_rpc_reply_t consumeReply = amqp_consume_message(
         connection,
         &envelope,
-        NULL,
+        &timeout,
         0
     );
 
     if (consumeReply.reply_type != AMQP_RESPONSE_NORMAL)
     {
-        printf("Could not consume message\n");
         return 0;
     }
 

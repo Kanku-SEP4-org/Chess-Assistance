@@ -3,5 +3,6 @@
 
 int read_temperature(float *temperature);
 int read_light(short *light);
+int fill_cup();
 
 #endif
