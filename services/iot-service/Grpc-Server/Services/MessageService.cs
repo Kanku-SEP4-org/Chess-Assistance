@@ -37,7 +37,11 @@ public class MessageService : BackgroundService, IMessageQueue{
             try
             {
                 var body = ea.Body.ToArray();
-                var obj = JsonSerializer.Deserialize<SensorMessage>(body);
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var obj = JsonSerializer.Deserialize<SensorMessage>(body, options);
 
                 if (obj != null)
                 {
