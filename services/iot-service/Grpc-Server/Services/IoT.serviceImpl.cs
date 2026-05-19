@@ -105,7 +105,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
             };
 
             // One single place where we talk to RabbitMQ
-            await _messageQueue.PublishAsync("sensor.requests", command);
+            await _messageQueue.EnqueueObjectAsync( command);
 
             return new ProtoStatus {
                 Success = true,

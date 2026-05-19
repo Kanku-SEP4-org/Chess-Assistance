@@ -109,6 +109,6 @@ public class IoTServiceImplTheoryTests
         // Assert
         Assert.True(response.Status.Success);
         // Here you would verify that your mock message queue received the call
-        _mockQueue.Verify(m => m.PublishAsync(It.IsAny<string>(), It.IsAny<object>()), Times.Once);
+        _mockQueue.Verify(m => m.EnqueueObjectAsync( It.IsAny<object>()), Times.Once);
     }
 }
