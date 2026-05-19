@@ -3,9 +3,9 @@
 //
 #include <unity.h>
 #include <string.h>
-#include "sensorRead.h"
+#include "services/sensorRead.h"
 #include "dht11.h"
-#include "communication.h"
+#include "../../src/services/communication.h"
 
 // --- MOCKING AREA ---
 // global variables that the "Fake" functions will use
