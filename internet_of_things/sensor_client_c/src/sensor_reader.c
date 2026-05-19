@@ -128,11 +128,6 @@ int read_light(short *light)
         return 1;
     }
 
-    light_pos = strstr(buffer, "LIGHT:");
-    if (light_pos && sscanf(light_pos, "LIGHT:%hd", light) == 1){
-        return 1;
-    }
-    
     return 0;
 #else
     // --- WINDOWS CLOUD MOCK ---
