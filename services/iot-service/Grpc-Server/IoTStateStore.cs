@@ -43,9 +43,7 @@ public class IoTStateStore : IIoTStateStore
             Type = normalizedType
         };
 
-        // until we do further the development, will sadly only do temperatureSensor with a dummy match and room
-        // that being said, if i magically find time before sprint end then sure
-        // currently i am at my wits end tho :(
+        // we have no handling of rooms so for now we create a dummy room
         if (_states[key].Recording)
         {
             dbContext.Add(new Sensor
@@ -81,7 +79,7 @@ public class IoTStateStore : IIoTStateStore
         
     }
 
-    public void Record(int arduinoId, bool isRecording)
+    public IEnumerable<SensorState> Record(int arduinoId)
     {
         var sensors = _states
             .Where(kvp => kvp.Key.ArduinoId == arduinoId)
@@ -89,8 +87,26 @@ public class IoTStateStore : IIoTStateStore
         
         foreach(var s in sensors)
         {
-            s.Recording = isRecording;
+            s.Recording = true;
         }
+
+        return sensors;
+    }
+
+    public IEnumerable<SensorState> StopRecord(int arduinoId)
+    {
+        var sensors = _states
+            .Where(kvp => kvp.Key.ArduinoId == arduinoId)
+            .Select(kvp => kvp.Value);
+        
+        foreach(var s in sensors)
+        {
+            s.Recording = true;
+        }
+
+        dbContext.SaveChangesAsync();
+
+        return sensors;
     }
 }
 

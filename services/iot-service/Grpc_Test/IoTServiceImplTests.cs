@@ -5,6 +5,8 @@ using IoTGrpcServer;
 using IotService;
 using Grpc.Core;
 using IoTGrpcServer.Contracts;
+using System.Runtime.InteropServices;
+using Microsoft.EntityFrameworkCore;
 
 namespace Grpc_Test;
 
@@ -62,5 +64,40 @@ public class IoTServiceImplTests
         Assert.False(response.Status.Success);
         Assert.Equal(0, response.Reading.Value);
         Assert.Contains("No temperature reading available", response.Status.Message);
+    }
+
+    [Fact]
+    public async Task StartRecording_Found_Success()
+    {
+        int arduinoId = 5;
+
+        var mockState = new SensorState
+        {
+            Value = 22.5f,
+            Timestamp = 12345,
+            Type = "temp"
+        };
+
+        _mockStore.Setup(s => s.Record(arduinoId)).Returns([mockState]);
+
+        var request = new recReq { ArduinoId = arduinoId };
+
+        var response = await _service.startRecording(request, null!);
+
+        Assert.True(response.Success);
+    }
+
+    [Fact]
+    public async Task StartRecording_NotFound_Failure()
+    {
+        int arduinoId = 5;
+
+        _mockStore.Setup(s => s.Record(arduinoId)).Returns([]);
+
+        var request = new recReq { ArduinoId = arduinoId };
+
+        var response = await _service.startRecording(request, null!);
+
+        Assert.True(response.Success);
     }
 }

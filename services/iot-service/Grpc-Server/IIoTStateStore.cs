@@ -5,6 +5,7 @@ namespace IoTGrpcServer;
 public interface IIoTStateStore
 {
     void Update(int arduinoId, float value, long timestamp, string type);
-    void Record(int arduinoId, bool isRecording);
+    IEnumerable<SensorState> Record(int arduinoId);
+    IEnumerable<SensorState> StopRecord(int arduinoId);
     SensorState? GetLatest(int arduinoId, string type);
 }

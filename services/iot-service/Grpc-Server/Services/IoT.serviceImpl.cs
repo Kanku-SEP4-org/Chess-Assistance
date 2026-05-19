@@ -129,29 +129,53 @@ public class IoTServiceImpl : iotService.iotServiceBase
 
     public override Task<ProtoStatus> startRecording(recReq request, ServerCallContext context)
     {
-        //TODO: error handling
-        _stateStore.Record(request.ArduinoId, true);
-
-        return Task.FromResult(
-            new ProtoStatus
-            {
-                Success = true,
-                Message = $"Recording for Arduino {request.ArduinoId} started"
-            }
-        );
+        var sensors = _stateStore.Record(request.ArduinoId);
+        if(sensors != null || !sensors.Any())
+        {
+            return Task.FromResult(
+                new ProtoStatus
+                {
+                    Success = true,
+                    Message = $"Recording for Arduino {request.ArduinoId} started"
+                }
+            );
+        }
+        else
+        {
+            return Task.FromResult(
+                new ProtoStatus
+                {
+                    Success = false,
+                    Message = $"Recording for Arduino {request.ArduinoId} failed"
+                }
+            );
+        }
     }
     public override Task<ProtoStatus> stopRecording(recReq request, ServerCallContext context)
     {
-        //TODO: error handling
-        _stateStore.Record(request.ArduinoId, false);
+        var sensors = _stateStore.StopRecord(request.ArduinoId);
+        if(sensors != null || !sensors.Any())
+        {
+            return Task.FromResult(
+                new ProtoStatus
+                {
+                    Success = true,
+                    Message = $"Recording for Arduino {request.ArduinoId} stopped"
+                }
+            );
+        }
+        else
+        {
+            return Task.FromResult(
+                new ProtoStatus
+                {
+                    Success = false,
+                    Message = $"Recording for Arduino {request.ArduinoId} stop failed"
+                }
+            );
+        }
 
-        return Task.FromResult(
-            new ProtoStatus
-            {
-                Success = true,
-                Message = $"Recording for Arduino {request.ArduinoId} stopped"
-            }
-        );
+        
     }
 
     private static sensorType MapSensorType(string type)
