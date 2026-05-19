@@ -130,7 +130,7 @@ int read_water(int *water)
     }
     return 0;
 
-    return 1;
+    return 0;
 #else
     // --- WINDOWS CLOUD MOCK ---
     // This allows testing the Message Builder/RabbitMQ without an Arduino
