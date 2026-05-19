@@ -16,6 +16,14 @@ public class IoTStateStore : IIoTStateStore
         this.dbContext = dbContext;
     }
 
+    private static DateTime UnixTimeStampToDateTime( double unixTimeStamp )
+    {
+        // Unix timestamp is seconds past epoch
+        DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        dateTime = dateTime.AddSeconds( unixTimeStamp ).ToLocalTime();
+        return dateTime;
+    }
+
     public void Update(int arduinoId, float value, long timestamp, string type)
     {
         var normalizedType = type.Trim().ToLowerInvariant();
@@ -49,6 +57,8 @@ public class IoTStateStore : IIoTStateStore
             dbContext.Add(new Sensor
             {
                 Value = value,
+                Type = normalizedType,
+                TimeStamp = UnixTimeStampToDateTime(timestamp),
                 Room = new Room
                 {
                     PlayerId = 1,
