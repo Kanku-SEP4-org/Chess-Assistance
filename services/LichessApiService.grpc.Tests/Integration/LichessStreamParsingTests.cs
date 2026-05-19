@@ -313,6 +313,64 @@ public class LichessStreamParsingTests : IDisposable
     }
 
     [Fact]
+    public async Task GameFinish_FetchFailsOnce_RetriesAndSucceeds()
+    {
+        var sessionId = await SeedSessionAsync();
+        var callCount = 0;
+
+        _mockGameFetcher
+            .Setup(f => f.FetchLatestGameAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns<string, string, CancellationToken>((_, _, _) =>
+            {
+                callCount++;
+                if (callCount == 1) throw new HttpRequestException("Transient failure");
+                return Task.FromResult<LichessGameDto?>(CreateSampleLichessGame());
+            });
+
+        var ndjson = """
+            {"type":"gameStart","game":{"gameId":"abc12345"}}
+            {"type":"gameFinish","game":{"gameId":"abc12345"}}
+            """;
+        using var reader = new StringReader(ndjson);
+
+        await _streamService.ProcessStreamAsync(
+            reader, sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        var games = await db.Games.ToListAsync();
+        Assert.Single(games);
+        Assert.Equal(2, callCount);
+    }
+
+    [Fact]
+    public async Task GameFinish_FetchAlwaysFails_GracefullySkips()
+    {
+        var sessionId = await SeedSessionAsync();
+
+        _mockGameFetcher
+            .Setup(f => f.FetchLatestGameAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Persistent failure"));
+
+        var ndjson = """
+            {"type":"gameStart","game":{"gameId":"abc12345"}}
+            {"type":"gameFinish","game":{"gameId":"abc12345"}}
+            """;
+        using var reader = new StringReader(ndjson);
+
+        await _streamService.ProcessStreamAsync(
+            reader, sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        var matches = await db.Matches.ToListAsync();
+        var games = await db.Games.ToListAsync();
+
+        Assert.Single(matches);
+        Assert.Empty(games);
+    }
+
+    [Fact]
     public async Task CancellationToken_StopsProcessing()
     {
         var sessionId = await SeedSessionAsync();
