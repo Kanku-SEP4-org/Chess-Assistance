@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import heroImg from '../assets/chess-bg.png'
+import Navbar from '../components/Navbar'
 
 const BASE_URL = 'http://localhost:3001'
 
@@ -74,8 +75,11 @@ function IotDashboard() {
     : ''
 
   return (
+    <>
+     <Navbar />
 
-    <main
+     <main
+
       className="min-vh-100 text-white"
       style={{
         backgroundImage: `url(${heroImg})`,
@@ -376,6 +380,7 @@ function IotDashboard() {
       </section>
 
     </main>
+    </>
   )
 }
 
