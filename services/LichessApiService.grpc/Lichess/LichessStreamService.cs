@@ -19,29 +19,81 @@ public class LichessStreamService(
         string lichessToken,
         CancellationToken ct)
     {
-        var client = httpClientFactory.CreateClient("Lichess");
+        const int maxRetries = 5;
+        var attempt = 0;
 
-        using var request = new HttpRequestMessage(HttpMethod.Get, "/api/stream/event");
-        request.Headers.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", lichessToken);
-
-        try
+        while (!ct.IsCancellationRequested)
         {
-            using var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct);
-            response.EnsureSuccessStatusCode();
+            try
+            {
+                var client = httpClientFactory.CreateClient("Lichess");
 
-            await using var stream = await response.Content.ReadAsStreamAsync(ct);
-            using var reader = new StreamReader(stream);
+                using var request = new HttpRequestMessage(HttpMethod.Get, "/api/stream/event");
+                request.Headers.Authorization =
+                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", lichessToken);
 
-            await ProcessStreamAsync(reader, sessionId, playerId, playerUsername, lichessToken, ct);
-        }
-        catch (OperationCanceledException)
-        {
-            logger.LogInformation("Stream cancelled for session {SessionId}", sessionId);
-        }
-        catch (Exception ex)
-        {
-            logger.LogError(ex, "Stream error for session {SessionId}", sessionId);
+                using var response = await client.SendAsync(
+                    request, HttpCompletionOption.ResponseHeadersRead, ct);
+
+                if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized
+                    or System.Net.HttpStatusCode.Forbidden)
+                {
+                    logger.LogError(
+                        "Auth failure ({StatusCode}) for session {SessionId}. Stopping stream",
+                        response.StatusCode, sessionId);
+                    return;
+                }
+
+                response.EnsureSuccessStatusCode();
+
+                attempt = 0;
+                logger.LogInformation("SSE stream connected for session {SessionId}", sessionId);
+
+                await using var stream = await response.Content.ReadAsStreamAsync(ct);
+                using var reader = new StreamReader(stream);
+
+                await ProcessStreamWithTimeoutAsync(
+                    reader, sessionId, playerId, playerUsername, lichessToken, ct);
+
+                logger.LogWarning("SSE stream ended (EOF) for session {SessionId}", sessionId);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                logger.LogInformation("Stream cancelled for session {SessionId}", sessionId);
+                return;
+            }
+            catch (HttpRequestException ex) when (
+                ex.StatusCode is System.Net.HttpStatusCode.Unauthorized
+                or System.Net.HttpStatusCode.Forbidden)
+            {
+                logger.LogError(ex,
+                    "Auth failure for session {SessionId}. Stopping stream", sessionId);
+                return;
+            }
+            catch (Exception ex) when (ex is IOException or HttpRequestException or TimeoutException)
+            {
+                logger.LogWarning(ex, "Transient stream error for session {SessionId}", sessionId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Unexpected stream error for session {SessionId}", sessionId);
+            }
+
+            attempt++;
+            if (attempt > maxRetries)
+            {
+                logger.LogError(
+                    "Max retries ({MaxRetries}) exceeded for session {SessionId}. Giving up",
+                    maxRetries, sessionId);
+                return;
+            }
+
+            var delay = TimeSpan.FromSeconds(Math.Pow(2, attempt));
+            logger.LogInformation(
+                "Reconnecting session {SessionId} in {Delay}s (attempt {Attempt}/{MaxRetries})",
+                sessionId, delay.TotalSeconds, attempt, maxRetries);
+
+            await Task.Delay(delay, ct);
         }
     }
 
@@ -70,36 +122,84 @@ public class LichessStreamService(
             if (line == null)
                 break;
 
-            if (string.IsNullOrWhiteSpace(line))
-                continue;
+            currentMatchId = await ParseAndDispatchAsync(
+                line, currentMatchId, sessionId, playerId, playerUsername, lichessToken, ct);
+        }
+    }
 
-            LichessStreamEvent? streamEvent;
+    internal async Task ProcessStreamWithTimeoutAsync(
+        TextReader reader,
+        int sessionId,
+        int playerId,
+        string playerUsername,
+        string lichessToken,
+        CancellationToken ct)
+    {
+        const int timeoutSeconds = 60;
+        int? currentMatchId = null;
+
+        while (!ct.IsCancellationRequested)
+        {
+            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+            timeoutCts.CancelAfter(TimeSpan.FromSeconds(timeoutSeconds));
+
+            string? line;
             try
             {
-                streamEvent = JsonSerializer.Deserialize<LichessStreamEvent>(line);
+                line = await reader.ReadLineAsync(timeoutCts.Token);
             }
-            catch (JsonException ex)
+            catch (OperationCanceledException) when (!ct.IsCancellationRequested)
             {
-                logger.LogWarning(ex, "Failed to parse stream event: {Line}", line);
-                continue;
+                throw new TimeoutException(
+                    $"No data for {timeoutSeconds}s on session {sessionId}");
             }
 
-            if (streamEvent == null)
-                continue;
+            if (line == null)
+                break;
 
-            switch (streamEvent.Type)
-            {
-                case "gameStart":
-                    currentMatchId = await HandleGameStartAsync(
-                        sessionId, playerId, playerUsername, ct);
-                    break;
+            currentMatchId = await ParseAndDispatchAsync(
+                line, currentMatchId, sessionId, playerId, playerUsername, lichessToken, ct);
+        }
+    }
 
-                case "gameFinish" when currentMatchId.HasValue:
-                    await HandleGameFinishAsync(
-                        currentMatchId.Value, playerUsername, lichessToken, ct);
-                    currentMatchId = null;
-                    break;
-            }
+    private async Task<int?> ParseAndDispatchAsync(
+        string line,
+        int? currentMatchId,
+        int sessionId,
+        int playerId,
+        string playerUsername,
+        string lichessToken,
+        CancellationToken ct)
+    {
+        if (string.IsNullOrWhiteSpace(line))
+            return currentMatchId;
+
+        LichessStreamEvent? streamEvent;
+        try
+        {
+            streamEvent = JsonSerializer.Deserialize<LichessStreamEvent>(line);
+        }
+        catch (JsonException ex)
+        {
+            logger.LogWarning(ex, "Failed to parse stream event: {Line}", line);
+            return currentMatchId;
+        }
+
+        if (streamEvent == null)
+            return currentMatchId;
+
+        switch (streamEvent.Type)
+        {
+            case "gameStart":
+                return await HandleGameStartAsync(sessionId, playerId, playerUsername, ct);
+
+            case "gameFinish" when currentMatchId.HasValue:
+                await HandleGameFinishAsync(
+                    currentMatchId.Value, playerUsername, lichessToken, ct);
+                return null;
+
+            default:
+                return currentMatchId;
         }
     }
 
@@ -142,10 +242,38 @@ public class LichessStreamService(
 
         await Task.Delay(TimeSpan.FromSeconds(2), ct);
 
-        var lichessGame = await gameFetcher.FetchLatestGameAsync(playerUsername, lichessToken, ct);
+        LichessGameDto? lichessGame = null;
+        const int maxFetchAttempts = 3;
+
+        for (var attempt = 1; attempt <= maxFetchAttempts; attempt++)
+        {
+            try
+            {
+                lichessGame = await gameFetcher.FetchLatestGameAsync(playerUsername, lichessToken, ct);
+                if (lichessGame != null) break;
+
+                logger.LogWarning(
+                    "Fetch returned null for match {MatchId}, attempt {Attempt}/{Max}",
+                    matchId, attempt, maxFetchAttempts);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                logger.LogWarning(ex,
+                    "Fetch failed for match {MatchId}, attempt {Attempt}/{Max}",
+                    matchId, attempt, maxFetchAttempts);
+            }
+
+            if (attempt < maxFetchAttempts)
+                await Task.Delay(TimeSpan.FromSeconds(2 * attempt), ct);
+        }
+
         if (lichessGame == null)
         {
-            logger.LogWarning("Could not fetch game data for match {MatchId}", matchId);
+            logger.LogWarning("Could not fetch game data for match {MatchId} after retries", matchId);
             return;
         }
 
