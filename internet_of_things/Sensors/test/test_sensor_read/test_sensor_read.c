@@ -6,7 +6,7 @@
 #include "services/sensorRead.h"
 #include "dht11.h"
 #include "services/communication.h"
-#include "services/light.h"
+#include "light.h"
 
 // --- MOCKING AREA ---
 // global variables that the "Fake" functions will use
