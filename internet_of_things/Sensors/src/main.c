@@ -8,6 +8,7 @@
 #include "services/communication.h"
 
 #include "wifi.h" // Include WiFi driver
+#include "soil.h"
 #define USE_WIFI_COMM 0 // Change this to 1 when ready to use WiFi
 
 int main(void) {
