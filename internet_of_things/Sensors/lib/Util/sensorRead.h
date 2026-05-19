@@ -28,3 +28,4 @@ void get_and_report_light(ADC_Error_t light_sensor);
  * Format: "WAT:431"
  */
 void get_and_report_water(ADC_Error_t water_sensor);
+void fill_and_report_done(void);

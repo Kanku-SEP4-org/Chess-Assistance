@@ -22,15 +22,23 @@ int main()
         char lightMessage[MESSAGE_SIZE];
         char tempMessage[MESSAGE_SIZE];
         char waterMessage[MESSAGE_SIZE];
-        
-        create_temperature_message(tempMessage);
+        char pumpMessage[MESSAGE_SIZE];
         send_response(connection, tempMessage);
+        
+
 
         create_water_message(waterMessage);
         send_response(connection, waterMessage);
-        create_light_message(lightMessage);
 
+        create_light_message(lightMessage);
         send_response(connection, lightMessage);
+
+        create_temperature_message(tempMessage);
+        send_response(connection, tempMessage);
+
+        create_pump_response_message(pumpMessage);
+        send_response(connection, pumpMessage);
+
         sleep(5);
     }
 
