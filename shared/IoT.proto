@@ -8,12 +8,14 @@ enum sensorType {
     temp = 0;
     light = 1;
     water = 2;
-    error = 3; 
+    co2 = 3;
+    error = 4; 
 }
 service iotService {
     rpc getTemperature(tempReq) returns (tempRes);
     rpc getLight(lightReq) returns (lightRes);
     rpc getWaterLevel(waterLevelReq) returns (waterLevelRes);
+    rpc getCO2(co2Req) returns (co2Res);
 
 }
 
@@ -42,6 +44,14 @@ message waterLevelRes {
     sensorReading reading =1;
     Status status = 2;
 }
+
+message co2Req {
+    int32 arduinoId = 1;
+}
+
+message co2Res {
+    sensorReading reading = 1;
+    Status status = 2;
 
 message Status {
     bool success = 1;
