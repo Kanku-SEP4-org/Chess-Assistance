@@ -1,6 +1,10 @@
 # Chess-Assistance — reverse proxy rules
 # Imported by the main Caddy gateway via: import /etc/caddy/sites/*
 
+chess.cannyboiz.com {
+    reverse_proxy chess-frontend:80
+}
+
 api-chess.cannyboiz.com {
     reverse_proxy chess-api-gateway:3001
 }
