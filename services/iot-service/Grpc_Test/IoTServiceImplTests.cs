@@ -1,4 +1,5 @@
-﻿using Moq;
+﻿using Grpc_Server.Messaging;
+using Moq;
 using Xunit;
 using Grpc_Server.Services;
 using IoTGrpcServer;
@@ -11,12 +12,14 @@ namespace Grpc_Test;
 public class IoTServiceImplTests
 {
     private readonly Mock<IIoTStateStore> _mockStore;
+    private readonly Mock<IMessageQueue> _mockQueue;
     private readonly IoTServiceImpl _service;
 
     public IoTServiceImplTests()
     {
         _mockStore = new Mock<IIoTStateStore>();
-        _service = new IoTServiceImpl(_mockStore.Object);
+        _mockQueue = new Mock<IMessageQueue>();
+        _service = new IoTServiceImpl(_mockStore.Object, _mockQueue.Object);
     }
 
     [Fact]
@@ -28,11 +31,11 @@ public class IoTServiceImplTests
         {
             Value = 22.5f,
             Timestamp = 12345,
-            Type = "temp"
+            Type = sensorType.Temp,
         };
 
         // the mock must return the fake state when called with these specific arguments
-        _mockStore.Setup(s => s.GetLatest(arduinoId, "temp")).Returns(mockState);
+        _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Temp)).Returns(mockState);
 
         var request = new tempReq { ArduinoId = arduinoId };
 
@@ -51,7 +54,7 @@ public class IoTServiceImplTests
         // Arrange
         int arduinoId = 99;
         // Tell the mock to return null for this ID
-        _mockStore.Setup(s => s.GetLatest(arduinoId, "temp")).Returns((SensorState)null!);
+        _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Temp)).Returns((SensorState)null!);
 
         var request = new tempReq { ArduinoId = arduinoId };
 
