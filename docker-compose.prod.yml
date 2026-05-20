@@ -65,8 +65,8 @@ services:
     expose:
       - "8082"
     environment:
-      - ASPNETCORE_ENVIRONMENT: Production
-      - CONNECTIONSTRINGS__DEFAULTCONNECTION: ${CONNECTIONSTRINGS__DEFAULTCONNECTION}
+      ASPNETCORE_ENVIRONMENT: Production
+      CONNECTIONSTRINGS__DEFAULTCONNECTION: ${CONNECTIONSTRINGS__DEFAULTCONNECTION}
     networks:
       - default
     depends_on:
@@ -86,7 +86,7 @@ services:
     expose:
       - "3001"
     environment:
-      - GRPC_HOST: chess-api-gateway
+      GRPC_HOST: chess-api-gateway
     networks:
       - caddy_net # <---- connect to caddy_net for reverse proxy
       - default
@@ -102,12 +102,12 @@ services:
     expose:
       - "8000"
     environment:
-      - MODEL_PATH: /app/models/model.pkl
-      - SCALER_PATH: /app/models/scaler.pkl
-      - ANGRINESS_MODEL_PATH: /app/angriness_models/model.pkl
-      - ANGRINESS_SCALER_PATH: /app/angriness_models/scaler.pkl
-      - ANGRINESS_BINS_PATH: /app/angriness_models/angriness_bins.json
-      - DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@chess-postgres:5432/${POSTGRES_DB}
+      MODEL_PATH: /app/models/model.pkl
+      SCALER_PATH: /app/models/scaler.pkl
+      ANGRINESS_MODEL_PATH: /app/angriness_models/model.pkl
+      ANGRINESS_SCALER_PATH: /app/angriness_models/scaler.pkl
+      ANGRINESS_BINS_PATH: /app/angriness_models/angriness_bins.json
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@chess-postgres:5432/${POSTGRES_DB}
     networks:
       - caddy_net # <---- connect to caddy_net for reverse proxy
       - default
