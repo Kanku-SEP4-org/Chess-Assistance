@@ -52,6 +52,13 @@ jobs:
           /p:ExcludeByFile="**/Program.cs"
           /p:ExcludeByAttribute="GeneratedCodeAttribute%2cCompilerGeneratedAttribute"
 
+      - name: Validate Docker build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/LichessApiService.grpc/Dockerfile
+          push: false
+
   publish:
     needs: test
     if: >-
