@@ -18,6 +18,8 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasDefaultSchema("chess_assistant");
+
         modelBuilder.HasPostgresEnum<TimeControlType>("public", "time_control_type");
         modelBuilder.HasPostgresEnum<GameResultType>("public", "game_result_type");
 
