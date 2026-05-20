@@ -90,8 +90,6 @@ services:
     networks:
       - caddy_net # <---- connect to caddy_net for reverse proxy
       - default
-    depends_on:
-      - grpc-service
     restart: unless-stopped
 
   ml-api:
