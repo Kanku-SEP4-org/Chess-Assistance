@@ -3,9 +3,9 @@
 //
 #include <unity.h>
 #include <string.h>
-#include "sensorRead.h"
+#include "services/sensorRead.h"
 #include "dht11.h"
-#include "communication.h"
+#include "services/communication.h"
 #include "light.h"
 
 // --- MOCKING AREA ---
@@ -113,8 +113,8 @@ void test_report_light_error_channel(void){
     // set up error
     ADC_Error_t light = light_init_channel();
 
-    get_and_report_light(light);    
-    
+    get_and_report_light(light);
+
     TEST_ASSERT_EQUAL_STRING("ERROR:ADC_ERROR_INVALID_CHANNEL", mock_transmit_buffer);
 }
 
@@ -122,8 +122,8 @@ void test_report_light_error_reference(void){
     // set up error
     ADC_Error_t light = light_init_reference();
 
-    get_and_report_light(light);    
-    
+    get_and_report_light(light);
+
     TEST_ASSERT_EQUAL_STRING("ERROR:ADC_ERROR_INVALID_REFERENCE", mock_transmit_buffer);
 }
 
@@ -140,8 +140,8 @@ void test_report_water_error_channel(void){
     // set up error
     ADC_Error_t water = soil_init_channel(ADC_PK0);
 
-    get_and_report_water(water);    
-    
+    get_and_report_water(water);
+
     TEST_ASSERT_EQUAL_STRING("ERROR:ADC_ERROR_INVALID_CHANNEL", mock_transmit_buffer);
 }
 
@@ -149,8 +149,8 @@ void test_report_water_error_reference(void){
     // set up error
     ADC_Error_t water = soil_init_reference(ADC_PK0);
 
-    get_and_report_water(water);    
-    
+    get_and_report_water(water);
+
     TEST_ASSERT_EQUAL_STRING("ERROR:ADC_ERROR_INVALID_REFERENCE", mock_transmit_buffer);
 }
 
