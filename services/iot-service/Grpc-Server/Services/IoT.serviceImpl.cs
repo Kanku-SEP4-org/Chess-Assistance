@@ -3,6 +3,7 @@ using IotService;
 using IoTGrpcServer;
 using IoTGrpcServer.Contracts;
 using ProtoStatus = IotService.Status;
+using Grpc_Server.Messaging;
 
 namespace Grpc_Server.Services;
 
