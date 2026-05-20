@@ -324,6 +324,28 @@ public class LichessStreamService(
             ? (decimal)openingStat!.PlayerWins / openingGameCount
             : (decimal?)null;
 
+        var previousResults = await db.Games
+            .Where(g => g.Match.SessionId == match.SessionId && g.MatchId != matchId)
+            .OrderByDescending(g => g.StartedAt)
+            .Select(g => g.Result)
+            .ToListAsync(ct);
+
+        var consecutiveLossesPregame = 0;
+        foreach (var r in previousResults)
+        {
+            if (r == GameResultType.Loss)
+                consecutiveLossesPregame++;
+            else
+                break;
+        }
+
+        decimal? avgTpmSeconds = null;
+        if (game.StartedAt.HasValue && game.EndedAt.HasValue && game.PlayerMoveCount is > 0)
+        {
+            var durationSeconds = (decimal)(game.EndedAt.Value - game.StartedAt.Value).TotalSeconds;
+            avgTpmSeconds = durationSeconds / game.PlayerMoveCount.Value;
+        }
+
         session.GameCount += 1;
 
         var dataset = new Dataset
@@ -354,7 +376,14 @@ public class LichessStreamService(
             TerminationType = game.TerminationType,
             Result = game.Result,
             PlayerOpeningWinRate = openingWinRate,
-            PlayerOpeningGameCount = openingGameCount > 0 ? openingGameCount : null
+            PlayerOpeningGameCount = openingGameCount > 0 ? openingGameCount : null,
+            InaccuracyCnt = game.InaccuracyCnt,
+            MistakeCnt = game.MistakeCnt,
+            BlunderCnt = game.BlunderCnt,
+            Acpl = game.Acpl,
+            Accuracy = game.Accuracy,
+            ConsecutiveLossesPregame = consecutiveLossesPregame,
+            AvgTpmSeconds = avgTpmSeconds
         };
 
         db.Datasets.Add(dataset);

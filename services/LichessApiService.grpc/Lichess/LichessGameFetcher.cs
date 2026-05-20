@@ -82,6 +82,11 @@ public class LichessGameFetcher(IHttpClientFactory httpClientFactory)
             StartedAt = startedAt,
             EndedAt = endedAt,
             DurationMin = durationMin,
+            InaccuracyCnt = playerSide.Analysis?.Inaccuracy,
+            MistakeCnt = playerSide.Analysis?.Mistake,
+            BlunderCnt = playerSide.Analysis?.Blunder,
+            Acpl = playerSide.Analysis?.Acpl,
+            Accuracy = playerSide.Analysis?.Accuracy,
             MatchId = matchId
         };
     }
