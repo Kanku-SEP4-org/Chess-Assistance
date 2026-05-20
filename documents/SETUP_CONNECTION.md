@@ -87,10 +87,10 @@ Endpoints:
 ```bash
 cd frontend/chessapp
 npm install  # if not already installed
-npm start
+npm run dev
 ```
 
-Frontend runs on: `http://localhost:3000`
+Frontend runs on: `http://localhost:5173`
 
 ## Data Flow
 
@@ -207,5 +207,5 @@ In the React app, you can enable "Mock Mode" to test without running all service
 - To change: Edit `services/grpc-service/server.js`
 
 ### React Frontend
-- Default port: 3000
-- To change: Set `PORT=3001 npm start`
+- Default port: 5173
+- To change: `Edit vite.config.js` or run: `VITE_PORT=3001 npm run dev`
