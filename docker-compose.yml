@@ -15,6 +15,24 @@ services:
       timeout: 3s
       retries: 10
 
+  rabbitmq:
+    image: rabbitmq:latest
+    hostname: chess_rabbitmq
+    container_name: chess_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_port_connectivity"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   prediction-service-grpc:
     build:
       context: .
@@ -37,6 +55,13 @@ services:
     environment:
       - MODEL_PATH=/app/models/model.pkl
       - SCALER_PATH=/app/models/scaler.pkl
+      - ANGRINESS_MODEL_PATH=/app/angriness_models/model.pkl
+      - ANGRINESS_SCALER_PATH=/app/angriness_models/scaler.pkl
+      - ANGRINESS_BINS_PATH=/app/angriness_models/angriness_bins.json
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-chess}:${POSTGRES_PASSWORD:-chess1234}@postgres:5432/${POSTGRES_DB:-chess_postgres}
+    depends_on:
+      postgres:
+        condition: service_healthy
 
   lichess-api:
     build:
@@ -49,12 +74,27 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8082
-      - IOT__GRPCHOST=iot-service
-      - IOT__GRPCPORT=8080
       - CONNECTIONSTRINGS__DEFAULTCONNECTION=${CONNECTIONSTRINGS__DEFAULTCONNECTION}
     depends_on:
       postgres:
         condition: service_healthy
 
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PREDICTION_GRPC_HOST=prediction-service-grpc
+      - PREDICTION_GRPC_PORT=5283
+      - IOT_GRPC_HOST=iot-service
+      - IOT_GRPC_PORT=8080
+    env_file:
+      - .env
+    depends_on:
+      - prediction-service-grpc
+
 volumes:
   pgdata:
+  rabbitmq_data:

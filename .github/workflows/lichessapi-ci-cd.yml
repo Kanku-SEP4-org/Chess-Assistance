@@ -1,0 +1,118 @@
+name: LichessApiService (.NET gRPC) CI/CD
+
+on:
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "services/LichessApiService.grpc/**"
+      - "services/LichessApiService.grpc.Tests/**"
+      - "shared/LichessApi.proto"
+      - ".github/workflows/lichessapi-ci-cd.yml"
+  push:
+    paths:
+      - "services/LichessApiService.grpc/**"
+      - "services/LichessApiService.grpc.Tests/**"
+      - "shared/LichessApi.proto"
+      - ".github/workflows/lichessapi-ci-cd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj
+
+      - name: Build
+        run: dotnet build services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj --configuration Release --no-restore
+
+      - name: Test with coverage
+        run: >-
+          dotnet test services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj
+          --configuration Release --no-build
+          /p:CollectCoverage=true
+          /p:CoverletOutputFormat=cobertura
+          /p:CoverletOutput=./coverage/
+          /p:Threshold=80
+          /p:ThresholdType=line
+          /p:Exclude="[*]LichessApiService.Grpc.Data.*%2c[*]LichessApiService.Grpc.Protos.*"
+          /p:ExcludeByFile="**/Program.cs"
+          /p:ExcludeByAttribute="GeneratedCodeAttribute%2cCompilerGeneratedAttribute"
+
+      - name: Validate Docker build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/LichessApiService.grpc/Dockerfile
+          push: false
+
+  publish:
+    needs: test
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata (develop)
+        if: github.ref_name == 'develop'
+        id: meta_develop
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/lichessapi-grpc
+          tags: |
+            type=raw,value=dev
+            type=sha,prefix=sha-
+
+      - name: Extract image metadata (main)
+        if: github.ref_name == 'main'
+        id: meta_main
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/lichessapi-grpc
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - name: Build and push Docker image (develop)
+        if: github.ref_name == 'develop'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/LichessApiService.grpc/Dockerfile
+          push: true
+          tags: ${{ steps.meta_develop.outputs.tags }}
+          labels: ${{ steps.meta_develop.outputs.labels }}
+
+      - name: Build and push Docker image (main)
+        if: github.ref_name == 'main'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/LichessApiService.grpc/Dockerfile
+          push: true
+          tags: ${{ steps.meta_main.outputs.tags }}
+          labels: ${{ steps.meta_main.outputs.labels }}

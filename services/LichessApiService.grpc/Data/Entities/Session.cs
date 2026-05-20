@@ -9,6 +9,8 @@ public class Session
     public int GameCount { get; set; }
     public int TotalWaterMl { get; set; }
     public int PlayerId { get; set; }
+    public int HealthRecordId { get; set; }
 
     public ICollection<Match> Matches { get; set; } = [];
+    public HealthRecord HealthRecord { get; set; } = null!;
 }
