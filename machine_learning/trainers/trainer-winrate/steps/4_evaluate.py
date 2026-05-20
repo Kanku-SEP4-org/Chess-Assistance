@@ -15,7 +15,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 
 def main() -> None:
     data_path = os.getenv("EVAL_DATA_PATH", "data/test.csv")
-    model_path = os.getenv("MODEL_PATH", "models/model_pipeline.pkl")
+    model_path = os.getenv("MODEL_PATH", "models/model.pkl")
     out_path = os.getenv("EVAL_METRICS_PATH", "models/eval_metrics.json")
 
     if not os.path.exists(data_path):

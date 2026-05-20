@@ -31,7 +31,7 @@ accuracy = accuracy_score(y_val, y_pred)
 
 
 os.makedirs("models", exist_ok=True)
-joblib.dump(pipeline, "models/model_pipeline.pkl")
+joblib.dump(pipeline, "models/model.pkl")
 
 metrics = {
     "model_type": "Logistic Regression",
