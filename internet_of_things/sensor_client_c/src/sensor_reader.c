@@ -124,7 +124,7 @@ int read_water(int *water)
     close(serial);
 
     char *water_pos = strstr(buffer, "WAT:");
-    if (water_pos && sscanf(water_pos, "WAT:%f", water) == 1)
+    if (water_pos && sscanf(water_pos, "WAT:%d", water) == 1)
     {
         return 1;
     }
@@ -180,6 +180,47 @@ int read_light(short *light)
     return 1;
 #endif
 }
+
+int read_co2(int *co2)
+{
+#if !defined(_WIN32) && !defined(UNIT_TESTING)
+    // --- REAL LINUX LOGIC ---
+    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
+    if (serial == -1)
+    {
+        printf("open_port: Unable to open");
+        return -1;
+    }
+    
+    setup_serial(serial);
+
+    char buffer[100] = {0};
+
+    sleep(2); // arduino may reset when port opens
+    tcflush(serial, TCIOFLUSH); // clear old data
+
+    write(serial, "6\n", 2);
+
+    usleep(500000);
+
+    read(serial, buffer, sizeof(buffer) - 1);
+
+    close(serial);
+
+    char *co2_pos = strstr(buffer, "CO2:");
+    if (co2_pos && sscanf(co2_pos, "CO2:%d", co2) == 1)
+    {
+        return 1;
+    }
+    return 0;
+#else
+    // --- WINDOWS CLOUD MOCK ---
+    // This allows testing the Message Builder/RabbitMQ without an Arduino
+    *co2 = 450;
+    return 1;
+#endif
+}
+
 
 // in administrator powershell
 
