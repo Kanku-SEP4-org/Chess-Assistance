@@ -39,4 +39,11 @@ void get_and_report_light(ADC_Error_t light_sensor);
  * Contains values between 0 and 1023
  * Format: "{"light":431}"
  */
+
 void get_and_report_light_json(ADC_Error_t light_sensor);
+/**
+ * @brief Starts the pump briefly and reports that filling is done.
+ * Current implementation is a simple placeholder using the pump driver.
+ * Format: "PUMP:DONE"
+ */
+void fill_and_report_done(void);

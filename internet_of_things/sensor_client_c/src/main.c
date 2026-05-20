@@ -22,6 +22,7 @@ int main()
     {
         char lightMessage[MESSAGE_SIZE];
         char tempMessage[MESSAGE_SIZE];
+        char pumpMessage[MESSAGE_SIZE];
 
         int requestReceived = wait_for_request(connection);
 
@@ -44,6 +45,10 @@ int main()
 
         create_temperature_message(tempMessage);
         send_response(connection, tempMessage);
+
+        create_pump_response_message(pumpMessage);
+        printf("Pump message: %s\n", pumpMessage);
+        send_response(connection, pumpMessage);
 
         sleep(5);
     }
