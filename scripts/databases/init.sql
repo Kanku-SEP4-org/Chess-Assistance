@@ -109,6 +109,11 @@ CREATE TABLE game (
     started_at            TIMESTAMP,
     ended_at              TIMESTAMP,
     duration_min          INTEGER,
+    inaccuracy_cnt        INTEGER,
+    mistake_cnt           INTEGER,
+    blunder_cnt           INTEGER,
+    acpl                  INTEGER,
+    accuracy              INTEGER,
     match_id              INTEGER NOT NULL UNIQUE,
     FOREIGN KEY (match_id) REFERENCES match(id)
 );
@@ -161,5 +166,12 @@ CREATE TABLE dataset (
     result                     game_result_type,
     player_opening_win_rate    NUMERIC(5,2),
     player_opening_game_count  INTEGER,
+    inaccuracy_cnt                 INTEGER,
+    mistake_cnt                    INTEGER,
+    blunder_cnt                    INTEGER,
+    acpl                           INTEGER,
+    accuracy                       INTEGER,
+    consecutive_losses_pregame     INTEGER,
+    avg_tpm_seconds                NUMERIC(10,6),
     FOREIGN KEY (match_id) REFERENCES match(id)
 );

@@ -123,6 +123,11 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.Property(e => e.StartedAt).HasColumnName("started_at");
             entity.Property(e => e.EndedAt).HasColumnName("ended_at");
             entity.Property(e => e.DurationMin).HasColumnName("duration_min");
+            entity.Property(e => e.InaccuracyCnt).HasColumnName("inaccuracy_cnt");
+            entity.Property(e => e.MistakeCnt).HasColumnName("mistake_cnt");
+            entity.Property(e => e.BlunderCnt).HasColumnName("blunder_cnt");
+            entity.Property(e => e.Acpl).HasColumnName("acpl");
+            entity.Property(e => e.Accuracy).HasColumnName("accuracy");
             entity.Property(e => e.MatchId).HasColumnName("match_id");
 
             entity.HasIndex(e => e.MatchId).IsUnique();
@@ -185,6 +190,13 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.Property(e => e.Result).HasColumnName("result");
             entity.Property(e => e.PlayerOpeningWinRate).HasColumnName("player_opening_win_rate");
             entity.Property(e => e.PlayerOpeningGameCount).HasColumnName("player_opening_game_count");
+            entity.Property(e => e.InaccuracyCnt).HasColumnName("inaccuracy_cnt");
+            entity.Property(e => e.MistakeCnt).HasColumnName("mistake_cnt");
+            entity.Property(e => e.BlunderCnt).HasColumnName("blunder_cnt");
+            entity.Property(e => e.Acpl).HasColumnName("acpl");
+            entity.Property(e => e.Accuracy).HasColumnName("accuracy");
+            entity.Property(e => e.ConsecutiveLossesPregame).HasColumnName("consecutive_losses_pregame");
+            entity.Property(e => e.AvgTpmSeconds).HasColumnName("avg_tpm_seconds");
 
             entity.HasIndex(e => e.MatchId).IsUnique();
         });

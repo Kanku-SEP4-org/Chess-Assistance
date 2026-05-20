@@ -15,4 +15,7 @@ public class LichessPlayerSideDto
 
     [JsonPropertyName("berserk")]
     public bool? Berserk { get; set; }
+
+    [JsonPropertyName("analysis")]
+    public LichessAnalysisDto? Analysis { get; set; }
 }
