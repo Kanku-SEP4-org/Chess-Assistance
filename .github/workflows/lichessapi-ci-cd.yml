@@ -39,8 +39,18 @@ jobs:
       - name: Build
         run: dotnet build services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj --configuration Release --no-build
+      - name: Test with coverage
+        run: >-
+          dotnet test services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj
+          --configuration Release --no-build
+          /p:CollectCoverage=true
+          /p:CoverletOutputFormat=cobertura
+          /p:CoverletOutput=./coverage/
+          /p:Threshold=80
+          /p:ThresholdType=line
+          /p:Exclude="[*]LichessApiService.Grpc.Data.*%2c[*]LichessApiService.Grpc.Protos.*"
+          /p:ExcludeByFile="**/Program.cs"
+          /p:ExcludeByAttribute="GeneratedCodeAttribute%2cCompilerGeneratedAttribute"
 
   publish:
     needs: test
