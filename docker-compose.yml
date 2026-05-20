@@ -79,6 +79,22 @@ services:
       postgres:
         condition: service_healthy
 
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - PREDICTION_GRPC_HOST=prediction-service-grpc
+      - PREDICTION_GRPC_PORT=5283
+      - IOT_GRPC_HOST=iot-service
+      - IOT_GRPC_PORT=8080
+    env_file:
+      - .env
+    depends_on:
+      - prediction-service-grpc
+
 volumes:
   pgdata:
   rabbitmq_data:
