@@ -13,7 +13,6 @@
 // global variables that the "Fake" functions will use
 static char mock_transmit_buffer[100];
 static uint8_t fake_h_int, fake_h_dec, fake_t_int, fake_t_dec;
-static uint16_t fake_co2_value;
 static DHT11_ERROR_MESSAGE_t fake_dht_status;
 
 // "Fake" the communication driver
