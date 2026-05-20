@@ -7,11 +7,13 @@
 #include "dht11.h"
 #include "services/communication.h"
 #include "light.h"
+#include "co2.h"
 
 // --- MOCKING AREA ---
 // global variables that the "Fake" functions will use
 static char mock_transmit_buffer[100];
 static uint8_t fake_h_int, fake_h_dec, fake_t_int, fake_t_dec;
+static uint16_t fake_co2_value;
 static DHT11_ERROR_MESSAGE_t fake_dht_status;
 
 // "Fake" the communication driver
@@ -71,6 +73,8 @@ void setUp(void) {
     memset(mock_transmit_buffer, 0, sizeof(mock_transmit_buffer));
     fake_h_int = 0; fake_h_dec = 0; fake_t_int = 0; fake_t_dec = 0;
     fake_dht_status = DHT11_OK;
+    // Force clear internal state of latest_co2_ppm by passing a 0 value
+    co2_incoming_data_handler(0);
 }
 
 void tearDown(void) {}
@@ -154,6 +158,27 @@ void test_report_water_error_reference(void){
     TEST_ASSERT_EQUAL_STRING("ERROR:ADC_ERROR_INVALID_REFERENCE", mock_transmit_buffer);
 }
 
+void test_report_co2_no_data_yet(void) {
+    // Arrange: Ensure state is 0 (handled by setUp)
+
+    // Act: Request reporting output
+    get_and_report_co2();
+
+    // Assert: Check for target error message string
+    TEST_ASSERT_EQUAL_STRING("ERROR:CO2_NO_DATA_YET", mock_transmit_buffer);
+}
+
+void test_report_co2_valid_value_format(void) {
+    // Arrange: Simulate the callback running from a UART packet capture event
+    co2_incoming_data_handler(450);
+
+    // Act: Request reporting output
+    get_and_report_co2();
+
+    // Assert: Ensure it formats correctly
+    TEST_ASSERT_EQUAL_STRING("CO2:450", mock_transmit_buffer);
+}
+
 // --- MAIN ---
 
 int main(void) {
@@ -166,5 +191,7 @@ int main(void) {
     RUN_TEST(test_report_water_format);
     RUN_TEST(test_report_water_error_channel);
     RUN_TEST(test_report_water_error_reference);
+    RUN_TEST(test_report_co2_no_data_yet);
+    RUN_TEST(test_report_co2_valid_value_format);
     return UNITY_END();
 }

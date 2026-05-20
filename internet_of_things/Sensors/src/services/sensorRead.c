@@ -3,8 +3,11 @@
 #include "light.h"
 #include "soil.h"
 #include "communication.h"
+#include "co2.h"
 #include <stdio.h>
 #include <stddef.h>
+
+static uint16_t latest_co2_ppm = 0; // Global variable to store the latest CO2 reading
 
 void get_and_report_temperature(void) {
     uint8_t h_int, h_dec, t_int, t_dec;
@@ -63,5 +66,20 @@ void get_and_report_water(ADC_Error_t water_sensor){
         sprintf(buffer, "ERROR:ADC_ERROR_INVALID_REFERENCE");
     }
     
+    transmit_data(buffer);
+}
+
+void co2_incoming_data_handler(uint16_t ppm) {
+    latest_co2_ppm = ppm;
+}
+
+void get_and_report_co2(void) {
+    
+    char buffer[50];
+    if (latest_co2_ppm > 0) {
+        sprintf(buffer, "CO2:%u", latest_co2_ppm);
+    } else {
+        sprintf(buffer, "ERROR:CO2_NO_DATA_YET");
+    }
     transmit_data(buffer);
 }
