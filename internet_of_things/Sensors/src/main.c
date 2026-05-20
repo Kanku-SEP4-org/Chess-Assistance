@@ -8,6 +8,7 @@
 #include "services/communication.h"
 
 #include "wifi.h" // Include WiFi driver
+#include "wifi_config.h"
 #include "soil.h"
 #define USE_WIFI_COMM 0 // Change this to 1 when ready to use WiFi
 
@@ -19,9 +20,34 @@ int main(void) {
     // WiFi Setup (Future-Proofing)
     #if USE_WIFI_COMM
         wifi_init();
-        // Add your credentials here when ready
-        // wifi_command_join_AP("SSID", "PASSWORD"); 
-        // wifi_command_create_TCP_connection("192.168.1.XX", 23, NULL, NULL);
+        printf("[WIFI] Waiting for module...\n");
+        delay(4000);
+
+        // check if wifi responsive
+        printf("[WIFI] Sending AT...\n");
+        while (wifi_command_AT() != WIFI_OK)
+        {
+            delay(1000);
+        }
+        printf("[WIFI] Module OK\n");
+
+        // disable echo
+        wifi_command_disable_echo();
+
+        // set mode to connecting to an access point
+        wifi_command_set_mode_to_1();
+
+
+        // use credentials provided in wifi_config.h
+        printf("[WIFI] Connecting to %s...\n", WIFI_SSID);
+        while (wifi_command_join_AP(WIFI_SSID, WIFI_PASS) != WIFI_OK)
+        {
+            printf("[WIFI] Retrying...\n");
+            delay(1000);
+        }
+        printf("[WIFI] Connected\n");
+
+        wifi_command_set_to_single_Connection();
     #endif
     sei();
 
