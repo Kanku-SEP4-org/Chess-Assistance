@@ -3,7 +3,8 @@ using System.Text.Json;
 using IoTGrpcServer.Contracts;
 using RabbitMQ.Client;
 
-var rabbitUrl = Environment.GetEnvironmentVariable("RABBITMQ_URL");
+var rabbitUrl = Environment.GetEnvironmentVariable("RABBITMQ_URL")
+                ?? "amqp://guest:guest@localhost:5672/"; //fallback for running without docker
 
 Uri uri = new Uri(rabbitUrl);
 
@@ -21,15 +22,16 @@ await channel.QueueDeclareAsync(
 );
 
 Random rnd = new Random();
+string[] types = { "temp", "light", "water" }; // Add new types here
 
-
-for (int i = 0; i < 10; i++)
+for (int i = 0; i < 15; i++)
 {
+    var sensorType = types[rnd.Next(types.Length)]; // Randomly pick a type
     var sensor = new SensorMessage
     {
         ArduinoId = rnd.Next(1, 5),
-        Value = rnd.Next(0, 256),
-        Type = "temp",
+        Value = (sensorType == "water") ? rnd.Next(0, 101) : rnd.Next(0, 256),
+        Type = sensorType,
         Timestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
     };
 

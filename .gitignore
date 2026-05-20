@@ -14,6 +14,9 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# C# Dev Kit cache
+*.lscache
+
 # Mono auto generated files
 mono_crash.*
 
@@ -449,3 +452,5 @@ prompts/
 prompts/
 /.claude
 
+# cannyboiz's notes
+cannyboizs-notes/
