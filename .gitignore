@@ -441,7 +441,6 @@ __pycache__/
 
 # ML artifacts
 *.pkl
-*.csv
 **/models/metrics.json
 **/models/eval_metrics.json
 *_cache.json

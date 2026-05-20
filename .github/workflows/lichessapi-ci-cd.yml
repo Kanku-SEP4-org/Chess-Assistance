@@ -9,7 +9,6 @@ on:
       - "shared/LichessApi.proto"
       - ".github/workflows/lichessapi-ci-cd.yml"
   push:
-    branches: [develop, main]
     paths:
       - "services/LichessApiService.grpc/**"
       - "services/LichessApiService.grpc.Tests/**"
@@ -45,7 +44,9 @@ jobs:
 
   publish:
     needs: test
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
