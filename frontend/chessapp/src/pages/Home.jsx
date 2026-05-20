@@ -91,8 +91,10 @@ const calculateWaterIntake = () => {
         </div>
       </section>
 
-      {showSleepForm && (
-        <section className="sleep-card">
+      {monitoringStarted && (
+        <section id="track" className="dashboard">
+
+         <section className="sleep-card">
           <h2>Sleep Tracker</h2>
 
           <div className="sleep-inputs">
@@ -123,10 +125,8 @@ const calculateWaterIntake = () => {
             </p>
           )}
         </section>
-      )}
-
-      {showWaterForm && (
-        <section className="sleep-card">
+      
+ <section className="sleep-card">
         <h2>Water Intake Tracker</h2>
 
       <div className="sleep-inputs">
@@ -152,25 +152,9 @@ const calculateWaterIntake = () => {
       </p>
      )}
     </section>
-   )}
+   
 
-      {monitoringStarted && (
-        <section id="track" className="dashboard">
-          <button
-            className="sleep-toggle-btn"
-            onClick={() => setShowSleepForm(!showSleepForm)}
-          >
-            How much time did I sleep?
-          </button>
-
-          <button
-            className="sleep-toggle-btn"
-            onClick={() => setShowWaterForm(!showWaterForm)}>
-            Track Water Intake
-         </button>
-
-          <h2>Live Metrics</h2>
-
+       <h2>Live Metrics</h2>
           <div className="cards-grid">
             <div className="metric-card">
               <span>Temperature</span>

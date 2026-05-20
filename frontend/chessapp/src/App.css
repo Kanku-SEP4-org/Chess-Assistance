@@ -413,13 +413,6 @@ body {
   font-size: 36px;
 }
 
-.sleep-inputs {
-  display: flex;
-  gap: 20px;
-  align-items: end;
-  flex-wrap: wrap;
-}
-
 .sleep-inputs input {
   margin-top: 10px;
   padding: 12px 14px;
@@ -437,6 +430,38 @@ body {
   color: #111;
   font-weight: 800;
   cursor: pointer;
+}
+
+.sleep-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.sleep-inputs button {
+  height: 48px;
+  padding: 0 24px;
+  margin-top: 28px;
+  border: none;
+  border-radius: 30px;
+  font-weight: 600;
+}
+
+.sleep-inputs {
+  align-items: flex-end;
+}
+
+.form-control {
+  font-size: 14px;
+  padding: 10px 14px;
+}
+
+.form-control::placeholder {
+  font-size: 14px;
+}
+
+.form-label {
+  margin-bottom: 8px;
 }
 
 .hero-title-split {

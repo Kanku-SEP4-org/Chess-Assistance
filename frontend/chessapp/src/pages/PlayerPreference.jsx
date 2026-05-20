@@ -62,17 +62,7 @@ function PlayerPreference() {
               >
 
                 <div className="text-center mb-5">
-
-                  <p
-                    className="text-warning text-uppercase fw-bold mb-2"
-                    style={{
-                      letterSpacing: "2px",
-                    }}
-                  >
-                    Player Settings
-                  </p>
-
-                  <h2 className="fw-bold mb-3">
+                 <h2 className="fw-bold mb-3 text-white">
                     Player Preferences
                   </h2>
 
@@ -87,14 +77,29 @@ function PlayerPreference() {
 
                   <div className="row g-4">
 
+                   <div className="col-12">
+                      <label className="form-label fw-semibold text-white">
+                        id
+                      </label>
+
+                      <input
+                        type="number"
+                        className="form-control"
+                        name="player_id"
+                        value={preferences.player_id}
+                        onChange={handleChange}
+                        placeholder="Enter player ID"
+                      />
+                    </div>
+
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">
+                      <label className="form-label fw-semibold text-white">
                         Daily Game Limit
                       </label>
 
                       <input
                         type="number"
-                        className="form-control form-control-lg"
+                        className="form-control"
                         name="daily_game_limit"
                         value={preferences.daily_game_limit}
                         onChange={handleChange}
@@ -103,13 +108,13 @@ function PlayerPreference() {
                     </div>
 
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">
+                      <label className="form-label fw-semibold text-white">
                         Daily Playtime Limit (min)
                       </label>
 
                       <input
                         type="number"
-                        className="form-control form-control-lg"
+                        className="form-control"
                         name="daily_playtime_limit_min"
                         value={preferences.daily_playtime_limit_min}
                         onChange={handleChange}
@@ -118,13 +123,13 @@ function PlayerPreference() {
                     </div>
 
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">
+                      <label className="form-label fw-semibold text-white">
                         Break Interval (min)
                       </label>
 
                       <input
                         type="number"
-                        className="form-control form-control-lg"
+                        className="form-control"
                         name="break_interval_min"
                         value={preferences.break_interval_min}
                         onChange={handleChange}
@@ -133,32 +138,17 @@ function PlayerPreference() {
                     </div>
 
                     <div className="col-12 col-md-6">
-                      <label className="form-label fw-semibold">
+                      <label className="form-label fw-semibold text-white">
                         Recommended Rest (min)
                       </label>
 
                       <input
                         type="number"
-                        className="form-control form-control-lg"
+                        className="form-control"
                         name="recommend_rest_min"
                         value={preferences.recommend_rest_min}
                         onChange={handleChange}
                         placeholder="Enter rest duration"
-                      />
-                    </div>
-
-                    <div className="col-12">
-                      <label className="form-label fw-semibold">
-                        Player ID
-                      </label>
-
-                      <input
-                        type="number"
-                        className="form-control form-control-lg"
-                        name="player_id"
-                        value={preferences.player_id}
-                        onChange={handleChange}
-                        placeholder="Enter player ID"
                       />
                     </div>
 
