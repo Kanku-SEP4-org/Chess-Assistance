@@ -37,6 +37,12 @@ public class LichessStreamParsingTests : IDisposable
                 StartedAt = DateTimeOffset.FromUnixTimeMilliseconds(dto.CreatedAt).UtcDateTime,
                 EndedAt = DateTimeOffset.FromUnixTimeMilliseconds(dto.LastMoveAt).UtcDateTime,
                 DurationMin = 10,
+                PlayerMoveCount = 20,
+                InaccuracyCnt = 2,
+                MistakeCnt = 1,
+                BlunderCnt = 0,
+                Acpl = 18,
+                Accuracy = 93,
                 MatchId = matchId
             });
 
@@ -307,6 +313,13 @@ public class LichessStreamParsingTests : IDisposable
         Assert.Equal(500, dataset.WaterIntakeMl);
         Assert.Equal("B20", dataset.EcoCode);
         Assert.Equal(GameResultType.Win, dataset.Result);
+        Assert.Equal(2, dataset.InaccuracyCnt);
+        Assert.Equal(1, dataset.MistakeCnt);
+        Assert.Equal(0, dataset.BlunderCnt);
+        Assert.Equal(18, dataset.Acpl);
+        Assert.Equal(93, dataset.Accuracy);
+        Assert.Equal(0, dataset.ConsecutiveLossesPregame);
+        Assert.NotNull(dataset.AvgTpmSeconds);
 
         var updatedSession = await db.Sessions.FirstAsync(s => s.Id == session.Id);
         Assert.Equal(1, updatedSession.GameCount);
