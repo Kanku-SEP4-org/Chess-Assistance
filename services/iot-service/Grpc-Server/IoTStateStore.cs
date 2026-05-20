@@ -1,30 +1,122 @@
+using System.Collections.Concurrent;
+using IoTGrpcServer.Contracts;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.VisualBasic;
+
 namespace IoTGrpcServer;
 
-public class IoTStateStore
+public class IoTStateStore : IIoTStateStore
 {
-    private readonly object _lock = new();
+    private readonly DbContext dbContext;
+    private readonly ConcurrentDictionary<SensorKey, SensorState> _states = new();
+    private readonly HashSet<string> _allowedTypes = new() { "temp", "light", "water" };
 
-    public float LatestValue { get; private set; }
-    public string LatestType { get; private set; } = string.Empty;
-    public long LatestTimestamp { get; private set; }
-    public bool HasValue { get; private set; }
-
-    public void Update(float value, long timestamp, string type)
+    public IoTStateStore(DbContext dbContext)
     {
-        lock (_lock)
-        {
-            LatestValue = value;
-            LatestTimestamp = timestamp;
-            LatestType = type;
-            HasValue = true;
-        }
+        this.dbContext = dbContext;
     }
 
-    public (bool HasValue, float Value, long Timestamp, string Type) GetLatest()
+    private static DateTime UnixTimeStampToDateTime( double unixTimeStamp )
     {
-        lock (_lock)
+        // Unix timestamp is seconds past epoch
+        DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+        dateTime = dateTime.AddSeconds( unixTimeStamp ).ToLocalTime();
+        return dateTime;
+    }
+
+    public void Update(int arduinoId, float value, long timestamp, string type)
+    {
+        var normalizedType = type.Trim().ToLowerInvariant();
+
+        // does not rely on a key list, providing a vulnerability, which allows to create any new key by sending a new message type
+        // DONE: make key lists limiting what message types we handle
+        if (!_allowedTypes.Contains(normalizedType))
         {
-            return (HasValue, LatestValue, LatestTimestamp, LatestType);
+            Console.WriteLine($"Invalid sensor type: {normalizedType}");
+            return;
         }
+        var key = new SensorKey 
+        {
+            ArduinoId = arduinoId,
+            Type = normalizedType
+        };
+
+        // this code currently makes a new sensor state with each message
+        // if we go with recording as a boolean for a sensor state to signify that messages get recorded we should be updating existing states instead
+        _states[key] = new SensorState
+        {
+            ArduinoId = arduinoId,
+            Value = value,
+            Timestamp = timestamp,
+            Type = normalizedType
+        };
+
+        // we have no handling of rooms so for now we create a dummy room
+        if (_states[key].Recording)
+        {
+            dbContext.Add(new Sensor
+            {
+                Value = value,
+                Type = normalizedType,
+                TimeStamp = UnixTimeStampToDateTime(timestamp),
+                Room = new Room
+                {
+                    PlayerId = 1,
+                    Perimeter = 20
+                }
+            });
+        }
+
+        // currenty saves into db when new message received, should it save when recording stopped?
+        dbContext.SaveChanges();
+    }
+
+    public SensorState? GetLatest(int arduinoId, string type) // a little cleaner this way, bc the get latest return the sensorstate directly
+    {
+        var normalizedType = type.Trim().ToLowerInvariant();
+        var key = new SensorKey
+        {
+            ArduinoId = arduinoId,
+            Type = normalizedType
+        };
+
+        if (_states.TryGetValue(key, out var state))
+        {
+            return state;
+        }
+
+        return null;
+        
+    }
+
+    public IEnumerable<SensorState> Record(int arduinoId)
+    {
+        var sensors = _states
+            .Where(kvp => kvp.Key.ArduinoId == arduinoId)
+            .Select(kvp => kvp.Value);
+        
+        foreach(var s in sensors)
+        {
+            s.Recording = true;
+        }
+
+        return sensors;
+    }
+
+    public IEnumerable<SensorState> StopRecord(int arduinoId)
+    {
+        var sensors = _states
+            .Where(kvp => kvp.Key.ArduinoId == arduinoId)
+            .Select(kvp => kvp.Value);
+        
+        foreach(var s in sensors)
+        {
+            s.Recording = true;
+        }
+
+        dbContext.SaveChangesAsync();
+
+        return sensors;
     }
 }
+
