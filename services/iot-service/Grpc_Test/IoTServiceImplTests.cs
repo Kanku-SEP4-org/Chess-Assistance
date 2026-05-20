@@ -78,7 +78,7 @@ public class IoTServiceImplTests
         {
             Value = 22.5f,
             Timestamp = 12345,
-            Type = "temp"
+            Type = sensorType.Temp,
         };
 
         _mockStore.Setup(s => s.Record(arduinoId)).Returns([mockState]);
