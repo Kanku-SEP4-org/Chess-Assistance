@@ -9,8 +9,19 @@ option csharp_namespace = "LichessApiService.Grpc.Protos";
 // Implemented by LichessApiService.grpc (gRPC SERVER)
 // Called by api-gateway
 service LichessService {
+  rpc RegisterPlayer(RegisterPlayerRequest) returns (RegisterPlayerResponse);
   rpc StartSession(StartSessionRequest) returns (StartSessionResponse);
   rpc EndSession(EndSessionRequest) returns (EndSessionResponse);
+}
+
+message RegisterPlayerRequest {
+  string lichess_id = 1;
+  string username = 2;
+}
+
+message RegisterPlayerResponse {
+  int32 player_id = 1;
+  bool is_new = 2;
 }
 
 message StartSessionRequest {
@@ -20,6 +31,7 @@ message StartSessionRequest {
   google.protobuf.Timestamp sleep_time = 4;
   google.protobuf.Timestamp awaken_time = 5;
   google.protobuf.Timestamp confirmed_at = 6;
+  int32 water_intake_initial_ml = 7;
 }
 
 message StartSessionResponse {

@@ -26,6 +26,7 @@ builder.Services.AddHttpClient("Lichess", client =>
 
 builder.Services.AddScoped<LichessGameFetcher>();
 builder.Services.AddSingleton<LichessStreamService>();
+builder.Services.AddHostedService<OrphanedSessionCleanupService>();
 
 var app = builder.Build();
 

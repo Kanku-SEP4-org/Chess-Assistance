@@ -9,8 +9,7 @@ public class HealthRecord
     public DateTime ConfirmedAt { get; set; }
     public TimeSpan? AwakeDuration { get; set; }
     public int? WaterIntakeMl { get; set; }
-    public DateTime RecordAt { get; set; }
-    public int SessionId { get; set; }
+    public int PlayerId { get; set; }
 
-    public Session Session { get; set; } = null!;
+    public ICollection<Session> Sessions { get; set; } = [];
 }

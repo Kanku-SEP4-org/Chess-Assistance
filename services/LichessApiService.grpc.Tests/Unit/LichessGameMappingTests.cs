@@ -42,7 +42,11 @@ public class LichessGameMappingTests
                     },
                     Rating = 1500,
                     RatingDiff = playerColor == "white" && winner == "white" ? 8
-                        : playerColor == "white" && winner == "black" ? -8 : 0
+                        : playerColor == "white" && winner == "black" ? -8 : 0,
+                    Analysis = new LichessAnalysisDto
+                    {
+                        Inaccuracy = 2, Mistake = 1, Blunder = 0, Acpl = 15, Accuracy = 94
+                    }
                 },
                 Black = new LichessPlayerSideDto
                 {
@@ -53,7 +57,11 @@ public class LichessGameMappingTests
                     },
                     Rating = 1480,
                     RatingDiff = playerColor == "black" && winner == "black" ? 8
-                        : playerColor == "black" && winner == "white" ? -8 : 0
+                        : playerColor == "black" && winner == "white" ? -8 : 0,
+                    Analysis = new LichessAnalysisDto
+                    {
+                        Inaccuracy = 3, Mistake = 2, Blunder = 1, Acpl = 30, Accuracy = 85
+                    }
                 }
             },
             Winner = winner,
@@ -340,5 +348,45 @@ public class LichessGameMappingTests
 
         Assert.False(game.IsPlayerPieceBlack);
         Assert.Equal(1500, game.UserRating);
+    }
+
+    [Fact]
+    public void MapToGameEntity_Analysis_WhitePlayerMapped()
+    {
+        var dto = CreateSampleGame(playerColor: "white");
+        var game = _fetcher.MapToGameEntity(dto, "testplayer", matchId: 1);
+
+        Assert.Equal(2, game.InaccuracyCnt);
+        Assert.Equal(1, game.MistakeCnt);
+        Assert.Equal(0, game.BlunderCnt);
+        Assert.Equal(15, game.Acpl);
+        Assert.Equal(94, game.Accuracy);
+    }
+
+    [Fact]
+    public void MapToGameEntity_Analysis_BlackPlayerMapped()
+    {
+        var dto = CreateSampleGame(playerColor: "black", playerUsername: "testplayer");
+        var game = _fetcher.MapToGameEntity(dto, "testplayer", matchId: 1);
+
+        Assert.Equal(3, game.InaccuracyCnt);
+        Assert.Equal(2, game.MistakeCnt);
+        Assert.Equal(1, game.BlunderCnt);
+        Assert.Equal(30, game.Acpl);
+        Assert.Equal(85, game.Accuracy);
+    }
+
+    [Fact]
+    public void MapToGameEntity_NoAnalysis_NullFields()
+    {
+        var dto = CreateSampleGame(playerColor: "white");
+        dto.Players.White.Analysis = null;
+        var game = _fetcher.MapToGameEntity(dto, "testplayer", matchId: 1);
+
+        Assert.Null(game.InaccuracyCnt);
+        Assert.Null(game.MistakeCnt);
+        Assert.Null(game.BlunderCnt);
+        Assert.Null(game.Acpl);
+        Assert.Null(game.Accuracy);
     }
 }
