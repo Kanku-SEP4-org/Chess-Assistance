@@ -34,15 +34,15 @@ static int mock_pump_success;
 //     return 0;
 // }
 
-int read_pump_status(int *success)
-{
-    if (mock_pump_result)
-    {
-        *success = mock_pump_success;
-        return 1;
-    }
-    return 0;
-}
+// int read_pump_status(int *success)
+// {
+//     if (mock_pump_result)
+//     {
+//         *success = mock_pump_success;
+//         return 1;
+//     }
+//     return 0;
+// }
 // It runs before each test. It resets each value so ever test starts from a clean known state
 void setUp(void)
 {
@@ -57,8 +57,7 @@ void setUp(void)
 
 // It runs AFTER each test and it does not require any cleanup. The function is required by unity.
 void tearDown(void)
-{
-}
+{}
 
 //Tests if a valid temp reading creates the correct JSON message containing the expected ARDUINO values(type, value, etc)
 void test_create_temperature_message_success(void)
