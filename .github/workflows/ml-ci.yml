@@ -32,6 +32,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r trainers/trainer-winrate/requirements.txt
           pip install -r trainers/trainer-angriness-predictor/requirements.txt
+          pip install -r trainers/trainer-ap/requirements.txt
           pip install -r api/requirements.txt
 
       - name: Run winrate training pipeline
@@ -65,6 +66,24 @@ jobs:
           test -f models/angriness_bins.json   || { echo "FAIL: models/angriness_bins.json not found";   exit 1; }
           test -f models/metrics.json          || { echo "FAIL: models/metrics.json not found";          exit 1; }
           test -f models/eval_metrics.json     || { echo "FAIL: models/eval_metrics.json not found";     exit 1; }
+          echo "All artifacts present."
+          echo "--- metrics.json ---"
+          cat models/metrics.json
+          echo ""
+          echo "--- eval_metrics.json ---"
+          cat models/eval_metrics.json
+
+      - name: Run accuracy predictor training pipeline
+        working-directory: machine_learning/trainers/trainer-ap
+        run: python run_pipeline.py
+
+      - name: Verify accuracy predictor pipeline artifacts
+        working-directory: machine_learning/trainers/trainer-ap
+        run: |
+          echo "Checking pipeline artifacts..."
+          test -f models/model_pipeline.pkl || { echo "FAIL: models/model_pipeline.pkl not found"; exit 1; }
+          test -f models/metrics.json       || { echo "FAIL: models/metrics.json not found";       exit 1; }
+          test -f models/eval_metrics.json  || { echo "FAIL: models/eval_metrics.json not found";  exit 1; }
           echo "All artifacts present."
           echo "--- metrics.json ---"
           cat models/metrics.json

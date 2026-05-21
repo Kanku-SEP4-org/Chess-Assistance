@@ -6,4 +6,5 @@ numpy
 mlflow
 joblib
 uvicorn
+requests
 psycopg2-binary
