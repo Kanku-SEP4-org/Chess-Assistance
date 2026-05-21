@@ -29,17 +29,11 @@ int main()
         if (requestReceived == 1)
         {
             printf("Fill-cup request received.\n");
-
-            int success = 0;
             
-            if (fill_cup(&success))
-            {
-                printf("Arduino was prompted to fill the cup.\n");
-            }
-            else
-            {
-                printf("Failed to prompt Arduino to fill the cup.\n");
-            }
+            create_pump_response_message(pumpMessage);
+            printf("Pump message: %s\n", pumpMessage);
+            send_response(connection, pumpMessage);
+
         }
 
         create_light_message(lightMessage);
@@ -48,9 +42,6 @@ int main()
         create_temperature_message(tempMessage);
         send_response(connection, tempMessage);
 
-        create_pump_response_message(pumpMessage);
-        printf("Pump message: %s\n", pumpMessage);
-        send_response(connection, pumpMessage);
 
         sleep(5);
     }
