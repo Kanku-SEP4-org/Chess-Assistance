@@ -3,8 +3,6 @@
 
 int read_temperature(float *temperature);
 int read_light(short *light);
-int fill_cup();
-int read_pump_status(int *success);
-
+int fill_cup(int *success);
 
 #endif

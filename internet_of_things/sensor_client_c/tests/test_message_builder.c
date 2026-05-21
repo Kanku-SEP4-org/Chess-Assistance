@@ -3,6 +3,10 @@
 
 #include "unity.h"
 
+int fill_cup(int *success)
+{
+    *success = 1;
+    return 1;
 
 //Run before every test
 void setUp(void){}
@@ -22,9 +26,22 @@ void test_create_temperature_response_message(void)
     TEST_ASSERT_NOT_NULL(strstr(responseMessage, "\"arduinoId\":1"));
 }
 
+void test_create_pump_response_message(void)
+{
+    char responseMessage[512];
+    create_pump_response_message(responseMessage);
+
+    TEST_ASSERT_NOT_NULL(responseMessage);
+    TEST_ASSERT_TRUE(strlen(responseMessage) > 0);
+    TEST_ASSERT_NOT_NULL(strstr(responseMessage, "\"type\":\"pump\""));
+    TEST_ASSERT_NOT_NULL(strstr(responseMessage, "\"status\":\"done\""));
+    TEST_ASSERT_NOT_NULL(strstr(responseMessage, "\"arduinoId\":1"));
+
 int main(void)
 {
     UNITY_BEGIN();
     RUN_TEST(test_create_temperature_response_message);
+    RUN_TEST(test_create_pump_response_message);
+
     return UNITY_END();
 }

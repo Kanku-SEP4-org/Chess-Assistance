@@ -30,7 +30,9 @@ int main()
         {
             printf("Fill-cup request received.\n");
 
-            if (fill_cup())
+            int success = 0;
+            
+            if (fill_cup(&success))
             {
                 printf("Arduino was prompted to fill the cup.\n");
             }
