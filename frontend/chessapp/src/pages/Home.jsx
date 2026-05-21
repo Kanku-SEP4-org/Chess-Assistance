@@ -11,6 +11,13 @@ function Home() {
   const [sleepTime, setSleepTime] = useState("");
   const [wakeTime, setWakeTime] = useState("");
   const [sleepResult, setSleepResult] = useState("");
+
+  //water-intake
+
+  const [showWaterForm, setShowWaterForm] = useState(false);
+  const [waterIntake, setWaterIntake] = useState("");
+  const [waterResult, setWaterResult] = useState("");
+
   const [heroIndex, setHeroIndex] = useState(0);
 
   useEffect(() => {
@@ -39,6 +46,12 @@ function Home() {
 
     setSleepResult(`${hours}h ${minutes}m`);
   };
+
+const calculateWaterIntake = () => {
+  if (!waterIntake) return;
+
+  setWaterResult(`You drank ${waterIntake} ml of water today.`);
+};
 
   return (
     <main className="app" style={{ backgroundImage: `url(${heroImg})` }}>
@@ -78,8 +91,10 @@ function Home() {
         </div>
       </section>
 
-      {showSleepForm && (
-        <section className="sleep-card">
+      {monitoringStarted && (
+        <section id="track" className="dashboard">
+
+         <section className="sleep-card">
           <h2>Sleep Tracker</h2>
 
           <div className="sleep-inputs">
@@ -110,19 +125,36 @@ function Home() {
             </p>
           )}
         </section>
-      )}
+      
+ <section className="sleep-card">
+        <h2>Water Intake Tracker</h2>
 
-      {monitoringStarted && (
-        <section id="track" className="dashboard">
-          <button
-            className="sleep-toggle-btn"
-            onClick={() => setShowSleepForm(!showSleepForm)}
-          >
-            How much time did I sleep?
-          </button>
+      <div className="sleep-inputs">
+       <div>
+        <p>Water Intake (ml)</p>
 
-          <h2>Live Metrics</h2>
+        <input
+          type="number"
+          value={waterIntake}
+          onChange={(e) => setWaterIntake(e.target.value)}
+          placeholder="Enter water amount"
+        />
+       </div>
 
+      <button onClick={calculateWaterIntake}>
+        Save Water Intake
+      </button>
+     </div>
+
+    {waterResult && (
+      <p>
+        <strong>{waterResult}</strong>
+      </p>
+     )}
+    </section>
+   
+
+       <h2>Live Metrics</h2>
           <div className="cards-grid">
             <div className="metric-card">
               <span>Temperature</span>

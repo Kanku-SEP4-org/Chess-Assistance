@@ -326,6 +326,53 @@ body {
   cursor: pointer;
 }
 
+.preference-card {
+  max-width: 900px;
+  margin: auto;
+}
+
+.preferences-form {
+  margin-top: 2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  margin-bottom: 0.5rem;
+  color: white;
+  font-weight: 600;
+}
+
+.input-group input {
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.input-group input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+.success-text {
+  margin-top: 1rem;
+  color: #6dffb3;
+  font-weight: 600;
+}
+
 .sleep-toggle-btn {
   display: block;
   margin-top: 12px;
@@ -366,13 +413,6 @@ body {
   font-size: 36px;
 }
 
-.sleep-inputs {
-  display: flex;
-  gap: 20px;
-  align-items: end;
-  flex-wrap: wrap;
-}
-
 .sleep-inputs input {
   margin-top: 10px;
   padding: 12px 14px;
@@ -390,6 +430,38 @@ body {
   color: #111;
   font-weight: 800;
   cursor: pointer;
+}
+
+.sleep-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.sleep-inputs button {
+  height: 48px;
+  padding: 0 24px;
+  margin-top: 28px;
+  border: none;
+  border-radius: 30px;
+  font-weight: 600;
+}
+
+.sleep-inputs {
+  align-items: flex-end;
+}
+
+.form-control {
+  font-size: 14px;
+  padding: 10px 14px;
+}
+
+.form-control::placeholder {
+  font-size: 14px;
+}
+
+.form-label {
+  margin-bottom: 8px;
 }
 
 .hero-title-split {
