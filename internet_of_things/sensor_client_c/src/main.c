@@ -3,6 +3,7 @@
 
 #include "rabbitmq_client.h"
 #include "message_builder.h"
+#include "sensor_reader.h"
 
 #define MESSAGE_SIZE 512
 
@@ -15,7 +16,7 @@ int main()
 
     setup_rabbitmq_queues(connection);
 
-    printf("Producing temperature and water messages every 5 seconds...\n");
+    printf("Producing temperature and light messages and listening for fill-cup requests...\n");
 
     while (1)
     {
@@ -29,6 +30,22 @@ int main()
 
         create_water_message(waterMessage);
         send_response(connection, waterMessage);
+
+        int requestReceived = wait_for_request(connection);
+
+        if (requestReceived == 1)
+        {
+            printf("Fill-cup request received.\n");
+
+            if (fill_cup())
+            {
+                printf("Arduino was prompted to fill the cup.\n");
+            }
+            else
+            {
+                printf("Failed to prompt Arduino to fill the cup.\n");
+            }
+        }
 
         create_light_message(lightMessage);
         send_response(connection, lightMessage);

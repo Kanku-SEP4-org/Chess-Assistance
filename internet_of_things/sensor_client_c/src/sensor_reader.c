@@ -183,16 +183,16 @@ int read_light(short *light)
 
 int read_pump_status(int *success)
 {
-#if !defined(_WIN32) && !defined(UNIT_TESTING)
+ #if !defined(_WIN32) && !defined(UNIT_TESTING)
     int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
     if (serial == -1)
     {
         printf("open_port: Unable to open\n");
         return -1;
     }
-
+  
     setup_serial(serial);
-
+  
     char buffer[100] = {0};
 
     sleep(2);
@@ -221,10 +221,41 @@ int read_pump_status(int *success)
     return 0;
 #else
     *success = 1;
-    return 1;
+     return 1;
 #endif
 }
 
+int fill_cup()
+{
+#if !defined(_WIN32) && !defined(UNIT_TESTING)
+    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
+    if (serial == -1)
+    {
+        printf("open_port: Unable to open");
+        return -1;
+    }
+
+    setup_serial(serial);
+
+    sleep(2);
+    tcflush(serial, TCIOFLUSH);
+
+    // Command to Arduino: fill the cup / start pump
+    write(serial, "6\n", 2);
+
+    usleep(500000);
+
+    close(serial);
+
+    printf("Fill cup command sent to Arduino\n");
+
+    return 1;
+#else
+    // Windows / testing mock
+    printf("Mock: Fill cup command sent to Arduino\n");
+    return 1;
+#endif
+}
 // in administrator powershell
 
 // usbipd list - This should show arduino connected 'SHARED'

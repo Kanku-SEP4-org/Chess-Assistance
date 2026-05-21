@@ -1,4 +1,6 @@
-﻿namespace Grpc_Test;
+﻿using IotService;
+
+namespace Grpc_Test;
 
 using Xunit;
 using IoTGrpcServer;
@@ -12,7 +14,7 @@ public class UnitTest1
         var store = new IoTStateStore();
 
         // Act
-        var result = store.GetLatest(1, "temp");
+        var result = store.GetLatest(1, sensorType.Temp);
 
         // Assert
         Assert.Null(result);
@@ -25,7 +27,7 @@ public class UnitTest1
         var store = new IoTStateStore();
         float expectedValue = 25.5f;
         long expectedTimestamp = 123456789;
-        string expectedType = "temp";
+        sensorType expectedType = sensorType.Temp;
         int arduinoId = 1;
 
         // Act
