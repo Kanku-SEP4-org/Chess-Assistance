@@ -10,22 +10,10 @@
 void get_and_report_temperature(void);
 
 /**
- * @brief Reads temperature from DHT11 and prints it to UART in JSON.
- * Format: "{"temperature":24.5}"
- */
-void get_and_report_temp_json(void);
-
-/**
  * @brief Reads humidity from DHT11 and prints it to UART in a machine-friendly format.
  * Format: "HUM:24.5"
  */
 void get_and_report_humidity(void);
-
-/**
- * @brief Reads humidity from DHT11 and prints it to UART in JSON.
- * Format: "{"humidity":24.5}"
- */
-void get_and_report_hum_json(void);
 
 /**
  * @brief Reads light from light sensor KY-018 and prints it to UART in a machine-friendly format.
@@ -35,12 +23,11 @@ void get_and_report_hum_json(void);
 void get_and_report_light(ADC_Error_t light_sensor);
 
 /**
- * @brief Reads light from light sensor KY-018 and prints it to UART in JSON.
+ * @brief Reads moisture from soil sensor and prints it to UART in a machine-friendly format.
  * Contains values between 0 and 1023
- * Format: "{"light":431}"
+ * Format: "WAT:431"
  */
-
-void get_and_report_light_json(ADC_Error_t light_sensor);
+void get_and_report_water(ADC_Error_t water_sensor);
 /**
  * @brief Starts the pump briefly and reports that filling is done.
  * Current implementation is a simple placeholder using the pump driver.
