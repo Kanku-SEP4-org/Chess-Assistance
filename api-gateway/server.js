@@ -32,16 +32,20 @@ const iotObject = grpc.loadPackageDefinition(iotDef);
 // package 'iotService' contains service 'iotService'
 const IotServiceClient = iotObject.iotService.iotService;
 
-// ===================== CLIENTS (→ grpc-service at :50051) =====================
-const grpcHost = process.env.GRPC_HOST || "localhost";
+// ===================== CLIENTS =====================
+const iotGrpcHost = process.env.IOT_GRPC_HOST || "localhost";
+const iotGrpcPort = process.env.IOT_GRPC_PORT || "8080";
+
+const predictionGrpcHost = process.env.PREDICTION_GRPC_HOST || "localhost";
+const predictionGrpcPort = process.env.PREDICTION_GRPC_PORT || "5283";
 
 const mlClient = new malPackage.WinrateService(
-  `${grpcHost}:50051`,
+  `${predictionGrpcHost}:${predictionGrpcPort}`,
   grpc.credentials.createInsecure()
 );
 
 const iotClient = new IotServiceClient(
-  `${grpcHost}:50051`,
+  `${iotGrpcHost}:${iotGrpcPort}`,
   grpc.credentials.createInsecure()
 );
 
@@ -131,7 +135,7 @@ app.post("/auth/lichess/callback", async (req, res) => {
 
   const clientId = process.env.LICHESS_CLIENT_ID || "chess-assistance";
   const redirectUri =
-    process.env.LICHESS_REDIRECT_URI || "http://localhost:3000/callback";
+    process.env.LICHESS_REDIRECT_URI || "http://localhost:5173/callback";
 
   if (!code || !code_verifier) {
     return res.status(400).json({

@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
 import heroImg from "../assets/chess-bg.png";
-import knightLogo from "../assets/knight-logo.png";
 import "../App.css";
 
 const heroTexts = ["Track your environment.", "Improve your game."]
@@ -12,14 +11,12 @@ function Home() {
   const [sleepTime, setSleepTime] = useState("");
   const [wakeTime, setWakeTime] = useState("");
   const [sleepResult, setSleepResult] = useState("");
-
   const [heroIndex, setHeroIndex] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setHeroIndex((prev) => (prev === heroTexts.length - 1 ? 0 : prev + 1));
     }, 3000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -43,103 +40,19 @@ function Home() {
     setSleepResult(`${hours}h ${minutes}m`);
   };
 
-  // const handlePlayerSearch = async (e) => {
-  //   e.preventDefault()
-  //   if (!username.trim()) {
-  //     setPlayerError('Please enter a Chess.com username.')
-  //     return
-  //   }
-  //   setPlayerLoading(true)
-  //   setPlayerError('')
-  //   setPlayerStats(null)
-  //   try {
-  //     const response = await fetch(
-  //       `https://api.chess.com/pub/player/${username.trim().toLowerCase()}/stats`
-  //     )
-  //     if (!response.ok) throw new Error('Player not found')
-  //     const data = await response.json()
-  //     setPlayerStats(data)
-  //   } catch (error) {
-  //     setPlayerError('Could not find this Chess.com player.')
-  //   } finally {
-  //     setPlayerLoading(false)
-  //   }
-  // }
-
-  const [lichessUser, setLichessUser] = useState(null);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("lichess_user");
-
-    if (savedUser) {
-      setLichessUser(JSON.parse(savedUser));
-    }
-  }, []);
-
-  const handleLogout = () => {
-    localStorage.removeItem("lichess_user");
-    setLichessUser(null);
-  };
-
-  const [menuOpen, setMenuOpen] = useState(false);
   return (
     <main className="app" style={{ backgroundImage: `url(${heroImg})` }}>
-      <nav className="navbar">
-        <div className="logo">ChessTrack™</div>
-
-        <div className="nav-links">
-          <Link to="/">Home</Link>
-          <a href="#about">About</a>
-          <Link to="/chesstrack">ChessTrack</Link>
-
-          <div className="profile-menu-container">
-            <button
-              className="settings-btn"
-              onClick={() => setMenuOpen(!menuOpen)}
-            >
-              <img src={knightLogo} alt="Knight Menu" className="knight-icon" />
-            </button>
-
-            {menuOpen && (
-              <div className="profile-dropdown">
-                {lichessUser ? (
-                  <>
-                    <button>👤 {lichessUser.player_username}</button>
-                  </>
-                ) : (
-                  <Link to="/login">
-                    <button>👤 Login</button>
-                  </Link>
-                )}
-                <button>📈 View Sessions</button>
-                <button>♟️ Elo Boosting</button>
-                <button>⚙️ Settings</button>
-                <Link to="/iot-dashboard">
-                  <button>🌐 IoT Dashboard</button>
-                </Link>
-                {lichessUser && (
-                  <button onClick={handleLogout}>🚪 Logout</button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </nav>
+      <Navbar />
 
       <section id="home" className="hero-section">
         <div className="hero-content">
           <p className="eyebrow">Chess Performance Assistant</p>
           <h1 className="hero-title-split">
             <span className="hero-line-wrapper">
-              <span
-                className={heroIndex === 0 ? "hero-line active" : "hero-line"}
-              >
+              <span className={heroIndex === 0 ? "hero-line active" : "hero-line"}>
                 Track
               </span>
-
-              <span
-                className={heroIndex === 1 ? "hero-line active" : "hero-line"}
-              >
+              <span className={heroIndex === 1 ? "hero-line active" : "hero-line"}>
                 Improve
               </span>
             </span>
@@ -147,15 +60,10 @@ function Home() {
             <span className="hero-static-line">Your</span>
 
             <span className="hero-line-wrapper">
-              <span
-                className={heroIndex === 0 ? "hero-line active" : "hero-line"}
-              >
+              <span className={heroIndex === 0 ? "hero-line active" : "hero-line"}>
                 Environment.
               </span>
-
-              <span
-                className={heroIndex === 1 ? "hero-line active" : "hero-line"}
-              >
+              <span className={heroIndex === 1 ? "hero-line active" : "hero-line"}>
                 Game.
               </span>
             </span>
@@ -206,14 +114,13 @@ function Home() {
 
       {monitoringStarted && (
         <section id="track" className="dashboard">
-          {monitoringStarted && (
-            <button
-              className="sleep-toggle-btn"
-              onClick={() => setShowSleepForm(!showSleepForm)}
-            >
-              How much time did I sleep?
-            </button>
-          )}
+          <button
+            className="sleep-toggle-btn"
+            onClick={() => setShowSleepForm(!showSleepForm)}
+          >
+            How much time did I sleep?
+          </button>
+
           <h2>Live Metrics</h2>
 
           <div className="cards-grid">

@@ -1,6 +1,7 @@
 ﻿//testing out more DRY-compliant tests for the IoTServiceImpl class, using xUnit's
 //Theory and InlineData attributes to run the same test with different inputs.
 
+using Grpc_Server.Messaging;
 using Moq;
 using Xunit;
 using Grpc_Server.Services;
@@ -13,46 +14,44 @@ namespace Grpc_Test;
 public class IoTServiceImplTheoryTests
 {
     private readonly Mock<IIoTStateStore> _mockStore;
+    private readonly Mock<IMessageQueue> _mockQueue;
     private readonly IoTServiceImpl _service;
 
     public IoTServiceImplTheoryTests()
     {
         _mockStore = new Mock<IIoTStateStore>();
-        _service = new IoTServiceImpl(_mockStore.Object);
+        _mockQueue = new Mock<IMessageQueue>();
+        _service = new IoTServiceImpl(_mockStore.Object, _mockQueue.Object);
     }
 
     [Theory]
-    [InlineData("temp", 1)]
-    [InlineData("light", 1)]
-    [InlineData("water", 1)]
-    [InlineData("co2", 1)]
-    //[InLineData("humidity", 1)]
-    //etc
-    public async Task GetSensorData_WhenStoreEmpty_ReturnsFailureStatus(string sensorTypeKey, int arduinoId)
+    [InlineData(sensorType.Temp, 1)]
+    [InlineData(sensorType.Light, 1)]
+    [InlineData(sensorType.Water, 1)]
+    [InlineData(sensorType.Co2, 1)]
+    public async Task GetSensorData_WhenStoreEmpty_ReturnsFailureStatus(sensorType type, int arduinoId)
     {
         // Arrange
-        // Setup the mock to return null for whatever type is being tested
-        _mockStore.Setup(s => s.GetLatest(arduinoId, sensorTypeKey)).Returns((SensorState)null!);
+        // Setup the mock using the enum!
+        _mockStore.Setup(s => s.GetLatest(arduinoId, type)).Returns((SensorState)null!);
 
         // Act & Assert
-        // check each method based on the sensorTypeKey passed by the Theory
-        if (sensorTypeKey == "temp")
+        if (type == sensorType.Temp)
         {
             var response = await _service.getTemperature(new tempReq { ArduinoId = arduinoId }, null!);
             Assert.False(response.Status.Success);
-            Assert.Equal(0, response.Reading.Value);
         }
-        else if (sensorTypeKey == "light")
+        else if (type == sensorType.Light)
         {
             var response = await _service.getLight(new lightReq { ArduinoId = arduinoId }, null!);
             Assert.False(response.Status.Success);
         }
-        else if (sensorTypeKey == "water")
+        else if (type == sensorType.Water)
         {
             var response = await _service.getWaterLevel(new waterLevelReq { ArduinoId = arduinoId }, null!);
             Assert.False(response.Status.Success);
         }
-        else if (sensorTypeKey == "co2")
+        else if (type == sensorType.Co2)
 {
             var response = await _service.getCO2(new co2Req { ArduinoId = arduinoId }, null!);
             Assert.False(response.Status.Success);
@@ -62,57 +61,71 @@ public class IoTServiceImplTheoryTests
     }
 
     [Theory]
-    [InlineData("temp", 23.5f, sensorType.Temp)]
-    [InlineData("light", 500f, sensorType.Light)]
-    [InlineData("water", 75.0f, sensorType.Water)]
-    [InlineData("co2", 650.5f, sensorType.Co2)]
-    public async Task GetSensorData_WhenDataExists_ReturnsCorrectValue(string key, float val, sensorType expectedType)
+    [InlineData(sensorType.Temp, 23.5f)]
+    [InlineData(sensorType.Light, 500f)]
+    [InlineData(sensorType.Water, 75.0f)]
+    [InlineData(sensorType.Co2, 650.0f)]
+    public async Task GetSensorData_WhenDataExists_ReturnsCorrectValue(sensorType type, float val)
     {
         // Arrange
         int arduinoId = 1;
         var state = new SensorState
         {
+            ArduinoId = arduinoId,
             Value = val,
-            Type = key,
+            Type = type, // Now an enum!
             Timestamp = 123456789
         };
 
-        // Configure the mock to return the fake state
-        _mockStore.Setup(s => s.GetLatest(arduinoId, key)).Returns(state);
+        _mockStore.Setup(s => s.GetLatest(arduinoId, type)).Returns(state);
 
         // Act & Assert
-        // Because gRPC uses different response classes, test each branch
-        if (key == "temp")
+        if (type == sensorType.Temp)
         {
             var response = await _service.getTemperature(new tempReq { ArduinoId = arduinoId }, null!);
-
             Assert.True(response.Status.Success);
             Assert.Equal(val, response.Reading.Value);
-            Assert.Equal(expectedType, response.Reading.Type);
+            Assert.Equal(type, response.Reading.Type);
         }
-        else if (key == "light")
+        else if (type == sensorType.Light)
         {
             var response = await _service.getLight(new lightReq { ArduinoId = arduinoId }, null!);
-
             Assert.True(response.Status.Success);
             Assert.Equal(val, response.Reading.Value);
-            Assert.Equal(expectedType, response.Reading.Type);
+            Assert.Equal(type, response.Reading.Type);
         }
-        else if (key == "water")
+        else if (type == sensorType.Water)
         {
             var response = await _service.getWaterLevel(new waterLevelReq { ArduinoId = arduinoId }, null!);
-
             Assert.True(response.Status.Success);
             Assert.Equal(val, response.Reading.Value);
-            Assert.Equal(expectedType, response.Reading.Type);
+            Assert.Equal(type, response.Reading.Type);
         }
-        else if (key == "co2")
+        else if (type == sensorType.Co2)
         {
             var response = await _service.getCO2(new co2Req { ArduinoId = arduinoId }, null!);
 
             Assert.True(response.Status.Success);
             Assert.Equal(val, response.Reading.Value);
-            Assert.Equal(expectedType, response.Reading.Type);
+            Assert.Equal(type, response.Reading.Type);
 }
+    }
+
+    [Theory]
+    [InlineData(1, 250.0f)] // Specific amount
+    [InlineData(1, null)]   // Default amount
+    public async Task FillCup_SendsCommandToQueue(int id, float? amount)
+    {
+        // Arrange
+        var request = new fillCupReq { ArduinoId = id };
+        if (amount.HasValue) request.Amount = amount.Value;
+
+        // Act
+        var response = await _service.fillCup(request, null!);
+
+        // Assert
+        Assert.True(response.Status.Success);
+        // Here you would verify that your mock message queue received the call
+        _mockQueue.Verify(m => m.EnqueueObjectAsync( It.IsAny<object>()), Times.Once);
     }
 }

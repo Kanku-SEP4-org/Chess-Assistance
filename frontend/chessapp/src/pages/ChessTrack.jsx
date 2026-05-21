@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import '../App.css'
+import Navbar from '../components/Navbar'
 
 function ChessTrack() {
   const [username, setUsername] = useState('')
@@ -112,6 +113,8 @@ function ChessTrack() {
   const bullet = getModeStats('chess_bullet')
 
   return (
+    <>
+    <Navbar />
     <main className="track-page">
       <section className="track-hero">
         <p className="eyebrow">Chess.com Player Lookup</p>
@@ -303,6 +306,7 @@ function ChessTrack() {
 )}
     </section>
     </main>
+    </>
   )
 }
 

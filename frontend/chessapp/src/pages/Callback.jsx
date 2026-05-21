@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import './Login.css'
 
 const API_BASE = 'http://localhost:3001'
@@ -7,6 +7,7 @@ const API_BASE = 'http://localhost:3001'
 function Callback() {
   const [status, setStatus] = useState('Completing Lichess login...')
   const [username, setUsername] = useState(null)
+  const navigate = useNavigate()
 
   useEffect(() => {
     const completeLogin = async () => {
@@ -25,45 +26,36 @@ function Callback() {
         return
       }
 
-      const codeVerifier = sessionStorage.getItem(
-        'lichess_code_verifier'
-      )
+      const codeVerifier = sessionStorage.getItem('lichess_code_verifier')
 
       if (!codeVerifier) {
         setStatus('Missing PKCE code verifier.')
         return
       }
 
+      // Clear verifier immediately so it can't be reused
+      sessionStorage.removeItem('lichess_code_verifier')
+
       try {
-        const response = await fetch(
-          `${API_BASE}/auth/lichess/callback`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              code,
-              code_verifier: codeVerifier,
-            }),
-          }
-        )
+        const response = await fetch(`${API_BASE}/auth/lichess/callback`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, code_verifier: codeVerifier }),
+        })
 
         const data = await response.json()
 
         if (!response.ok) {
-          throw new Error(
-            data.error || 'Lichess login failed'
-          )
+          throw new Error(data.error || 'Lichess login failed')
         }
 
-        localStorage.setItem(
-          'lichess_user',
-          JSON.stringify(data)
-        )
-
+        localStorage.setItem('lichess_user', JSON.stringify(data))
         setUsername(data.player_username)
         setStatus('Successfully logged into Lichess.')
+
+        // Redirect home after short delay so user sees the success message
+        setTimeout(() => navigate('/'), 1500)
+
       } catch (err) {
         console.error(err)
         setStatus(err.message)
@@ -88,9 +80,9 @@ function Callback() {
           </p>
         )}
         <Link to="/">
-         <button className="login-button">
-           Go back home
-         </button>
+          <button className="login-button">
+            Go back home
+          </button>
         </Link>
       </div>
     </main>

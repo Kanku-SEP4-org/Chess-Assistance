@@ -1,27 +1,26 @@
 using System.Collections.Concurrent;
 using IoTGrpcServer.Contracts;
+using IotService;
 
 namespace IoTGrpcServer;
 
 public class IoTStateStore : IIoTStateStore
 {
     private readonly ConcurrentDictionary<SensorKey, SensorState> _states = new();
-    private readonly HashSet<string> _allowedTypes = new() { "temp", "light", "water", "co2" };
-    public void Update(int arduinoId, float value, long timestamp, string type)
+    //private readonly HashSet<string> _allowedTypes = new() { "temp", "light", "water" };
+    public void Update(int arduinoId, float value, long timestamp,
+        sensorType type)
     {
-        var normalizedType = type.Trim().ToLowerInvariant();
 
-        // does not rely on a key list, providing a vulnerability, which allows to create any new key by sending a new message type
-        // DONE: make key lists limiting what message types we handle
-        if (!_allowedTypes.Contains(normalizedType))
+        if (type == sensorType.Error)
         {
-            Console.WriteLine($"Invalid sensor type: {normalizedType}");
+            Console.WriteLine("Invalid sensor type.");
             return;
         }
         var key = new SensorKey 
         {
             ArduinoId = arduinoId,
-            Type = normalizedType
+            Type = type
         };
 
         _states[key] = new SensorState
@@ -29,25 +28,19 @@ public class IoTStateStore : IIoTStateStore
             ArduinoId = arduinoId,
             Value = value,
             Timestamp = timestamp,
-            Type = normalizedType
+            Type = type
         };
     }
 
-    public SensorState? GetLatest(int arduinoId, string type) // a little cleaner this way, bc the get latest return the sensorstate directly
+    public SensorState? GetLatest(int arduinoId, sensorType type) // a little cleaner this way, bc the get latest return the sensorstate directly
     {
-        var normalizedType = type.Trim().ToLowerInvariant();
         var key = new SensorKey
         {
             ArduinoId = arduinoId,
-            Type = normalizedType
+            Type = type
         };
 
-        if (_states.TryGetValue(key, out var state))
-        {
-            return state;
-        }
-
-        return null;
+        return _states.TryGetValue(key, out var state) ? state : null;
         
     }
 }
