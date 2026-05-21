@@ -6,3 +6,4 @@ numpy
 mlflow
 joblib
 uvicorn
+requests
