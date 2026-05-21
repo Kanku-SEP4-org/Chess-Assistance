@@ -1,19 +1,19 @@
 # Step 1: Build React app
-FROM node:18 AS build
+FROM node:20 AS build
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+COPY package-lock.json ./
+RUN npm ci
 
 COPY . .
 RUN npm run build
 
-# Step 2: Serve with nginx
-FROM nginx:alpine
+# Step 2: Serve with Caddy
+FROM caddy:alpine
 
-COPY --from=build /app/build /usr/share/nginx/html
+COPY --from=build /app/dist /srv
+COPY Caddyfile /etc/caddy/Caddyfile
 
 EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]

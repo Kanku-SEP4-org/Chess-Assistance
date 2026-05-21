@@ -11,6 +11,9 @@
 *.sln.docstates
 *.env
 
+# VS Code C# Dev Kit language service cache
+*.lscache
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 

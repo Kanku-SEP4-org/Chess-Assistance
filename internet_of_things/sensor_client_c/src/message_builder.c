@@ -42,6 +42,26 @@ void create_temperature_message(char *message)
     }
 }
 
+void create_water_message(char *responseMessage)
+{
+    int water = 0;
+    long timestamp = get_timestamp();
+
+    if (read_water(&water))
+    {
+        sprintf(
+            responseMessage,
+            "{"
+                "\"arduinoId\":1,"
+                "\"value\":%d,"
+                "\"type\":\"water\","
+                "\"timestamp\":%ld"
+            "}",
+            water,
+            timestamp
+        );
+    }
+}
 void create_light_message(char *message)
 {
     short light = 0;
@@ -64,12 +84,47 @@ void create_light_message(char *message)
     else
     {
         sprintf(
+          
             message,
             "{"
                 "\"arduinoId\":1,"
                 "\"type\":\"light\","
                 "\"timestamp\":%ld,"
                 "\"value\": null"
+            "}",
+            timestamp
+        );
+    }
+}
+
+void create_pump_response_message(char *message)
+{
+    int success = 0;
+    long timestamp = get_timestamp();
+
+    if (read_pump_status(&success))
+    {
+        sprintf(
+            message,
+            "{"
+                "\"arduinoId\":1,"
+                "\"type\":\"pump\","
+                "\"status\":\"%s\","
+                "\"timestamp\":%ld"
+            "}",
+            success ? "done" : "fail",
+            timestamp
+        );
+    }
+    else
+    {
+        sprintf(
+            message,
+            "{"
+                "\"arduinoId\":1,"
+                "\"type\":\"pump\","
+                "\"status\":\"error\","
+                "\"timestamp\":%ld"
             "}",
             timestamp
         );

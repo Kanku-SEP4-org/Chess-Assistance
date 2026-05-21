@@ -22,6 +22,14 @@ int main()
     {
         char lightMessage[MESSAGE_SIZE];
         char tempMessage[MESSAGE_SIZE];
+        char waterMessage[MESSAGE_SIZE];
+        char pumpMessage[MESSAGE_SIZE];
+        send_response(connection, tempMessage);
+        
+
+
+        create_water_message(waterMessage);
+        send_response(connection, waterMessage);
 
         int requestReceived = wait_for_request(connection);
 
@@ -44,6 +52,9 @@ int main()
 
         create_temperature_message(tempMessage);
         send_response(connection, tempMessage);
+
+        create_pump_response_message(pumpMessage);
+        send_response(connection, pumpMessage);
 
         sleep(5);
     }
