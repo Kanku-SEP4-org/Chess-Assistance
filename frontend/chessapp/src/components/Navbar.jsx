@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import knightLogo from '../assets/knight-logo.png'
+import { API_URL } from '../config'
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
@@ -14,7 +15,13 @@ function Navbar() {
     }
   }, [])
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_URL}/auth/lichess/logout`, {
+        method: 'POST',
+        credentials: 'include',
+      })
+    } catch (_) {}
     localStorage.removeItem('lichess_user')
     setLichessUser(null)
   }

@@ -1,8 +1,6 @@
 import React from 'react'
 import './Login.css'
-
-const CLIENT_ID = 'chess-assistance'
-const REDIRECT_URI = 'http://localhost:5173/callback'
+import { LICHESS_CLIENT_ID, LICHESS_REDIRECT_URI } from '../config'
 
 function generateCodeVerifier() {
   const array = new Uint8Array(64)
@@ -34,9 +32,9 @@ function Login() {
 
     const params = new URLSearchParams({
       response_type: 'code',
-      client_id: CLIENT_ID,
-      redirect_uri: REDIRECT_URI,
-      scope: '',
+      client_id: LICHESS_CLIENT_ID,
+      redirect_uri: LICHESS_REDIRECT_URI,
+      scope: 'board:play',
       code_challenge: codeChallenge,
       code_challenge_method: 'S256',
     })

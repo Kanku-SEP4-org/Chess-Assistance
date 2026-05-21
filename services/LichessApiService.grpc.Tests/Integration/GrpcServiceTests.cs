@@ -43,6 +43,19 @@ public class GrpcServiceTests : IDisposable
     private static ServerCallContext CreateTestContext() =>
         new FakeServerCallContext();
 
+    private async Task<Player> SeedPlayerAsync(int id = 1)
+    {
+        var player = new Player
+        {
+            Id = id,
+            LichessId = $"lichess_{id}",
+            Username = "testplayer"
+        };
+        _db.Players.Add(player);
+        await _db.SaveChangesAsync();
+        return player;
+    }
+
     private async Task<HealthRecord> SeedHealthRecordAsync(int playerId = 1)
     {
         var hr = new HealthRecord
@@ -142,6 +155,7 @@ public class GrpcServiceTests : IDisposable
     [Fact]
     public async Task StartSession_ValidRequest_CreatesSessionAndHealthRecord()
     {
+        await SeedPlayerAsync();
         var request = CreateValidRequest();
 
         var response = await _service.StartSession(request, CreateTestContext());
@@ -194,6 +208,7 @@ public class GrpcServiceTests : IDisposable
     [Fact]
     public async Task StartSession_MissingSleepTime_ReturnsFalse()
     {
+        await SeedPlayerAsync();
         var request = CreateValidRequest();
         request.SleepTime = null;
 
@@ -206,6 +221,7 @@ public class GrpcServiceTests : IDisposable
     [Fact]
     public async Task StartSession_MissingAwakenTime_ReturnsFalse()
     {
+        await SeedPlayerAsync();
         var request = CreateValidRequest();
         request.AwakenTime = null;
 
@@ -218,6 +234,7 @@ public class GrpcServiceTests : IDisposable
     [Fact]
     public async Task StartSession_MissingConfirmedAt_ReturnsFalse()
     {
+        await SeedPlayerAsync();
         var request = CreateValidRequest();
         request.ConfirmedAt = null;
 
@@ -230,6 +247,7 @@ public class GrpcServiceTests : IDisposable
     [Fact]
     public async Task StartSession_AwakenBeforeSleep_ReturnsFalse()
     {
+        await SeedPlayerAsync();
         var request = CreateValidRequest();
         request.SleepTime = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-2));
         request.AwakenTime = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-5));
@@ -243,6 +261,7 @@ public class GrpcServiceTests : IDisposable
     [Fact]
     public async Task StartSession_ConfirmedAtBeforeAwaken_ReturnsFalse()
     {
+        await SeedPlayerAsync();
         var request = CreateValidRequest();
         request.AwakenTime = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-1));
         request.ConfirmedAt = Timestamp.FromDateTime(DateTime.UtcNow.AddHours(-2));
@@ -256,6 +275,7 @@ public class GrpcServiceTests : IDisposable
     [Fact]
     public async Task StartSession_DuplicateActiveSession_ReturnsFalse()
     {
+        await SeedPlayerAsync();
         var hr = await SeedHealthRecordAsync();
         _db.Sessions.Add(new Session
         {
@@ -288,6 +308,7 @@ public class GrpcServiceTests : IDisposable
     [Fact]
     public async Task StartSession_SecondSessionSameDay_ReusesHealthRecord()
     {
+        await SeedPlayerAsync();
         var request1 = CreateValidRequest();
         var response1 = await _service.StartSession(request1, CreateTestContext());
         Assert.True(response1.Success);
