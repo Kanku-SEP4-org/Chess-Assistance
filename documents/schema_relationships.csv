@@ -1,0 +1,18 @@
+source_table,source_column,target_table,target_column,cardinality,constraint_type,constraint_name
+room,player_id,player,id,N:1,FOREIGN KEY,
+health_record,player_id,player,id,N:1,FOREIGN KEY,
+health_record,"(player_id, confirmed_at::date)",,,"1 per player per day",UNIQUE INDEX,uq_one_health_record_per_day
+health_record,awaken_time,,,awaken_time > sleep_time,CHECK,chk_sleep_order
+health_record,confirmed_at,,,confirmed_at > awaken_time,CHECK,chk_awake_order
+session,player_id,player,id,N:1,FOREIGN KEY,
+session,health_record_id,health_record,id,N:1,FOREIGN KEY,
+session,"player_id WHERE ended_at IS NULL",,,"1 active per player",UNIQUE INDEX,uq_one_active_session
+player_preference,player_id,player,id,1:1,FOREIGN KEY + UNIQUE,
+match,session_id,session,id,N:1,FOREIGN KEY,
+match,player_id,player,id,N:1,FOREIGN KEY,
+sensor,room_id,room,id,N:1,FOREIGN KEY,
+sensor,"(room_id, time_stamp)",,,composite index,INDEX,idx_sensor_room_timestamp
+game,match_id,match,id,1:1,FOREIGN KEY + UNIQUE,
+player_opening_stat,player_id,player,id,N:1,FOREIGN KEY,
+player_opening_stat,"(player_id, eco_code)",,,"1 per player per opening",UNIQUE,uq_player_opening
+dataset,match_id,match,id,1:1,FOREIGN KEY + UNIQUE,

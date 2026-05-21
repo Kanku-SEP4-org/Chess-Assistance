@@ -10,6 +10,10 @@ on:
     paths:
       - 'frontend/chessapp/**'
 
+permissions:
+  contents: read
+  packages: write
+      
 jobs:
   ci:
     name: Test & Build

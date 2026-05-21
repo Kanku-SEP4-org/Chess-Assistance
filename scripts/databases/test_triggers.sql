@@ -14,8 +14,6 @@ DECLARE
     v_room_id    INTEGER;
     v_session_id INTEGER;
     v_match_id   INTEGER;
-    v_status     session_status;
-    v_game_count INTEGER;
     v_game_start TIMESTAMP := '2026-05-12 10:00:00';
     v_game_end   TIMESTAMP := '2026-05-12 10:30:00';
 BEGIN
@@ -30,13 +28,10 @@ BEGIN
     VALUES ('2026-05-12 09:00:00', v_player_id)
     RETURNING id INTO v_session_id;
 
-    RAISE NOTICE '=== TEST: insert match (status should be pending) ===';
+    RAISE NOTICE '=== TEST: insert match ===';
     INSERT INTO match (match_date, session_id, player_id)
     VALUES ('2026-05-12', v_session_id, v_player_id)
     RETURNING id INTO v_match_id;
-
-    SELECT status INTO v_status FROM match WHERE id = v_match_id;
-    RAISE NOTICE 'match status after insert: %', v_status;
 
     RAISE NOTICE '=== TEST: insert game (eco_code=B02, result=win) ===';
     INSERT INTO game (
@@ -55,58 +50,12 @@ BEGIN
         v_game_start, v_game_end, 30, v_match_id
     );
 
-    SELECT status INTO v_status FROM match WHERE id = v_match_id;
-    RAISE NOTICE 'match status after game: %', v_status;
-
-    RAISE NOTICE '=== TEST: insert sleep_record ===';
-    INSERT INTO sleep_record (sleep_time, awaken_time, match_id)
-    VALUES ('2026-05-12 00:00:00', '2026-05-12 07:30:00', v_match_id);
-
-    SELECT status INTO v_status FROM match WHERE id = v_match_id;
-    RAISE NOTICE 'match status after sleep: %', v_status;
-
-    RAISE NOTICE '=== TEST: insert sensor readings (within game window) ===';
-    INSERT INTO light_sensor (time_stamp, lumen, room_id, match_id)
-    VALUES ('2026-05-12 10:10:00', 15.50, v_room_id, v_match_id);
-
-    INSERT INTO temperature_sensor (time_stamp, celsius, room_id, match_id)
-    VALUES ('2026-05-12 10:10:00', 21, v_room_id, v_match_id);
-
-    INSERT INTO water_sensor (time_stamp, ml, room_id, match_id)
-    VALUES ('2026-05-12 10:15:00', 250, v_room_id, v_match_id);
-
-    SELECT status INTO v_status FROM match WHERE id = v_match_id;
-    RAISE NOTICE 'match status after 3 sensors (missing co2): %', v_status;
-
-    -- This final sensor insert should trigger completion
-    INSERT INTO co2_sensor (time_stamp, ppm, room_id, match_id)
-    VALUES ('2026-05-12 10:10:00', 800, v_room_id, v_match_id);
-
-    SELECT status INTO v_status FROM match WHERE id = v_match_id;
-    RAISE NOTICE 'match status after all sensors: %', v_status;
-
-    RAISE NOTICE '=== VERIFY: dataset row ===';
-    PERFORM 1 FROM dataset WHERE match_id = v_match_id;
-    IF FOUND THEN
-        RAISE NOTICE 'OK — dataset row exists for match %', v_match_id;
-    ELSE
-        RAISE NOTICE 'FAIL — no dataset row for match %', v_match_id;
-    END IF;
-
     RAISE NOTICE '=== VERIFY: player_opening_stat ===';
     PERFORM 1 FROM player_opening_stat WHERE player_id = v_player_id AND eco_code = 'B02';
     IF FOUND THEN
         RAISE NOTICE 'OK — opening stat exists for player % eco=B02', v_player_id;
     ELSE
         RAISE NOTICE 'FAIL — no opening stat for player % eco=B02', v_player_id;
-    END IF;
-
-    RAISE NOTICE '=== VERIFY: session.game_count ===';
-    SELECT game_count INTO v_game_count FROM session WHERE id = v_session_id;
-    IF v_game_count = 1 THEN
-        RAISE NOTICE 'OK — session % game_count = 1', v_session_id;
-    ELSE
-        RAISE NOTICE 'FAIL — session % game_count = % (expected 1)', v_session_id, v_game_count;
     END IF;
 
     RAISE NOTICE '=== ALL CHECKS DONE ===';
