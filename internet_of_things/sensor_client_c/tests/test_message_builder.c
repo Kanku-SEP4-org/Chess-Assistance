@@ -55,6 +55,12 @@ void setUp(void)
     mock_pump_success = 1;
 }
 
+//int fill_cup(int *success)
+//{
+//    *success = 1;
+//    return 1;
+//}
+
 // It runs AFTER each test and it does not require any cleanup. The function is required by unity.
 void tearDown(void)
 {}

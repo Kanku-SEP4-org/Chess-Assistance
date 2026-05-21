@@ -102,8 +102,7 @@ void create_pump_response_message(char *message)
     int success = 0;
     long timestamp = get_timestamp();
 
-    if (read_pump_status(&success))
-    {
+    if (fill_cup(&success))    {
         sprintf(
             message,
             "{"

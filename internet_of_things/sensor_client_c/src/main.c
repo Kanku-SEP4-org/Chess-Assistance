@@ -23,9 +23,7 @@ int main()
         char lightMessage[MESSAGE_SIZE];
         char tempMessage[MESSAGE_SIZE];
         char waterMessage[MESSAGE_SIZE];
-        char pumpMessage[MESSAGE_SIZE];
-        send_response(connection, tempMessage);
-        
+        char pumpMessage[MESSAGE_SIZE];        
 
 
         create_water_message(waterMessage);
@@ -36,15 +34,11 @@ int main()
         if (requestReceived == 1)
         {
             printf("Fill-cup request received.\n");
+            
+            create_pump_response_message(pumpMessage);
+            printf("Pump message: %s\n", pumpMessage);
+            send_response(connection, pumpMessage);
 
-            if (fill_cup())
-            {
-                printf("Arduino was prompted to fill the cup.\n");
-            }
-            else
-            {
-                printf("Failed to prompt Arduino to fill the cup.\n");
-            }
         }
 
         create_light_message(lightMessage);

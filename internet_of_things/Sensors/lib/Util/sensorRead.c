@@ -5,6 +5,8 @@
 #include "communication.h"
 #include <stdio.h>
 #include <stddef.h>
+#include "pump.h"
+#include <util/delay.h>
 
 void get_and_report_temperature(void) {
     uint8_t h_int, h_dec, t_int, t_dec;
@@ -66,8 +68,13 @@ void get_and_report_water(ADC_Error_t water_sensor){
     transmit_data(buffer);
 }
 
-void fill_and_report_done(void) {
-    // Dummy implementation until real pump driver exists
-    // Simulates a successful filling operation, for now
+void fill_and_report_done(void)
+{
+    //start pump, wait briefly, stop pump, then report done.
+    //safe for relay testing without real pump power connected.
+    pump_start();
+    _delay_ms(500);
+    pump_stop();
+
     transmit_data("PUMP:DONE\n");
 }

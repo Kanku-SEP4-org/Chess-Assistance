@@ -2,7 +2,7 @@
 #include <avr/interrupt.h>
 #include <stdio.h>
 #include "uart_stdio.h"
-
+#include "pump.h"
 #include "sensorRead.h" // access interface
 #include "light.h"
 #include "communication.h"
@@ -26,6 +26,7 @@ int main(void) {
 
     //initialize ADC sensors
     ADC_Error_t light = light_init();
+    pump_init();
     ADC_Error_t water = soil_init(ADC_PK0);
 
     while (1) {
