@@ -297,13 +297,12 @@ body {
 }
 
 .player-search {
-  display: flex;
-  gap: 12px;
-  margin-top: 24px;
+  justify-content: center;
 }
 
 .player-search input {
-  width: 280px;
+  width: 100%;
+  max-width: 500px;
   padding: 14px 18px;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.14);
@@ -316,14 +315,24 @@ body {
   color: rgba(255, 255, 255, 0.55);
 }
 
-.player-search button {
-  padding: 14px 24px;
-  border-radius: 999px;
-  border: 1px solid rgba(216, 170, 85, 0.6);
-  background: linear-gradient(135deg, #d8aa55, #8f6425);
-  color: #111;
-  font-weight: 800;
-  cursor: pointer;
+.search-btn {
+  background: #f5c518;
+  border: none;
+  padding: 8px 20px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 600;
+  width: fit-content;
+}
+
+.search-btn:hover {
+  opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+  .player-search button {
+    width: 100%;
+  }
 }
 
 .preference-card {

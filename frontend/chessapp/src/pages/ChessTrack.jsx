@@ -115,25 +115,30 @@ function ChessTrack() {
   return (
     <>
     <Navbar />
-    <main className="track-page">
-      <section className="track-hero">
+    <main className="track-page container py-4">
+      <section className="track-hero text-center py-5">
         <p className="eyebrow">Chess.com Player Lookup</p>
         <h1>Search player performance</h1>
         <p>
           Enter a Chess.com username to view public ratings, records and win ratios.
         </p>
 
-        <form className="player-search" onSubmit={handlePlayerSearch}>
+        <form className="player-search row justify-content-center align-items-center g-3 mt-4" onSubmit={handlePlayerSearch}>
+           <div className="col-12 col-md-7 col-lg-5">
           <input
+            className="form-control"
             type="text"
             placeholder="Example: hikaru"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
           />
+          </div>
 
-          <button type="submit">
+           
+            <button className="search-btn" type="submit">
             {playerLoading ? 'Searching...' : 'Search Player'}
           </button>
+      
         </form>
 
         {playerError && <p className="player-error">{playerError}</p>}
@@ -143,35 +148,44 @@ function ChessTrack() {
         <section className="player-results">
           <h2>{username} Stats</h2>
 
-          <div className="cards-grid">
-            <div className="metric-card">
+          <div className="row g-4 mt-3">
+           <div className="col-12 col-sm-6 col-lg-3">
+            <div className="metric-card h-100 text-center p-4">
               <span>Rapid Rating</span>
               <strong>{rapid.rating}</strong>
               <p>Win Rate: {rapid.winRate}%</p>
+              </div>
             </div>
 
-            <div className="metric-card">
+            <div className="col-12 col-sm-6 col-lg-3">
+            <div className="metric-card h-100 text-center p-4">
               <span>Blitz Rating</span>
               <strong>{blitz.rating}</strong>
               <p>Win Rate: {blitz.winRate}%</p>
+              </div>
             </div>
 
-            <div className="metric-card">
+            <div className="col-12 col-sm-6 col-lg-3">
+            <div className="metric-card h-100 text-center p-4">
               <span>Bullet Rating</span>
               <strong>{bullet.rating}</strong>
               <p>Win Rate: {bullet.winRate}%</p>
+              </div>
             </div>
 
-            <div className="metric-card">
+            <div className="col-12 col-sm-6 col-lg-3">
+             <div className="metric-card h-100 text-center p-4">
               <span>Total Rapid Games</span>
               <strong>{rapid.wins + rapid.losses + rapid.draws}</strong>
               <p>
                 {rapid.wins}W / {rapid.losses}L / {rapid.draws}D
               </p>
             </div>
+            </div>
+
           </div>
 
-          <div className="session-card">
+          <div className="session-card row align-items-center g-4 mt-4">
             <div>
               <p className="eyebrow">Player Summary</p>
               <h2>Performance Overview</h2>
@@ -180,20 +194,20 @@ function ChessTrack() {
               </p>
             </div>
 
-            <div className="session-stats">
-              <div>
+            <div className="session-stats row text-center">
+              <div className="col-6 col-md-3 mb-3">
                 <span>Rapid WR</span>
                 <strong>{rapid.winRate}%</strong>
               </div>
-              <div>
+              <div className="col-6 col-md-3 mb-3">
                 <span>Blitz WR</span>
                 <strong>{blitz.winRate}%</strong>
               </div>
-              <div>
+              <div className="col-6 col-md-3 mb-3">
                 <span>Bullet WR</span>
                 <strong>{bullet.winRate}%</strong>
               </div>
-              <div>
+              <div className="col-6 col-md-3 mb-3">
                 <span>Best Rating</span>
                 <strong>
                   {Math.max(
@@ -207,7 +221,7 @@ function ChessTrack() {
           </div>
         </section>
       )}
-        <section className="track-hero lichess-section">
+        <section className="track-hero lichess-section py-5 text-center">
            <p className="eyebrow">Lichess Player Lookup</p>
 
            <h1>Search Lichess performance</h1>
@@ -216,17 +230,22 @@ function ChessTrack() {
              Enter a Lichess username to view public ratings and player performance.
            </p>
 
-           <form className="player-search" onSubmit={handleLichessSearch}>
+           <form className="player-search row justify-content-center align-items-center g-3 mt-4" onSubmit={handleLichessSearch}>
+            <div className="col-12 col-md-7 col-lg-5">
             <input
+              className="form-control"
               type="text"
               placeholder="Example: drnykterstein"
               value={lichessUsername}
               onChange={(e) => setLichessUsername(e.target.value)}
             />
+            </div>
 
-            <button type="submit">
+            
+            <button className="search-btn" type="submit">
               {lichessLoading ? 'Searching...' : 'Search Player'}
            </button>
+           
           </form>
 
           {lichessError && (
@@ -236,33 +255,41 @@ function ChessTrack() {
   <section className="player-results">
     <h2>{lichessStats.username} Stats</h2>
 
-    <div className="cards-grid">
-      <div className="metric-card">
-  <span>Rapid Rating</span>
-  <strong>{lichessStats.perfs?.rapid?.rating || 'N/A'}</strong>
-  <p>Games: {lichessStats.perfs?.rapid?.games || 0}</p>
-</div>
+    <div className="row g-4 mt-3">
+      <div className="col-12 col-sm-6 col-lg-3">
+            <div className="metric-card h-100 text-center p-4">
+       <span>Rapid Rating</span>
+       <strong>{lichessStats.perfs?.rapid?.rating || 'N/A'}</strong>
+       <p>Games: {lichessStats.perfs?.rapid?.games || 0}</p>
+     </div>
+     </div>
 
-      <div className="metric-card">
+      <div className="col-12 col-sm-6 col-lg-3">
+            <div className="metric-card h-100 text-center p-4">
         <span>Blitz Rating</span>
         <strong>{lichessStats.perfs?.blitz?.rating || 'N/A'}</strong>
         <p>Games: {lichessStats.perfs?.blitz?.games || 0}</p>
       </div>
+      </div>
 
-      <div className="metric-card">
+      <div className="col-12 col-sm-6 col-lg-3">
+            <div className="metric-card h-100 text-center p-4">
         <span>Bullet Rating</span>
         <strong>{lichessStats.perfs?.bullet?.rating || 'N/A'}</strong>
         <p>Games: {lichessStats.perfs?.bullet?.games || 0}</p>
       </div>
+      </div>
 
-      <div className="metric-card">
+      <div className="col-12 col-sm-6 col-lg-3">
+            <div className="metric-card h-100 text-center p-4">
         <span>Classical Rating</span>
         <strong>{lichessStats.perfs?.classical?.rating || 'N/A'}</strong>
         <p>Games: {lichessStats.perfs?.classical?.games || 0}</p>
       </div>
+      </div>
     </div>
 
-    <div className="session-card">
+    <div className="session-card row align-items-center g-4 mt-4">
       <div>
         <p className="eyebrow">Player Summary</p>
         <h2>Lichess Performance Overview</h2>
@@ -272,29 +299,29 @@ function ChessTrack() {
         </p>
       </div>
 
-      <div className="session-stats">
-        <div>
+      <div className="session-stats row text-center">
+        <div className="col-6 col-md-3 mb-3">
           <span>Puzzle</span>
           <strong>
             {lichessStats.perfs?.puzzle?.rating || 'N/A'}
           </strong>
         </div>
 
-        <div>
+        <div className="col-6 col-md-3 mb-3">
           <span>Storm</span>
           <strong>
             {lichessStats.perfs?.storm?.score || 'N/A'}
           </strong>
         </div>
 
-        <div>
+        <div className="col-6 col-md-3 mb-3">
           <span>Patron</span>
           <strong>
             {lichessStats.patron ? 'Yes' : 'No'}
           </strong>
         </div>
 
-        <div>
+        <div className="col-6 col-md-3 mb-3">
           <span>Online</span>
           <strong>
             {lichessStats.online ? 'Yes' : 'No'}
