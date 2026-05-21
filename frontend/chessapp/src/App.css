@@ -594,3 +594,11 @@ body {
     padding-left: 4px;
   }
 }
+
+@media (max-width: 767px) {
+  /* existing rules... */
+
+  .metric-card strong {
+    font-size: 24px;
+  }
+}
