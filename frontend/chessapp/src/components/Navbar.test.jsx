@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, test } from 'vitest'
 import Navbar from './Navbar'
@@ -13,6 +13,7 @@ function renderNavbar() {
 
 beforeEach(() => {
   localStorage.clear()
+  globalThis.fetch = () => Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
 })
 
 describe('Navbar', () => {
@@ -60,14 +61,16 @@ describe('Navbar', () => {
     expect(screen.queryByRole('link', { name: /login/i })).not.toBeInTheDocument()
   })
 
-  test('logout button removes user from localStorage and hides username', () => {
+  test('logout button removes user from localStorage and hides username', async () => {
     localStorage.setItem(
       'lichess_user',
       JSON.stringify({ player_username: 'Magnus' })
     )
     renderNavbar()
     fireEvent.click(screen.getByRole('button'))
-    fireEvent.click(screen.getByText(/logout/i))
+    await act(async () => {
+      fireEvent.click(screen.getByText(/logout/i))
+    })
     expect(localStorage.getItem('lichess_user')).toBeNull()
     expect(screen.queryByText(/Magnus/)).not.toBeInTheDocument()
   })

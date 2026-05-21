@@ -1,6 +1,6 @@
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import Home from './Home'
 
 function renderHome() {
@@ -14,6 +14,9 @@ function renderHome() {
 beforeEach(() => {
   localStorage.clear()
   vi.useFakeTimers()
+  globalThis.fetch = vi.fn(() =>
+    Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) })
+  )
 })
 
 afterEach(() => {
@@ -64,67 +67,71 @@ describe('Home — monitoring dashboard', () => {
     expect(screen.getByText(/focus score/i)).toBeInTheDocument()
   })
 
-  test('sleep form is hidden until toggle button is clicked', () => {
+  test('shows login prompt when no user is logged in', () => {
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
-    expect(screen.queryByRole('heading', { name: /sleep tracker/i })).not.toBeInTheDocument()
+    expect(screen.getByText(/log in with lichess/i)).toBeInTheDocument()
   })
 
-  test('clicking sleep toggle shows Sleep Tracker form', () => {
+  test('shows Start Chess Session button when user is logged in', () => {
+    localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
-    fireEvent.click(screen.getByRole('button', { name: /how much time did i sleep/i }))
-    expect(screen.getByRole('heading', { name: /sleep tracker/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /start chess session/i })).toBeInTheDocument()
   })
 
-  test('clicking sleep toggle again hides the form', () => {
+  test('clicking Start Chess Session shows the session form', () => {
+    localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
-    const toggleBtn = screen.getByRole('button', { name: /how much time did i sleep/i })
-    fireEvent.click(toggleBtn)
-    fireEvent.click(toggleBtn)
-    expect(screen.queryByRole('heading', { name: /sleep tracker/i })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /start chess session/i }))
+    expect(screen.getByText(/time you went to sleep/i)).toBeInTheDocument()
+    expect(screen.getByText(/water intake so far/i)).toBeInTheDocument()
   })
 })
 
-describe('Home — sleep calculator', () => {
-  function openSleepForm() {
+describe('Home — session form', () => {
+  function openSessionForm() {
+    localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
-    fireEvent.click(screen.getByRole('button', { name: /how much time did i sleep/i }))
+    fireEvent.click(screen.getByRole('button', { name: /start chess session/i }))
   }
 
-  test('Calculate Sleep button does nothing when inputs are empty', () => {
-    openSleepForm()
-    fireEvent.click(screen.getByRole('button', { name: /calculate sleep/i }))
-    expect(screen.queryByText(/you slept for/i)).not.toBeInTheDocument()
+  test('Start Session button does nothing when time inputs are empty', async () => {
+    openSessionForm()
+    fireEvent.click(screen.getByRole('button', { name: /^start session$/i }))
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('/session/evaluate'),
+      expect.anything()
+    )
   })
 
-  test('calculates overnight sleep via 22:00 to 06:00', () => {
-    openSleepForm()
+  test('submitting form calls /session/evaluate', async () => {
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({
+          alerts: [{ level: 'yellow', message: 'Test alert' }],
+          sleep_duration: '6h 0m',
+          awake_duration: '2h 0m',
+        }),
+      })
+    )
+
+    openSessionForm()
     const [sleepInput, wakeInput] = document.querySelectorAll('input[type="time"]')
-    fireEvent.change(sleepInput, { target: { value: '22:00' } })
-    fireEvent.change(wakeInput, { target: { value: '06:00' } })
-    fireEvent.click(screen.getByRole('button', { name: /calculate sleep/i }))
-    expect(screen.getByText(/you slept for/i)).toBeInTheDocument()
-    expect(screen.getByText(/8h 0m/i)).toBeInTheDocument()
-  })
+    fireEvent.change(sleepInput, { target: { value: '23:00' } })
+    fireEvent.change(wakeInput, { target: { value: '05:00' } })
 
-  test('calculates 7h 45m for 23:30 to 07:15', () => {
-    openSleepForm()
-    const inputs = document.querySelectorAll('input[type="time"]')
-    fireEvent.change(inputs[0], { target: { value: '23:30' } })
-    fireEvent.change(inputs[1], { target: { value: '07:15' } })
-    fireEvent.click(screen.getByRole('button', { name: /calculate sleep/i }))
-    expect(screen.getByText(/7h 45m/i)).toBeInTheDocument()
-  })
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^start session$/i }))
+    })
 
-  test('calculates 24h when sleep and wake time are identical', () => {
-    openSleepForm()
-    const inputs = document.querySelectorAll('input[type="time"]')
-    fireEvent.change(inputs[0], { target: { value: '08:00' } })
-    fireEvent.change(inputs[1], { target: { value: '08:00' } })
-    fireEvent.click(screen.getByRole('button', { name: /calculate sleep/i }))
-    expect(screen.getByText(/24h 0m/i)).toBeInTheDocument()
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/session/evaluate'),
+      expect.objectContaining({ method: 'POST' })
+    )
   })
 })
