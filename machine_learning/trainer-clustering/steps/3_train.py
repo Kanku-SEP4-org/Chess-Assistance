@@ -1,3 +1,5 @@
+import os
+import joblib
 import pandas as pd
 import numpy as np
 from sklearn.cluster import KMeans
@@ -37,3 +39,11 @@ preprocessor = ColumnTransformer(
     ],
     remainder='passthrough'
 )
+os.makedirs("models", exist_ok=True)
+joblib.dump({
+    'model': model_pipeline, 
+    'km_env': kmeans_env, 
+    'km_game': kmeans_game,
+    'scaler_env': scaler_env,
+    'scaler_game': scaler_game
+}, 'models_v2/chess_ai_v2.pkl')
