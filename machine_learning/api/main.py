@@ -11,10 +11,10 @@ app = FastAPI(title="Chess Assistance Models API")
 # Winrate model
 # ---------------------------------------------------------------------------
 
-MODEL_PATH = os.getenv("MODEL_PATH", "../trainers/trainer-winrate/models/model.pkl")
+MODEL_PATH = os.getenv("MODEL_PATH", "../trainers/trainer-winrate/models/model_pipeline.pkl")
 
 if not os.path.exists(MODEL_PATH):
-    raise RuntimeError(f"model.pkl not found at {MODEL_PATH}")
+    raise RuntimeError(f"model_pipeline.pkl not found at {MODEL_PATH}")
 
 pipeline = joblib.load(MODEL_PATH)
 
@@ -24,6 +24,7 @@ class ChanceWinrateFeatures(BaseModel):
     temperature_celsius: float
     co2:  float
     light:  float
+
 
 @app.post("/predict")
 def predict(data: ChanceWinrateFeatures):
@@ -41,6 +42,120 @@ def predict(data: ChanceWinrateFeatures):
     prediction_proba = pipeline.predict_proba(X)
     return {
         "prediction": prediction_proba[0][1]
+    }
+
+
+# ---------------------------------------------------------------------------
+# Environment recommendation
+# ---------------------------------------------------------------------------
+
+def calculate_recommendation_env_score(temperature_celsius: float, co2: float) -> float:
+    temp_dist = abs(temperature_celsius - 20)
+    co2_norm = (co2 - 400) / 1600
+    return 1 - (co2_norm * 0.7 + (temp_dist / 5) * 0.3)
+
+
+def build_recommendation_winrate_frame(
+    minutes_slept: float,
+    minutes_awake: float,
+    temperature_celsius: float,
+    co2: float,
+    light: float,
+) -> pd.DataFrame:
+    env_score = calculate_recommendation_env_score(temperature_celsius, co2)
+    return pd.DataFrame(
+        [[minutes_slept, minutes_awake, env_score, light]],
+        columns=['minutes_slept', 'minutes_awake', 'env_score', 'light'],
+    )
+
+
+def predict_recommendation_win_probability(
+    minutes_slept: float,
+    minutes_awake: float,
+    temperature_celsius: float,
+    co2: float,
+    light: float,
+) -> float:
+    X = build_recommendation_winrate_frame(
+        minutes_slept,
+        minutes_awake,
+        temperature_celsius,
+        co2,
+        light,
+    )
+    return float(pipeline.predict_proba(X)[0][1])
+
+
+def round_probability(value: float) -> float:
+    return round(float(value), 3)
+
+
+def round_percentage_points(value: float) -> float:
+    return round(float(value), 2)
+
+
+@app.post("/recommend-environment")
+def recommend_environment(data: ChanceWinrateFeatures):
+    current_probability = predict_recommendation_win_probability(
+        data.minutes_slept,
+        data.minutes_awake,
+        data.temperature_celsius,
+        data.co2,
+        data.light,
+    )
+
+    candidates = [
+        ("temperature_celsius", data.temperature_celsius, 20),
+        ("co2", data.co2, 500),
+        ("light", data.light, 1500),
+    ]
+
+    all_candidates = []
+    for factor, current_value, recommended_value in candidates:
+        candidate_values = {
+            "minutes_slept": data.minutes_slept,
+            "minutes_awake": data.minutes_awake,
+            "temperature_celsius": data.temperature_celsius,
+            "co2": data.co2,
+            "light": data.light,
+        }
+        candidate_values[factor] = recommended_value
+
+        win_probability = predict_recommendation_win_probability(**candidate_values)
+        increase = win_probability - current_probability
+        all_candidates.append({
+            "factor": factor,
+            "current_value": float(current_value),
+            "recommended_value": float(recommended_value),
+            "win_probability": round_probability(win_probability),
+            "increase": round_probability(increase),
+            "increase_percentage_points": round_percentage_points(increase * 100),
+        })
+
+    positive_candidates = [candidate for candidate in all_candidates if candidate["increase"] > 0]
+    if not positive_candidates:
+        return {
+            "current_win_probability": round_probability(current_probability),
+            "recommended_factor": None,
+            "message": "No environmental improvement increased the prediction according to the model.",
+            "all_candidates": all_candidates,
+        }
+
+    best_candidate = max(positive_candidates, key=lambda candidate: candidate["increase"])
+    return {
+        "current_win_probability": round_probability(current_probability),
+        "recommended_factor": best_candidate["factor"],
+        "current_value": best_candidate["current_value"],
+        "recommended_value": best_candidate["recommended_value"],
+        "improved_win_probability": best_candidate["win_probability"],
+        "increase": best_candidate["increase"],
+        "increase_percentage_points": best_candidate["increase_percentage_points"],
+        "message": (
+            f"Changing {best_candidate['factor']} from {best_candidate['current_value']} "
+            f"to {best_candidate['recommended_value']} may increase your win probability by "
+            f"{best_candidate['increase_percentage_points']:.1f} percentage points."
+        ),
+        "all_candidates": all_candidates,
     }
 
 # ---------------------------------------------------------------------------
