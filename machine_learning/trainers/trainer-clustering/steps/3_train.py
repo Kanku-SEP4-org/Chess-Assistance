@@ -5,10 +5,10 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler, OneHotEncoder
 from sklearn.compose import ColumnTransformer
-from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report
 from sklearn.pipeline import Pipeline
 from sklearn.ensemble import RandomForestClassifier
+
 
 def main() -> None:
     train_path = os.getenv("TRAIN_DATA_PATH", "data/train.csv")
@@ -67,7 +67,6 @@ def main() -> None:
     X_test_final['game_cluster'] = kmeans_game.predict(scaler_game.transform(X_test[game_cols]))
 
     # One-Hot Encode Categorical features + Clusters
-    # Note: Treat cluster IDs as categorical
     cat_features_to_encode = cat_cols + ['env_cluster', 'game_cluster']
     preprocessor = ColumnTransformer(
         transformers=[('cat', OneHotEncoder(handle_unknown='ignore'), cat_features_to_encode)],
@@ -102,3 +101,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

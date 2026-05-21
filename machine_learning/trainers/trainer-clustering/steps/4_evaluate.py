@@ -4,6 +4,7 @@ from sklearn.metrics import classification_report
 import os
 import joblib
 
+
 def main() -> None:
     test_path = os.getenv("TEST_DATA_PATH", "data/test.csv")
     if not os.path.exists(test_path):
@@ -40,3 +41,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

@@ -3,6 +3,7 @@ import numpy as np
 import os
 from sklearn.model_selection import train_test_split
 
+
 # 2. PREPROCESSING FUNCTIONS
 def preprocess_chess_data(df):
     # Convert sleep_duration (INTERVAL) to float hours
@@ -10,14 +11,15 @@ def preprocess_chess_data(df):
     def parse_sleep(s):
         parts = s.split()
         return float(parts[0]) + float(parts[2])/60.0
-    
+
     df_proc = df.copy()
     df_proc['sleep_hours'] = df_proc['sleep_duration'].apply(parse_sleep)
-    
+
     # Target: 1 for Win, 0 for everything else
     df_proc['target'] = (df_proc['result'] == 'Win').astype(int)
-    
+
     return df_proc
+
 
 def main() -> None:
     raw_path = os.getenv("RAW_DATA_PATH", "data/raw.csv")

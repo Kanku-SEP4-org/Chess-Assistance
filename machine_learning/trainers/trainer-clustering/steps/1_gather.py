@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 
+
 def generate_advanced_mock_data(n=200):
     np.random.seed(42)
     data = {
@@ -31,6 +32,7 @@ def generate_advanced_mock_data(n=200):
     }
     return pd.DataFrame(data)
 
+
 def main() -> None:
     df = generate_advanced_mock_data()
     os.makedirs("data", exist_ok=True)
@@ -41,3 +43,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
