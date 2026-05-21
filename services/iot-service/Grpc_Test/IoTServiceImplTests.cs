@@ -75,10 +75,10 @@ public class IoTServiceImplTests
         {
             Value = 650.5f,
             Timestamp = 54321,
-            Type = "co2"
+            Type = sensorType.Co2
         };
 
-        _mockStore.Setup(s => s.GetLatest(arduinoId, "co2")).Returns(mockState);
+        _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Co2)).Returns(mockState);
 
         var request = new co2Req { ArduinoId = arduinoId };
 
@@ -95,7 +95,7 @@ public class IoTServiceImplTests
     public async Task GetCO2_NotFound_ReturnsFailure()
     {
         int arduinoId = 99;
-        _mockStore.Setup(s => s.GetLatest(arduinoId, "co2")).Returns((SensorState)null!);
+        _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Co2)).Returns((SensorState)null!);
 
         var request = new co2Req { ArduinoId = arduinoId };
 
@@ -112,13 +112,13 @@ public class IoTServiceImplTests
     public async Task GetCO2_CallsStateStoreWithCorrectType()
     {
     int arduinoId = 5;
-    _mockStore.Setup(s => s.GetLatest(arduinoId, "co2"))
+    _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Co2))
               .Returns((SensorState)null!);
 
     var request = new co2Req { ArduinoId = arduinoId };
 
     await _service.getCO2(request, null!);
 
-    _mockStore.Verify(s => s.GetLatest(arduinoId, "co2"), Times.Once);
+    _mockStore.Verify(s => s.GetLatest(arduinoId, sensorType.Co2), Times.Once);
     }
 }

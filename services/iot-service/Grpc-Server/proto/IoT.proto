@@ -51,7 +51,9 @@ message fillCupReq {
     optional float amount = 2; //amount of water to fill in milliliters, optional because we can also just request a standard quantity fill, set up previously
 }
 message fillCupRes {
-     Status status = 1;
+    Status status = 1;
+}
+
 message co2Req {
     int32 arduinoId = 1;
 }
@@ -68,7 +70,7 @@ message Status {
 
 message sensorReading {
     float value = 1;
-    sensorType type = 2; //to identify the kind of sensor. possibly use an enum
+    sensorType type = 2; //to identify the kind of sensor. use the enum
     int64 timestamp = 3;
 }
 

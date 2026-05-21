@@ -65,10 +65,11 @@ public class IoTServiceImpl : iotService.iotServiceBase
 
         return new fillCupRes { Status = status };
     }
-    
-    public override Task<co2Res> getCO2(co2Req request, ServerCallContext context)
+
+    public override Task<co2Res> getCO2(co2Req request,
+        ServerCallContext context)
     {
-        var latest = _stateStore.GetLatest(request.ArduinoId, "co2");
+        var latest = _stateStore.GetLatest(request.ArduinoId, sensorType.Co2);
 
         if (latest == null)
         {
@@ -83,7 +84,8 @@ public class IoTServiceImpl : iotService.iotServiceBase
                 Status = new ProtoStatus
                 {
                     Success = false,
-                    Message = $"No CO2 reading available yet for Arduino {request.ArduinoId}."
+                    Message =
+                        $"No CO2 reading available yet for Arduino {request.ArduinoId}."
                 }
             });
         }
@@ -93,16 +95,18 @@ public class IoTServiceImpl : iotService.iotServiceBase
             Reading = new sensorReading
             {
                 Value = latest.Value,
-                Type = MapSensorType(latest.Type),
+                Type = latest.Type,
                 Timestamp = latest.Timestamp
             },
             Status = new ProtoStatus
             {
                 Success = true,
-                Message = $"Latest CO2 reading for Arduino {request.ArduinoId} retrieved successfully."
+                Message =
+                    $"Latest CO2 reading for Arduino {request.ArduinoId} retrieved successfully."
             }
         });
-    
+    }
+
 
 
 // HELPER methods
