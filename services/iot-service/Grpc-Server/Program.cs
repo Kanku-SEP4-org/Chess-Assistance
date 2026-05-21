@@ -5,11 +5,21 @@ using IoTGrpcServer.Contracts;
 using IoTGrpcServer.Services;
 using RabbitMQ.Client;
 using Grpc_Server.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // RabbitMQ settings
-var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "rabbitmq";
+//var rabbitHost = builder.Configuration["RabbitMQ:Host"] ?? "rabbitmq";
+
+// Look for an environment variable named RABBIT_HOST,
+// then check appsettings, then default to "localhost" for local dev safety.
+var rabbitHost = Environment.GetEnvironmentVariable("RABBIT_HOST")
+                 ?? builder.Configuration["RabbitMQ:Host"]
+                 ?? "localhost"; // Changed default from "rabbitmq" to "localhost"
+//after making sure the rabbitmq server works on http://localhost:15672
+//in console: $env:RabbitMQ__Host="localhost"
+//then you can build and run without docker
 var rabbitUser = builder.Configuration["RabbitMQ:User"] ?? "guest";
 var rabbitPass = builder.Configuration["RabbitMQ:Password"] ?? "guest";
 var requestQueue = builder.Configuration["RabbitMQ:RequestQueue"] ?? "sensor.requests";
@@ -17,7 +27,7 @@ var responseQueue = builder.Configuration["RabbitMQ:ResponseQueue"] ?? "sensor.r
 
 builder.Services.AddGrpc();
 
-builder.Services.AddSingleton<IoTStateStore>();
+builder.Services.AddSingleton<IIoTStateStore, IoTStateStore>();
 builder.Services.AddSingleton<IMessageReceiver, MessageReceiver>();
 builder.Services.AddSingleton(sp => new ConnectionFactory
 {
@@ -77,8 +87,11 @@ builder.Services.AddSingleton<IMessageQueue>(sp =>
 builder.Services.AddHostedService(sp =>
     sp.GetRequiredService<MessageService>());
 
-var app = builder.Build();
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(
+    builder.Configuration.GetConnectionString("DefaultConnection")));
 
+var app = builder.Build();
+Console.WriteLine("GRPC SERVER BUILD TEEEEEST");
 app.MapGrpcService<IoTServiceImpl>();
 app.MapGet("/", () => "IoT gRPC server is running.");
 

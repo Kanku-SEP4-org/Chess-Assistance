@@ -6,8 +6,9 @@ CREATE TYPE time_control_type AS ENUM ('bullet', 'blitz', 'rapid', 'classical');
 CREATE TYPE game_result_type  AS ENUM ('win', 'loss', 'draw');
 
 CREATE TABLE player (
-    id       SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL
+    id         SERIAL PRIMARY KEY,
+    lichess_id VARCHAR(50) NOT NULL UNIQUE,
+    username   VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE room (
@@ -16,6 +17,23 @@ CREATE TABLE room (
     player_id INTEGER NOT NULL,
     FOREIGN KEY (player_id) REFERENCES player(id)
 );
+
+CREATE TABLE health_record (
+    id              SERIAL PRIMARY KEY,
+    sleep_time      TIMESTAMP NOT NULL,
+    awaken_time     TIMESTAMP NOT NULL,
+    sleep_duration  INTERVAL GENERATED ALWAYS AS (awaken_time - sleep_time) STORED,
+    confirmed_at    TIMESTAMP NOT NULL,
+    awake_duration  INTERVAL GENERATED ALWAYS AS (confirmed_at - awaken_time) STORED,
+    water_intake_ml INTEGER,
+    player_id       INTEGER NOT NULL,
+    FOREIGN KEY (player_id) REFERENCES player(id),
+    CONSTRAINT chk_sleep_order CHECK (awaken_time > sleep_time),
+    CONSTRAINT chk_awake_order CHECK (confirmed_at > awaken_time)
+);
+
+CREATE UNIQUE INDEX uq_one_health_record_per_day
+ON health_record (player_id, (confirmed_at::date));
 
 -- "session" replaces the old "play_block" table
 CREATE TABLE session (
@@ -26,7 +44,9 @@ CREATE TABLE session (
     game_count     INTEGER DEFAULT 0,
     total_water_ml INTEGER DEFAULT 0,
     player_id      INTEGER NOT NULL,
-    FOREIGN KEY (player_id) REFERENCES player(id)
+    health_record_id INTEGER NOT NULL,
+    FOREIGN KEY (player_id) REFERENCES player(id),
+    FOREIGN KEY (health_record_id) REFERENCES health_record(id)
 );
 
 CREATE UNIQUE INDEX uq_one_active_session
@@ -89,23 +109,13 @@ CREATE TABLE game (
     started_at            TIMESTAMP,
     ended_at              TIMESTAMP,
     duration_min          INTEGER,
+    inaccuracy_cnt        INTEGER,
+    mistake_cnt           INTEGER,
+    blunder_cnt           INTEGER,
+    acpl                  INTEGER,
+    accuracy              INTEGER,
     match_id              INTEGER NOT NULL UNIQUE,
     FOREIGN KEY (match_id) REFERENCES match(id)
-);
-
-CREATE TABLE sleep_record (
-    id              SERIAL PRIMARY KEY,
-    sleep_time      TIMESTAMP NOT NULL,
-    awaken_time     TIMESTAMP NOT NULL,
-    sleep_duration  INTERVAL GENERATED ALWAYS AS (awaken_time - sleep_time) STORED,
-    confirmed_at    TIMESTAMP NOT NULL,
-    awake_duration  INTERVAL GENERATED ALWAYS AS (confirmed_at - awaken_time) STORED,
-    water_intake_ml INTEGER,
-    record_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    session_id      INTEGER NOT NULL UNIQUE,
-    FOREIGN KEY (session_id) REFERENCES session(id),
-    CONSTRAINT chk_sleep_order CHECK (awaken_time > sleep_time),
-    CONSTRAINT chk_awake_order CHECK (confirmed_at > awaken_time)
 );
 
 CREATE TABLE player_opening_stat (
@@ -156,5 +166,12 @@ CREATE TABLE dataset (
     result                     game_result_type,
     player_opening_win_rate    NUMERIC(5,2),
     player_opening_game_count  INTEGER,
+    inaccuracy_cnt                 INTEGER,
+    mistake_cnt                    INTEGER,
+    blunder_cnt                    INTEGER,
+    acpl                           INTEGER,
+    accuracy                       INTEGER,
+    consecutive_losses_pregame     INTEGER,
+    avg_tpm_seconds                NUMERIC(10,6),
     FOREIGN KEY (match_id) REFERENCES match(id)
 );

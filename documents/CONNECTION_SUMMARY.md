@@ -56,7 +56,7 @@ User Input (React)
 ML API Response
   → gRPC Service (port 50051)
     → API Gateway (port 3001)
-      → React Frontend (port 3000)
+      → React Frontend (port 5173)
         → Display: "Win Rate: X%"
 ```
 
@@ -66,7 +66,7 @@ ML API Response
 2. **ML API**: `uvicorn main:app --reload` in `machine_learning/api/` (port 8000)
 3. **gRPC Service**: `node server.js` in `services/grpc-service/` (port 50051)
 4. **API Gateway**: `node server.js` in `api-gateway/` (port 3001)
-5. **React Frontend**: `npm start` in `frontend/chessapp/` (port 3000)
+5. **React Frontend**: `npm run dev` in `frontend/chessapp/` (port 5173)
 
 ## Input/Output Examples
 
@@ -107,7 +107,7 @@ Temperature: 24 °C
 - [ ] Start ML API on port 8000
 - [ ] Start gRPC service on port 50051
 - [ ] Start API Gateway on port 3001
-- [ ] Start React app on port 3000
+- [ ] Start React app on port 5173
 - [ ] Enter sleep (480 min) and awake (60 min) times
 - [ ] Verify win rate prediction displays (0-100)
 - [ ] Verify temperature displays if Arduino ID provided

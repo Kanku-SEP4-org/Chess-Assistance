@@ -1,11 +1,16 @@
 import { useState } from 'react'
 import '../App.css'
+import Navbar from '../components/Navbar'
 
 function ChessTrack() {
   const [username, setUsername] = useState('')
   const [playerStats, setPlayerStats] = useState(null)
   const [playerError, setPlayerError] = useState('')
   const [playerLoading, setPlayerLoading] = useState(false)
+  const [lichessUsername, setLichessUsername] = useState('');
+  const [lichessStats, setLichessStats] = useState(null);
+  const [lichessLoading, setLichessLoading] = useState(false);
+  const [lichessError, setLichessError] = useState('');
 
   const calculateWinRate = (record) => {
     if (!record) return 0
@@ -72,11 +77,44 @@ function ChessTrack() {
     }
   }
 
+     const handleLichessSearch = async (e) => {
+        if (e) e.preventDefault()
+
+        if (!lichessUsername.trim()) {
+           setLichessError('Please enter a Lichess username.')
+           return
+        }
+
+        setLichessLoading(true)
+        setLichessError('')
+        setLichessStats(null)
+
+        try {
+           const response = await fetch(
+             `https://lichess.org/api/user/${lichessUsername.trim()}`
+           )
+
+           if (!response.ok) {
+              throw new Error('Player not found')
+          }
+
+          const data = await response.json()
+          setLichessStats(data)
+        } catch (error) {
+          setLichessError('Could not find this Lichess player.')
+        } finally {
+          setLichessLoading(false)
+        }
+  }
+
+
   const rapid = getModeStats('chess_rapid')
   const blitz = getModeStats('chess_blitz')
   const bullet = getModeStats('chess_bullet')
 
   return (
+    <>
+    <Navbar />
     <main className="track-page">
       <section className="track-hero">
         <p className="eyebrow">Chess.com Player Lookup</p>
@@ -169,7 +207,106 @@ function ChessTrack() {
           </div>
         </section>
       )}
+        <section className="track-hero lichess-section">
+           <p className="eyebrow">Lichess Player Lookup</p>
+
+           <h1>Search Lichess performance</h1>
+
+           <p>
+             Enter a Lichess username to view public ratings and player performance.
+           </p>
+
+           <form className="player-search" onSubmit={handleLichessSearch}>
+            <input
+              type="text"
+              placeholder="Example: drnykterstein"
+              value={lichessUsername}
+              onChange={(e) => setLichessUsername(e.target.value)}
+            />
+
+            <button type="submit">
+              {lichessLoading ? 'Searching...' : 'Search Player'}
+           </button>
+          </form>
+
+          {lichessError && (
+            <p className="player-error">{lichessError}</p>
+          )}
+          {lichessStats && (
+  <section className="player-results">
+    <h2>{lichessStats.username} Stats</h2>
+
+    <div className="cards-grid">
+      <div className="metric-card">
+  <span>Rapid Rating</span>
+  <strong>{lichessStats.perfs?.rapid?.rating || 'N/A'}</strong>
+  <p>Games: {lichessStats.perfs?.rapid?.games || 0}</p>
+</div>
+
+      <div className="metric-card">
+        <span>Blitz Rating</span>
+        <strong>{lichessStats.perfs?.blitz?.rating || 'N/A'}</strong>
+        <p>Games: {lichessStats.perfs?.blitz?.games || 0}</p>
+      </div>
+
+      <div className="metric-card">
+        <span>Bullet Rating</span>
+        <strong>{lichessStats.perfs?.bullet?.rating || 'N/A'}</strong>
+        <p>Games: {lichessStats.perfs?.bullet?.games || 0}</p>
+      </div>
+
+      <div className="metric-card">
+        <span>Classical Rating</span>
+        <strong>{lichessStats.perfs?.classical?.rating || 'N/A'}</strong>
+        <p>Games: {lichessStats.perfs?.classical?.games || 0}</p>
+      </div>
+    </div>
+
+    <div className="session-card">
+      <div>
+        <p className="eyebrow">Player Summary</p>
+        <h2>Lichess Performance Overview</h2>
+
+        <p>
+          Public Lichess stats loaded successfully.
+        </p>
+      </div>
+
+      <div className="session-stats">
+        <div>
+          <span>Puzzle</span>
+          <strong>
+            {lichessStats.perfs?.puzzle?.rating || 'N/A'}
+          </strong>
+        </div>
+
+        <div>
+          <span>Storm</span>
+          <strong>
+            {lichessStats.perfs?.storm?.score || 'N/A'}
+          </strong>
+        </div>
+
+        <div>
+          <span>Patron</span>
+          <strong>
+            {lichessStats.patron ? 'Yes' : 'No'}
+          </strong>
+        </div>
+
+        <div>
+          <span>Online</span>
+          <strong>
+            {lichessStats.online ? 'Yes' : 'No'}
+          </strong>
+        </div>
+      </div>
+    </div>
+  </section>
+)}
+    </section>
     </main>
+    </>
   )
 }
 

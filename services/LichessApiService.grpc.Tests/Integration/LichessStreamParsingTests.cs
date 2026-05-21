@@ -37,6 +37,12 @@ public class LichessStreamParsingTests : IDisposable
                 StartedAt = DateTimeOffset.FromUnixTimeMilliseconds(dto.CreatedAt).UtcDateTime,
                 EndedAt = DateTimeOffset.FromUnixTimeMilliseconds(dto.LastMoveAt).UtcDateTime,
                 DurationMin = 10,
+                PlayerMoveCount = 20,
+                InaccuracyCnt = 2,
+                MistakeCnt = 1,
+                BlunderCnt = 0,
+                Acpl = 18,
+                Accuracy = 93,
                 MatchId = matchId
             });
 
@@ -59,7 +65,22 @@ public class LichessStreamParsingTests : IDisposable
     private async Task<int> SeedSessionAsync()
     {
         var db = CreateDb();
-        var session = new Session { StartedAt = DateTime.UtcNow, PlayerId = 1 };
+        var healthRecord = new HealthRecord
+        {
+            SleepTime = DateTime.UtcNow.AddHours(-8),
+            AwakenTime = DateTime.UtcNow.AddHours(-1),
+            ConfirmedAt = DateTime.UtcNow,
+            PlayerId = 1
+        };
+        db.HealthRecords.Add(healthRecord);
+        await db.SaveChangesAsync();
+
+        var session = new Session
+        {
+            StartedAt = DateTime.UtcNow,
+            PlayerId = 1,
+            HealthRecordId = healthRecord.Id
+        };
         db.Sessions.Add(session);
         await db.SaveChangesAsync();
         return session.Id;
@@ -236,7 +257,24 @@ public class LichessStreamParsingTests : IDisposable
     public async Task GameFinish_WithSensorData_CreatesDataset()
     {
         var db = CreateDb();
-        var session = new Session { StartedAt = DateTime.UtcNow, PlayerId = 1 };
+
+        var healthRecord = new HealthRecord
+        {
+            SleepTime = DateTime.UtcNow.AddHours(-8),
+            AwakenTime = DateTime.UtcNow.AddHours(-1),
+            ConfirmedAt = DateTime.UtcNow,
+            WaterIntakeMl = 500,
+            PlayerId = 1
+        };
+        db.HealthRecords.Add(healthRecord);
+        await db.SaveChangesAsync();
+
+        var session = new Session
+        {
+            StartedAt = DateTime.UtcNow,
+            PlayerId = 1,
+            HealthRecordId = healthRecord.Id
+        };
         db.Sessions.Add(session);
         await db.SaveChangesAsync();
 
@@ -253,16 +291,6 @@ public class LichessStreamParsingTests : IDisposable
             new Sensor { RoomId = room.Id, Type = SensorType.Temperature, Value = 24, TimeStamp = gameStart.AddMinutes(6) },
             new Sensor { RoomId = room.Id, Type = SensorType.Co2, Value = 400, TimeStamp = gameStart.AddMinutes(3) },
             new Sensor { RoomId = room.Id, Type = SensorType.Co2, Value = 500, TimeStamp = gameStart.AddMinutes(7) });
-
-        var healthRecord = new HealthRecord
-        {
-            SleepTime = DateTime.UtcNow.AddHours(-8),
-            AwakenTime = DateTime.UtcNow.AddHours(-1),
-            ConfirmedAt = DateTime.UtcNow,
-            WaterIntakeMl = 500,
-            SessionId = session.Id
-        };
-        db.HealthRecords.Add(healthRecord);
         await db.SaveChangesAsync();
 
         var ndjson = """
@@ -285,9 +313,74 @@ public class LichessStreamParsingTests : IDisposable
         Assert.Equal(500, dataset.WaterIntakeMl);
         Assert.Equal("B20", dataset.EcoCode);
         Assert.Equal(GameResultType.Win, dataset.Result);
+        Assert.Equal(2, dataset.InaccuracyCnt);
+        Assert.Equal(1, dataset.MistakeCnt);
+        Assert.Equal(0, dataset.BlunderCnt);
+        Assert.Equal(18, dataset.Acpl);
+        Assert.Equal(93, dataset.Accuracy);
+        Assert.Equal(0, dataset.ConsecutiveLossesPregame);
+        Assert.NotNull(dataset.AvgTpmSeconds);
 
         var updatedSession = await db.Sessions.FirstAsync(s => s.Id == session.Id);
         Assert.Equal(1, updatedSession.GameCount);
+    }
+
+    [Fact]
+    public async Task GameFinish_FetchFailsOnce_RetriesAndSucceeds()
+    {
+        var sessionId = await SeedSessionAsync();
+        var callCount = 0;
+
+        _mockGameFetcher
+            .Setup(f => f.FetchLatestGameAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .Returns<string, string, CancellationToken>((_, _, _) =>
+            {
+                callCount++;
+                if (callCount == 1) throw new HttpRequestException("Transient failure");
+                return Task.FromResult<LichessGameDto?>(CreateSampleLichessGame());
+            });
+
+        var ndjson = """
+            {"type":"gameStart","game":{"gameId":"abc12345"}}
+            {"type":"gameFinish","game":{"gameId":"abc12345"}}
+            """;
+        using var reader = new StringReader(ndjson);
+
+        await _streamService.ProcessStreamAsync(
+            reader, sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        var games = await db.Games.ToListAsync();
+        Assert.Single(games);
+        Assert.Equal(2, callCount);
+    }
+
+    [Fact]
+    public async Task GameFinish_FetchAlwaysFails_GracefullySkips()
+    {
+        var sessionId = await SeedSessionAsync();
+
+        _mockGameFetcher
+            .Setup(f => f.FetchLatestGameAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Persistent failure"));
+
+        var ndjson = """
+            {"type":"gameStart","game":{"gameId":"abc12345"}}
+            {"type":"gameFinish","game":{"gameId":"abc12345"}}
+            """;
+        using var reader = new StringReader(ndjson);
+
+        await _streamService.ProcessStreamAsync(
+            reader, sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        var matches = await db.Matches.ToListAsync();
+        var games = await db.Games.ToListAsync();
+
+        Assert.Single(matches);
+        Assert.Empty(games);
     }
 
     [Fact]

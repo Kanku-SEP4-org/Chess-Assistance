@@ -37,7 +37,11 @@ public class MessageService : BackgroundService, IMessageQueue{
             try
             {
                 var body = ea.Body.ToArray();
-                var obj = JsonSerializer.Deserialize<SensorMessage>(body);
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+                var obj = JsonSerializer.Deserialize<SensorMessage>(body, options);
 
                 if (obj != null)
                 {
@@ -79,6 +83,19 @@ public class MessageService : BackgroundService, IMessageQueue{
     {
         byte[] body = JsonSerializer.SerializeToUtf8Bytes(message);
         await EnqueueAsync(body);
+    }
+
+    public async Task PublishAsync(string queueName, object message)
+    {
+        var body = JsonSerializer.SerializeToUtf8Bytes(message);
+
+        await _reqChannel.BasicPublishAsync(
+            exchange: string.Empty,
+            routingKey: queueName,
+            mandatory: true,
+            basicProperties: new BasicProperties { Persistent = true },
+            body: body
+        );
     }
 
 }

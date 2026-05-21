@@ -3,10 +3,12 @@
 #include <stdio.h>
 #include "uart_stdio.h"
 
-#include "sensorRead.h" // access interface
-#include "communication.h"
+#include "services/sensorRead.h" // access interface
+#include "light.h"
+#include "services/communication.h"
 
 #include "wifi.h" // Include WiFi driver
+#include "soil.h"
 #define USE_WIFI_COMM 0 // Change this to 1 when ready to use WiFi
 
 int main(void) {
@@ -23,6 +25,10 @@ int main(void) {
     #endif
     sei();
 
+    //initialize ADC sensors
+    ADC_Error_t light = light_init();
+    ADC_Error_t water = soil_init(ADC_PK0);
+
     while (1) {
         // Wait for a prompt from the PC/RabbitMQ Producer
         //" %c" allows us to skip any whitespace characters, including newlines (note the space before %c)
@@ -36,14 +42,14 @@ int main(void) {
                 get_and_report_humidity();
                 break;
             case '3':
-                get_and_report_temp_json();
+                get_and_report_light(light);
                 break;
             case '4':
-                get_and_report_hum_json();
+                get_and_report_water(water);
                 break;
 
             default:
-                transmit_data("Invalid input. Please enter 1, 2, 3, or 4.\n");
+                transmit_data("Invalid input. Please enter 1 - 4.\n");
                 break;
             }
         }

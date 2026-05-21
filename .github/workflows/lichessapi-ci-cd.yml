@@ -9,7 +9,6 @@ on:
       - "shared/LichessApi.proto"
       - ".github/workflows/lichessapi-ci-cd.yml"
   push:
-    branches: [develop, main]
     paths:
       - "services/LichessApiService.grpc/**"
       - "services/LichessApiService.grpc.Tests/**"
@@ -40,12 +39,31 @@ jobs:
       - name: Build
         run: dotnet build services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj --configuration Release --no-restore
 
-      - name: Test
-        run: dotnet test services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj --configuration Release --no-build
+      - name: Test with coverage
+        run: >-
+          dotnet test services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj
+          --configuration Release --no-build
+          /p:CollectCoverage=true
+          /p:CoverletOutputFormat=cobertura
+          /p:CoverletOutput=./coverage/
+          /p:Threshold=80
+          /p:ThresholdType=line
+          /p:Exclude="[*]LichessApiService.Grpc.Data.*%2c[*]LichessApiService.Grpc.Protos.*"
+          /p:ExcludeByFile="**/Program.cs"
+          /p:ExcludeByAttribute="GeneratedCodeAttribute%2cCompilerGeneratedAttribute"
+
+      - name: Validate Docker build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/LichessApiService.grpc/Dockerfile
+          push: false
 
   publish:
     needs: test
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

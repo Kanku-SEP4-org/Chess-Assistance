@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+//imports here
+//options here
+package iotService;
+
+enum sensorType {
+    error = 0;
+    temp = 1;
+    light = 2;
+    water = 3;
+    fillCup = 4;
+}
+service iotService {
+    rpc getTemperature(tempReq) returns (tempRes);
+    rpc getLight(lightReq) returns (lightRes);
+    rpc getWaterLevel(waterLevelReq) returns (waterLevelRes);
+    rpc fillCup(fillCupReq) returns (fillCupRes);
+
+    rpc startRecording(recReq) returns (Status);
+    rpc stopRecording(recReq) returns (Status);
+}
+
+message tempReq {
+    int32 arduinoId = 1;
+}
+
+message tempRes {
+    sensorReading reading =1;
+    Status status = 2;
+}
+
+message lightReq {
+    int32 arduinoId = 1;
+}
+
+message lightRes {
+    sensorReading reading =1;
+    Status status = 2;
+}
+
+message waterLevelReq {
+    int32 arduinoId = 1;
+}
+message waterLevelRes {
+    sensorReading reading =1;
+    Status status = 2;
+}
+
+message fillCupReq {
+    int32 arduinoId = 1;
+    optional float amount = 2; //amount of water to fill in milliliters, optional because we can also just request a standard quantity fill, set up previously
+}
+message fillCupRes {
+     Status status = 1;
+}
+
+message Status {
+    bool success = 1;
+    string message = 2;
+}
+
+message sensorReading {
+    float value = 1;
+    sensorType type = 2; //to identify the kind of sensor. possibly use an enum
+    int64 timestamp = 3;
+}
+
+message recReq {
+    int32 arduinoId = 1;
+}
+
+

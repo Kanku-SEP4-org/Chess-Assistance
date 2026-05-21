@@ -32,6 +32,13 @@ public class Dataset
     public GameResultType? Result { get; set; }
     public decimal? PlayerOpeningWinRate { get; set; }
     public int? PlayerOpeningGameCount { get; set; }
+    public int? InaccuracyCnt { get; set; }
+    public int? MistakeCnt { get; set; }
+    public int? BlunderCnt { get; set; }
+    public int? Acpl { get; set; }
+    public int? Accuracy { get; set; }
+    public int? ConsecutiveLossesPregame { get; set; }
+    public decimal? AvgTpmSeconds { get; set; }
 
     public Match Match { get; set; } = null!;
 }

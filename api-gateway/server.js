@@ -32,16 +32,20 @@ const iotObject = grpc.loadPackageDefinition(iotDef);
 // package 'iotService' contains service 'iotService'
 const IotServiceClient = iotObject.iotService.iotService;
 
-// ===================== CLIENTS (→ grpc-service at :50051) =====================
-const grpcHost = process.env.GRPC_HOST || "localhost";
+// ===================== CLIENTS =====================
+const iotGrpcHost = process.env.IOT_GRPC_HOST || "localhost";
+const iotGrpcPort = process.env.IOT_GRPC_PORT || "8080";
+
+const predictionGrpcHost = process.env.PREDICTION_GRPC_HOST || "localhost";
+const predictionGrpcPort = process.env.PREDICTION_GRPC_PORT || "5283";
 
 const mlClient = new malPackage.WinrateService(
-  `${grpcHost}:50051`,
+  `${predictionGrpcHost}:${predictionGrpcPort}`,
   grpc.credentials.createInsecure()
 );
 
 const iotClient = new IotServiceClient(
-  `${grpcHost}:50051`,
+  `${iotGrpcHost}:${iotGrpcPort}`,
   grpc.credentials.createInsecure()
 );
 
@@ -120,6 +124,84 @@ app.get("/iot/temp", (req, res) => {
       message: response.status?.message ?? "",
     });
   });
+});
+
+// POST /auth/lichess/callback
+// Body: { code, code_verifier }
+// Exchanges the Lichess authorization code for an access token,
+// then fetches the authenticated Lichess account.
+app.post("/auth/lichess/callback", async (req, res) => {
+  const { code, code_verifier } = req.body;
+
+  const clientId = process.env.LICHESS_CLIENT_ID || "chess-assistance";
+  const redirectUri =
+    process.env.LICHESS_REDIRECT_URI || "http://localhost:5173/callback";
+
+  if (!code || !code_verifier) {
+    return res.status(400).json({
+      error: "Missing code or code_verifier",
+    });
+  }
+
+  try {
+    const tokenResponse = await fetch("https://lichess.org/api/token", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "authorization_code",
+        code,
+        redirect_uri: redirectUri,
+        client_id: clientId,
+        code_verifier,
+      }),
+    });
+
+    if (!tokenResponse.ok) {
+      const errorText = await tokenResponse.text();
+      console.error("Lichess token exchange failed:", errorText);
+
+      return res.status(500).json({
+        error: "Lichess token exchange failed",
+        details: errorText,
+      });
+    }
+
+    const tokenData = await tokenResponse.json();
+    const accessToken = tokenData.access_token;
+
+    const accountResponse = await fetch("https://lichess.org/api/account", {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    if (!accountResponse.ok) {
+      const errorText = await accountResponse.text();
+      console.error("Lichess account fetch failed:", errorText);
+
+      return res.status(500).json({
+        error: "Lichess account fetch failed",
+        details: errorText,
+      });
+    }
+
+    const accountData = await accountResponse.json();
+
+    res.json({
+      player_username: accountData.username,
+      player_id: accountData.id,
+      lichess_token: accessToken,
+    });
+  } catch (err) {
+    console.error("Lichess OAuth callback error:", err);
+
+    res.status(500).json({
+      error: "Lichess OAuth callback failed",
+      details: err.message,
+    });
+  }
 });
 
 // ===================== START =====================
