@@ -169,13 +169,13 @@ void test_report_co2_no_data_yet(void) {
 
 void test_report_co2_valid_value_format(void) {
     // Arrange: Simulate the callback running from a UART packet capture event
-    co2_incoming_data_handler(450);
+    co2_incoming_data_handler(1250);
 
     // Act: Request reporting output
     get_and_report_co2();
 
     // Assert: Ensure it formats correctly
-    TEST_ASSERT_EQUAL_STRING("CO2:450", mock_transmit_buffer);
+    TEST_ASSERT_EQUAL_STRING("CO2:1250", mock_transmit_buffer);
 }
 
 // --- MAIN ---
