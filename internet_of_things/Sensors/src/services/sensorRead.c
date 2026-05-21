@@ -84,9 +84,9 @@ void get_and_report_co2(void) {
     cli(); // Clear Global Interrupts - stops the UART ISR from firing
     co2_local_copy = latest_co2_ppm; // Safe 2-byte read transaction
     sei(); // Re-enable Global Interrupts
-    
+
     if (co2_local_copy > 0) {
-        sprintf(buffer, "CO2:%u", latest_co2_ppm);
+        sprintf(buffer, "CO2:%u", co2_local_copy);
     } else {
         sprintf(buffer, "ERROR:CO2_NO_DATA_YET");
     }
