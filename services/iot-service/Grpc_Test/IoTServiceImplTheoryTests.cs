@@ -50,12 +50,20 @@ public class IoTServiceImplTheoryTests
             var response = await _service.getWaterLevel(new waterLevelReq { ArduinoId = arduinoId }, null!);
             Assert.False(response.Status.Success);
         }
+        else if (sensorTypeKey == "co2")
+{
+            var response = await _service.getCO2(new co2Req { ArduinoId = arduinoId }, null!);
+            Assert.False(response.Status.Success);
+            Assert.Equal(0, response.Reading.Value);
+            Assert.Equal(sensorType.Co2, response.Reading.Type);
+}
     }
 
     [Theory]
     [InlineData(sensorType.Temp, 23.5f)]
     [InlineData(sensorType.Light, 500f)]
     [InlineData(sensorType.Water, 75.0f)]
+    [InlineData(sensorType.Co2, 650.5f)]
     public async Task GetSensorData_WhenDataExists_ReturnsCorrectValue(sensorType type, float val)
     {
         // Arrange
@@ -92,6 +100,14 @@ public class IoTServiceImplTheoryTests
             Assert.Equal(val, response.Reading.Value);
             Assert.Equal(type, response.Reading.Type);
         }
+        else if (key == sensorType.Co2)
+        {
+            var response = await _service.getCO2(new co2Req { ArduinoId = arduinoId }, null!);
+
+            Assert.True(response.Status.Success);
+            Assert.Equal(val, response.Reading.Value);
+            Assert.Equal(expectedType, response.Reading.Type);
+}
     }
 
     [Theory]
