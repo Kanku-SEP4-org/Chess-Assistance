@@ -57,6 +57,9 @@ function Navbar() {
               <Link to="/iot-dashboard">
                 <button>🌐 IoT Dashboard</button>
               </Link>
+              <Link to="/preferences">
+                <button>🎮 Player Preference</button>
+              </Link>
               {lichessUser && (
                 <button onClick={handleLogout}>🚪 Logout</button>
               )}
