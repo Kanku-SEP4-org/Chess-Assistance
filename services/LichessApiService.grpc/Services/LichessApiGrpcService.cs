@@ -71,6 +71,16 @@ public class LichessApiGrpcService(
             };
         }
 
+        var playerExists = await db.Players.AnyAsync(p => p.Id == request.PlayerId);
+        if (!playerExists)
+        {
+            return new StartSessionResponse
+            {
+                Success = false,
+                Message = $"Player {request.PlayerId} not found — please log in again"
+            };
+        }
+
         if (request.SleepTime == null || request.AwakenTime == null || request.ConfirmedAt == null)
         {
             return new StartSessionResponse
