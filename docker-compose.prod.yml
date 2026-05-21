@@ -25,7 +25,7 @@ services:
     networks:
       - default
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -87,6 +87,8 @@ services:
       - "3001"
     environment:
       GRPC_HOST: chess-api-gateway
+      LICHESS_GRPC_HOST: chess-lichess-api-grpc
+      LICHESS_GRPC_PORT: "8082"
     networks:
       - caddy_net # <---- connect to caddy_net for reverse proxy
       - default
