@@ -49,6 +49,7 @@ services:
   # ---------------------------------------------------------
 
   iot-service:
+    profiles: [iot]
     build:
       context: ./services/iot-service
       dockerfile: Grpc-Server/Dockerfile
