@@ -18,6 +18,8 @@ function Home() {
   const [endingSession, setEndingSession] = useState(false);
   const [lichessUser, setLichessUser] = useState(null);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [temperature, setTemperature] = useState(null);
+  const [lightLevel, setLightLevel] = useState(null);
 
   const sessionDates = useRef(null);
 
@@ -42,6 +44,31 @@ function Home() {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+  const fetchSensorData = async () => {
+    try {
+      const [tempRes, lightRes] = await Promise.all([
+        fetch(`${API_URL}/iot/temp?id=1`),
+        fetch(`${API_URL}/iot/light?id=1`)
+      ])
+      const tempData = await tempRes.json()
+      const lightData = await lightRes.json()
+      if (tempRes.ok && tempData.value != null) {
+        setTemperature(tempData.value.toFixed(1))
+      }
+      if (lightRes.ok && lightData.value != null) {
+        setLightLevel(lightData.value.toFixed(1))
+      }
+    } catch (err) {
+      console.error('Failed to fetch sensor data:', err)
+    }
+  }
+
+  fetchSensorData()
+  const interval = setInterval(fetchSensorData, 10000)
+  return () => clearInterval(interval)
+}, [])
 
   useEffect(() => {
     const handlePageHide = () => {
@@ -327,16 +354,16 @@ function Home() {
 
           <div className="cards-grid">
             <div className="metric-card">
-              <span>Temperature</span>
-              <strong>22°C</strong>
-              <p>Optimal playing condition</p>
-            </div>
+  <span>Temperature</span>
+  <strong>{temperature != null ? `${temperature}°C` : '—'}</strong>
+  <p>Optimal playing condition</p>
+</div>
 
             <div className="metric-card">
-              <span>CO2 Level</span>
-              <strong>820 ppm</strong>
-              <p>Room air quality is stable</p>
-            </div>
+  <span>Light Level</span>
+  <strong>{lightLevel != null ? `${lightLevel} lux` : '—'}</strong>
+  <p>Good visibility for focus</p>
+</div>
 
             <div className="metric-card">
               <span>Light Level</span>

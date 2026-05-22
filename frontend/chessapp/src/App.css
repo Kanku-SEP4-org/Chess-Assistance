@@ -571,3 +571,90 @@ body {
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
 }
+
+/* ===================== RESPONSIVE / MOBILE ===================== */
+
+@media (max-width: 767px) {
+
+  /* Navbar */
+  .navbar {
+    padding: 16px 24px;
+    flex-wrap: wrap;
+  }
+
+  .nav-links {
+    display: none;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 0;
+    width: 100%;
+  }
+
+  .navbar-collapse.show .nav-links {
+    display: flex;
+  }
+
+  /* Hero */
+  .hero-content {
+    margin-left: 0;
+    padding: 0 24px;
+    max-width: 100%;
+  }
+
+  .hero-title-split {
+    font-size: 2.8rem;
+    margin-bottom: 60px;
+  }
+
+  .hero-line-wrapper {
+    height: 70px;
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .hero-line {
+    white-space: nowrap;
+    font-size: 2.8rem;
+  }
+
+  .hero-section {
+    padding: 100px 24px 60px;
+  }
+
+  /* Dashboard */
+  .dashboard {
+    padding: 40px 24px;
+  }
+
+  .cards-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .session-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 24px;
+  }
+
+  .session-stats {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-right: 0;
+    width: 100%;
+  }
+
+  .metric-card strong {
+    font-size: 24px;
+  }
+
+  /* Sleep card */
+  .sleep-card {
+    margin: 0 0 40px;
+  }
+
+  /* Profile dropdown */
+  .profile-menu-container {
+    padding-left: 4px;
+  }
+}
