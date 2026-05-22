@@ -47,6 +47,7 @@ services:
       RabbitMQ__Password: guest
       RabbitMQ__RequestQueue: sensor.requests
       RabbitMQ__ResponseQueue: sensor.responses
+      CONNECTIONSTRINGS__DEFAULTCONNECTION: ${CONNECTIONSTRINGS__DEFAULTCONNECTION}
     depends_on:
       rabbitmq:
         condition: service_healthy
