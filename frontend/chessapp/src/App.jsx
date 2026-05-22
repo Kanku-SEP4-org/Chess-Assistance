@@ -5,6 +5,7 @@ import IotDashboard from "./pages/IotDashboard";
 import Login from "./pages/Login.jsx";
 import Callback from "./pages/Callback";
 import PlayerPreference from "./pages/PlayerPreference";
+import AngrinessPredictor from "./pages/AngrinessPredictor";
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/chesstrack" element={<ChessTrack />} />
+        <Route path="/angriness" element={<AngrinessPredictor />} />
         <Route path="/iot-dashboard" element={<IotDashboard />} />
         <Route path="/login" element={<Login />} />
         <Route path="/callback" element={<Callback />} />

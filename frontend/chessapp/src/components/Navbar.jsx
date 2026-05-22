@@ -33,6 +33,7 @@ function Navbar() {
         <Link to="/">Home</Link>
         <a href="#about">About</a>
         <Link to="/chesstrack">ChessTrack</Link>
+        <Link to="/angriness">Tilt Predictor</Link>
 
         <div className="profile-menu-container">
           <button
