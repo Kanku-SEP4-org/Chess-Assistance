@@ -11,6 +11,7 @@ on:
       - "docker-compose.yml"
       - "docker-compose.prod.yml"
       - "infrastructure/chess.Caddyfile"
+      - "api-gateway/**"
       - ".github/workflows/ml-team-ci-cd.yml"
   pull_request:
     branches: [develop, main]
@@ -19,6 +20,7 @@ on:
       - "services/LichessApiService.grpc/**"
       - "services/LichessApiService.grpc.Tests/**"
       - "shared/LichessApi.proto"
+      - "api-gateway/**"
       - ".github/workflows/ml-team-ci-cd.yml"
   workflow_dispatch:
 
@@ -314,11 +316,68 @@ jobs:
           tags: ${{ steps.meta_main.outputs.tags }}
           labels: ${{ steps.meta_main.outputs.labels }}
 
+  api-gateway-publish:
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata (develop)
+        if: github.ref_name == 'develop'
+        id: meta_develop
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/chess-api-gateway
+          tags: |
+            type=raw,value=dev
+            type=sha,prefix=sha-
+
+      - name: Extract image metadata (main)
+        if: github.ref_name == 'main'
+        id: meta_main
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/chess-api-gateway
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - name: Build and push Docker image (develop)
+        if: github.ref_name == 'develop'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: api-gateway/Dockerfile
+          push: true
+          tags: ${{ steps.meta_develop.outputs.tags }}
+          labels: ${{ steps.meta_develop.outputs.labels }}
+
+      - name: Build and push Docker image (main)
+        if: github.ref_name == 'main'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: api-gateway/Dockerfile
+          push: true
+          tags: ${{ steps.meta_main.outputs.tags }}
+          labels: ${{ steps.meta_main.outputs.labels }}
+
   # ───────────────────────────────────────────────────────────────
   # DEPLOY TO VPS
   # ───────────────────────────────────────────────────────────────
   deploy:
-    needs: [lichess-publish, ml-publish]
+    needs: [lichess-publish, ml-publish, api-gateway-publish]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     timeout-minutes: 20
