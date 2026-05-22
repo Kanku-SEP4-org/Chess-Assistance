@@ -326,6 +326,53 @@ body {
   cursor: pointer;
 }
 
+.preference-card {
+  max-width: 900px;
+  margin: auto;
+}
+
+.preferences-form {
+  margin-top: 2rem;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.input-group label {
+  margin-bottom: 0.5rem;
+  color: white;
+  font-weight: 600;
+}
+
+.input-group input {
+  padding: 0.9rem 1rem;
+  border-radius: 12px;
+  border: none;
+  outline: none;
+  font-size: 1rem;
+  background: rgba(255,255,255,0.08);
+  color: white;
+  backdrop-filter: blur(10px);
+}
+
+.input-group input::placeholder {
+  color: rgba(255,255,255,0.6);
+}
+
+.success-text {
+  margin-top: 1rem;
+  color: #6dffb3;
+  font-weight: 600;
+}
+
 .sleep-toggle-btn {
   display: block;
   margin-top: 12px;
@@ -366,13 +413,6 @@ body {
   font-size: 36px;
 }
 
-.sleep-inputs {
-  display: flex;
-  gap: 20px;
-  align-items: end;
-  flex-wrap: wrap;
-}
-
 .sleep-inputs input {
   margin-top: 10px;
   padding: 12px 14px;
@@ -390,6 +430,38 @@ body {
   color: #111;
   font-weight: 800;
   cursor: pointer;
+}
+
+.sleep-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.sleep-inputs button {
+  height: 48px;
+  padding: 0 24px;
+  margin-top: 28px;
+  border: none;
+  border-radius: 30px;
+  font-weight: 600;
+}
+
+.sleep-inputs {
+  align-items: flex-end;
+}
+
+.form-control {
+  font-size: 14px;
+  padding: 10px 14px;
+}
+
+.form-control::placeholder {
+  font-size: 14px;
+}
+
+.form-label {
+  margin-bottom: 8px;
 }
 
 .hero-title-split {
@@ -438,4 +510,64 @@ body {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* Angriness Predictor */
+.angriness-scale {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.angriness-segment {
+  flex: 1;
+  max-width: 140px;
+  padding: 1rem 0.5rem;
+  border-radius: 10px;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.angriness-level-active {
+  transform: scale(1.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+.angriness-segment-number {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Playfair Display', serif;
+}
+
+.angriness-segment-label {
+  display: block;
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-top: 0.25rem;
+}
+
+.game-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  transition: background 0.2s;
+}
+
+.game-list-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.analysis-warning {
+  background: rgba(255, 179, 0, 0.08);
+  border: 1px solid rgba(255, 179, 0, 0.4);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
 }

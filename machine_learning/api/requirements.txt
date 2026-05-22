@@ -7,4 +7,5 @@ mlflow
 joblib
 uvicorn
 requests
+httpx
 psycopg2-binary

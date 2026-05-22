@@ -38,12 +38,15 @@ public class LichessStreamParsingTests : IDisposable
                 EndedAt = DateTimeOffset.FromUnixTimeMilliseconds(dto.LastMoveAt).UtcDateTime,
                 DurationMin = 10,
                 PlayerMoveCount = 20,
-                InaccuracyCnt = 2,
-                MistakeCnt = 1,
-                BlunderCnt = 0,
-                Acpl = 18,
-                Accuracy = 93,
-                MatchId = matchId
+                MatchId = matchId,
+                Analysis = new GameAnalysis
+                {
+                    InaccuracyCnt = 2,
+                    MistakeCnt = 1,
+                    BlunderCnt = 0,
+                    Acpl = 18,
+                    Accuracy = 93,
+                }
             });
 
         var services = new ServiceCollection();

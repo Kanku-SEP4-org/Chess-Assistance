@@ -1,6 +1,6 @@
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import Home from './Home'
 
 function renderHome() {
@@ -13,11 +13,10 @@ function renderHome() {
 
 beforeEach(() => {
   localStorage.clear()
-  vi.useFakeTimers()
-})
-
-afterEach(() => {
-  vi.useRealTimers()
+  globalThis.fetch = vi.fn(() =>
+    Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) })
+  )
+  globalThis.alert = vi.fn()
 })
 
 describe('Home — hero section', () => {
@@ -32,6 +31,7 @@ describe('Home — hero section', () => {
   })
 
   test('hero text cycles on interval', () => {
+    vi.useFakeTimers()
     renderHome()
     const firstActive = document.querySelectorAll('.hero-line.active')
     expect(firstActive.length).toBeGreaterThan(0)
@@ -40,6 +40,32 @@ describe('Home — hero section', () => {
 
     const afterCycle = document.querySelectorAll('.hero-line.active')
     expect(afterCycle.length).toBeGreaterThan(0)
+    vi.useRealTimers()
+  })
+})
+
+describe('Home — auth check on mount', () => {
+  test('clears user when /auth/me returns not ok', async () => {
+    localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({ ok: false, status: 401, json: () => Promise.resolve({}) })
+    )
+
+    await act(async () => { renderHome() })
+
+    fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
+    expect(screen.getByText(/log in with lichess/i)).toBeInTheDocument()
+    expect(localStorage.getItem('lichess_user')).toBeNull()
+  })
+
+  test('keeps user when /auth/me fetch throws', async () => {
+    localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
+    globalThis.fetch = vi.fn(() => Promise.reject(new Error('network')))
+
+    await act(async () => { renderHome() })
+
+    fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
+    expect(screen.getByRole('button', { name: /start chess session/i })).toBeInTheDocument()
   })
 })
 
@@ -64,67 +90,352 @@ describe('Home — monitoring dashboard', () => {
     expect(screen.getByText(/focus score/i)).toBeInTheDocument()
   })
 
-  test('sleep form is hidden until toggle button is clicked', () => {
+  test('shows login prompt when no user is logged in', () => {
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
-    expect(screen.queryByRole('heading', { name: /sleep tracker/i })).not.toBeInTheDocument()
+    expect(screen.getByText(/log in with lichess/i)).toBeInTheDocument()
   })
 
-  test('clicking sleep toggle shows Sleep Tracker form', () => {
+  test('shows Start Chess Session button when user is logged in', () => {
+    localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
-    fireEvent.click(screen.getByRole('button', { name: /how much time did i sleep/i }))
-    expect(screen.getByRole('heading', { name: /sleep tracker/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /start chess session/i })).toBeInTheDocument()
   })
 
-  test('clicking sleep toggle again hides the form', () => {
+  test('clicking Start Chess Session shows the session form', () => {
+    localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
-    const toggleBtn = screen.getByRole('button', { name: /how much time did i sleep/i })
-    fireEvent.click(toggleBtn)
-    fireEvent.click(toggleBtn)
-    expect(screen.queryByRole('heading', { name: /sleep tracker/i })).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /start chess session/i }))
+    expect(screen.getByText(/time you went to sleep/i)).toBeInTheDocument()
+    expect(screen.getByText(/water intake so far/i)).toBeInTheDocument()
   })
 })
 
-describe('Home — sleep calculator', () => {
-  function openSleepForm() {
+describe('Home — session form', () => {
+  function openSessionForm() {
+    localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
-    fireEvent.click(screen.getByRole('button', { name: /how much time did i sleep/i }))
+    fireEvent.click(screen.getByRole('button', { name: /start chess session/i }))
   }
 
-  test('Calculate Sleep button does nothing when inputs are empty', () => {
-    openSleepForm()
-    fireEvent.click(screen.getByRole('button', { name: /calculate sleep/i }))
-    expect(screen.queryByText(/you slept for/i)).not.toBeInTheDocument()
+  test('Start Session button does nothing when time inputs are empty', async () => {
+    openSessionForm()
+    fireEvent.click(screen.getByRole('button', { name: /^start session$/i }))
+    expect(globalThis.fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining('/session/evaluate'),
+      expect.anything()
+    )
   })
 
-  test('calculates overnight sleep via 22:00 to 06:00', () => {
-    openSleepForm()
+  test('submitting form calls /session/evaluate', async () => {
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({
+          alerts: [{ level: 'yellow', message: 'Test alert' }],
+          sleep_duration: '6h 0m',
+          awake_duration: '2h 0m',
+        }),
+      })
+    )
+
+    openSessionForm()
+    const [sleepInput, wakeInput] = document.querySelectorAll('input[type="time"]')
+    fireEvent.change(sleepInput, { target: { value: '23:00' } })
+    fireEvent.change(wakeInput, { target: { value: '05:00' } })
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^start session$/i }))
+    })
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/session/evaluate'),
+      expect.objectContaining({ method: 'POST' })
+    )
+  })
+
+  test('evaluate error shows alert to user', async () => {
+    globalThis.fetch = vi.fn(() => Promise.reject(new Error('network')))
+
+    openSessionForm()
+    const [sleepInput, wakeInput] = document.querySelectorAll('input[type="time"]')
+    fireEvent.change(sleepInput, { target: { value: '23:00' } })
+    fireEvent.change(wakeInput, { target: { value: '05:00' } })
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^start session$/i }))
+    })
+
+    expect(globalThis.alert).toHaveBeenCalledWith('Failed to evaluate readiness')
+  })
+
+  test('water intake input accepts changes', () => {
+    openSessionForm()
+    const waterInput = screen.getByPlaceholderText(/e\.g\. 500/i)
+    fireEvent.change(waterInput, { target: { value: '750' } })
+    expect(waterInput.value).toBe('750')
+  })
+})
+
+describe('Home — alerts display', () => {
+  async function showAlertsWithWarnings() {
+    localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true, status: 200,
+        json: () => Promise.resolve({
+          alerts: [
+            { level: 'yellow', message: 'Low sleep detected' },
+            { level: 'red', message: 'Very tired' },
+          ],
+          sleep_duration: '5h 30m',
+          awake_duration: '2h 0m',
+        }),
+      })
+    )
+
+    renderHome()
+    fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
+    fireEvent.click(screen.getByRole('button', { name: /start chess session/i }))
+
+    const [sleepInput, wakeInput] = document.querySelectorAll('input[type="time"]')
+    fireEvent.change(sleepInput, { target: { value: '01:00' } })
+    fireEvent.change(wakeInput, { target: { value: '06:30' } })
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^start session$/i }))
+    })
+  }
+
+  test('shows alerts and durations after evaluate', async () => {
+    await showAlertsWithWarnings()
+
+    expect(screen.getByText(/low sleep detected/i)).toBeInTheDocument()
+    expect(screen.getByText(/very tired/i)).toBeInTheDocument()
+    expect(screen.getByText(/5h 30m/)).toBeInTheDocument()
+    expect(screen.getByText(/2h 0m/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /start anyway/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument()
+  })
+
+  test('Cancel clears alerts and shows form again', async () => {
+    await showAlertsWithWarnings()
+
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }))
+
+    expect(screen.queryByText(/low sleep detected/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/time you went to sleep/i)).toBeInTheDocument()
+  })
+
+  test('no alerts auto-starts session', async () => {
+    localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
+
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) })
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({
+          alerts: [],
+          sleep_duration: '8h 0m',
+          awake_duration: '1h 0m',
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ success: true, session_id: 42 }),
+      })
+
+    renderHome()
+    fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
+    fireEvent.click(screen.getByRole('button', { name: /start chess session/i }))
+
     const [sleepInput, wakeInput] = document.querySelectorAll('input[type="time"]')
     fireEvent.change(sleepInput, { target: { value: '22:00' } })
     fireEvent.change(wakeInput, { target: { value: '06:00' } })
-    fireEvent.click(screen.getByRole('button', { name: /calculate sleep/i }))
-    expect(screen.getByText(/you slept for/i)).toBeInTheDocument()
-    expect(screen.getByText(/8h 0m/i)).toBeInTheDocument()
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^start session$/i }))
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText(/session #42 is active/i)).toBeInTheDocument()
+    })
+  })
+})
+
+describe('Home — session lifecycle', () => {
+  async function startActiveSession() {
+    localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
+
+    globalThis.fetch = vi.fn()
+      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) })
+      .mockResolvedValueOnce({
+        ok: true, status: 200,
+        json: () => Promise.resolve({
+          alerts: [{ level: 'yellow', message: 'warning' }],
+          sleep_duration: '6h', awake_duration: '2h',
+        }),
+      })
+
+    renderHome()
+    fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
+    fireEvent.click(screen.getByRole('button', { name: /start chess session/i }))
+
+    const [sleepInput, wakeInput] = document.querySelectorAll('input[type="time"]')
+    fireEvent.change(sleepInput, { target: { value: '23:00' } })
+    fireEvent.change(wakeInput, { target: { value: '05:00' } })
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^start session$/i }))
+    })
+
+    return screen.getByRole('button', { name: /start anyway/i })
+  }
+
+  test('Start Anyway calls /session/start and shows active session', async () => {
+    const startAnywayBtn = await startActiveSession()
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ success: true, session_id: 7 }),
+      })
+    )
+
+    await act(async () => { fireEvent.click(startAnywayBtn) })
+
+    await waitFor(() => {
+      expect(screen.getByText(/session #7 is active/i)).toBeInTheDocument()
+    })
+    expect(screen.getByRole('button', { name: /end session/i })).toBeInTheDocument()
   })
 
-  test('calculates 7h 45m for 23:30 to 07:15', () => {
-    openSleepForm()
-    const inputs = document.querySelectorAll('input[type="time"]')
-    fireEvent.change(inputs[0], { target: { value: '23:30' } })
-    fireEvent.change(inputs[1], { target: { value: '07:15' } })
-    fireEvent.click(screen.getByRole('button', { name: /calculate sleep/i }))
-    expect(screen.getByText(/7h 45m/i)).toBeInTheDocument()
+  test('startSession handles 401 by logging out', async () => {
+    const startAnywayBtn = await startActiveSession()
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: false, status: 401,
+        json: () => Promise.resolve({}),
+      })
+    )
+
+    await act(async () => { fireEvent.click(startAnywayBtn) })
+
+    expect(globalThis.alert).toHaveBeenCalledWith(
+      expect.stringContaining('session expired')
+    )
+    expect(localStorage.getItem('lichess_user')).toBeNull()
   })
 
-  test('calculates 24h when sleep and wake time are identical', () => {
-    openSleepForm()
-    const inputs = document.querySelectorAll('input[type="time"]')
-    fireEvent.change(inputs[0], { target: { value: '08:00' } })
-    fireEvent.change(inputs[1], { target: { value: '08:00' } })
-    fireEvent.click(screen.getByRole('button', { name: /calculate sleep/i }))
-    expect(screen.getByText(/24h 0m/i)).toBeInTheDocument()
+  test('startSession handles non-success response', async () => {
+    const startAnywayBtn = await startActiveSession()
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ success: false, message: 'already active' }),
+      })
+    )
+
+    await act(async () => { fireEvent.click(startAnywayBtn) })
+
+    expect(globalThis.alert).toHaveBeenCalledWith('already active')
+  })
+
+  test('startSession handles network error', async () => {
+    const startAnywayBtn = await startActiveSession()
+
+    globalThis.fetch = vi.fn(() => Promise.reject(new Error('offline')))
+
+    await act(async () => { fireEvent.click(startAnywayBtn) })
+
+    expect(globalThis.alert).toHaveBeenCalledWith('Failed to connect to server')
+  })
+
+  test('End Session ends successfully', async () => {
+    const startAnywayBtn = await startActiveSession()
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ success: true, session_id: 10 }),
+      })
+    )
+    await act(async () => { fireEvent.click(startAnywayBtn) })
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /end session/i })).toBeInTheDocument()
+    })
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ success: true }),
+      })
+    )
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /end session/i }))
+    })
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /start chess session/i })).toBeInTheDocument()
+    })
+  })
+
+  test('End Session handles failure response', async () => {
+    const startAnywayBtn = await startActiveSession()
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ success: true, session_id: 10 }),
+      })
+    )
+    await act(async () => { fireEvent.click(startAnywayBtn) })
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /end session/i })).toBeInTheDocument()
+    })
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ success: false, message: 'already ended' }),
+      })
+    )
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /end session/i }))
+    })
+
+    expect(globalThis.alert).toHaveBeenCalledWith('already ended')
+  })
+
+  test('End Session handles network error', async () => {
+    const startAnywayBtn = await startActiveSession()
+
+    globalThis.fetch = vi.fn(() =>
+      Promise.resolve({
+        ok: true, status: 200,
+        json: () => Promise.resolve({ success: true, session_id: 10 }),
+      })
+    )
+    await act(async () => { fireEvent.click(startAnywayBtn) })
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /end session/i })).toBeInTheDocument()
+    })
+
+    globalThis.fetch = vi.fn(() => Promise.reject(new Error('offline')))
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /end session/i }))
+    })
+
+    expect(globalThis.alert).toHaveBeenCalledWith('Failed to connect to server')
   })
 })

@@ -4,6 +4,8 @@ using LichessApiService.Grpc.Data.DTOs;
 using LichessApiService.Grpc.Data.Entities;
 using LichessApiService.Grpc.Data.Enums;
 using Microsoft.EntityFrameworkCore;
+using System.Net.Http.Headers;
+using System.Net;
 
 namespace LichessApiService.Grpc.Lichess;
 
@@ -30,13 +32,13 @@ public class LichessStreamService(
 
                 using var request = new HttpRequestMessage(HttpMethod.Get, "/api/stream/event");
                 request.Headers.Authorization =
-                    new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", lichessToken);
+                    new AuthenticationHeaderValue("Bearer", lichessToken);
 
                 using var response = await client.SendAsync(
                     request, HttpCompletionOption.ResponseHeadersRead, ct);
 
-                if (response.StatusCode is System.Net.HttpStatusCode.Unauthorized
-                    or System.Net.HttpStatusCode.Forbidden)
+                if (response.StatusCode is HttpStatusCode.Unauthorized
+                    or HttpStatusCode.Forbidden)
                 {
                     logger.LogError(
                         "Auth failure ({StatusCode}) for session {SessionId}. Stopping stream",
@@ -63,8 +65,8 @@ public class LichessStreamService(
                 return;
             }
             catch (HttpRequestException ex) when (
-                ex.StatusCode is System.Net.HttpStatusCode.Unauthorized
-                or System.Net.HttpStatusCode.Forbidden)
+                ex.StatusCode is HttpStatusCode.Unauthorized
+                or HttpStatusCode.Forbidden)
             {
                 logger.LogError(ex,
                     "Auth failure for session {SessionId}. Stopping stream", sessionId);
@@ -377,11 +379,11 @@ public class LichessStreamService(
             Result = game.Result,
             PlayerOpeningWinRate = openingWinRate,
             PlayerOpeningGameCount = openingGameCount > 0 ? openingGameCount : null,
-            InaccuracyCnt = game.InaccuracyCnt,
-            MistakeCnt = game.MistakeCnt,
-            BlunderCnt = game.BlunderCnt,
-            Acpl = game.Acpl,
-            Accuracy = game.Accuracy,
+            InaccuracyCnt = game.Analysis?.InaccuracyCnt,
+            MistakeCnt = game.Analysis?.MistakeCnt,
+            BlunderCnt = game.Analysis?.BlunderCnt,
+            Acpl = game.Analysis?.Acpl,
+            Accuracy = game.Analysis?.Accuracy,
             ConsecutiveLossesPregame = consecutiveLossesPregame,
             AvgTpmSeconds = avgTpmSeconds
         };
