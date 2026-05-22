@@ -1,0 +1,51 @@
+syntax = "proto3";
+
+package lichess_api;
+
+import "google/protobuf/timestamp.proto";
+
+option csharp_namespace = "LichessApiService.Grpc.Protos";
+
+// Implemented by LichessApiService.grpc (gRPC SERVER)
+// Called by api-gateway
+service LichessService {
+  rpc RegisterPlayer(RegisterPlayerRequest) returns (RegisterPlayerResponse);
+  rpc StartSession(StartSessionRequest) returns (StartSessionResponse);
+  rpc EndSession(EndSessionRequest) returns (EndSessionResponse);
+}
+
+message RegisterPlayerRequest {
+  string lichess_id = 1;
+  string username = 2;
+}
+
+message RegisterPlayerResponse {
+  int32 player_id = 1;
+  bool is_new = 2;
+}
+
+message StartSessionRequest {
+  int32 player_id = 1;
+  string player_username = 2;
+  string lichess_token = 3;
+  google.protobuf.Timestamp sleep_time = 4;
+  google.protobuf.Timestamp awaken_time = 5;
+  google.protobuf.Timestamp confirmed_at = 6;
+  int32 water_intake_initial_ml = 7;
+}
+
+message StartSessionResponse {
+  int32 session_id = 1;
+  bool success = 2;
+  string message = 3;
+}
+
+message EndSessionRequest {
+  int32 session_id = 1;
+  int32 water_drunk_during_session_ml = 2;
+}
+
+message EndSessionResponse {
+  bool success = 1;
+  string message = 2;
+}

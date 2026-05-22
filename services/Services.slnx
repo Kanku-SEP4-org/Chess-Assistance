@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/Services/">
+    <Project Path="iot-service/Grpc-Server/Grpc-Server.csproj" />
+    <Project Path="LichessApiService.grpc/LichessApiService.grpc.csproj" />
+    <Project Path="LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj" />
+  </Folder>
+</Solution>

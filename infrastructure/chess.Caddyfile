@@ -1,0 +1,26 @@
+# Chess-Assistance — reverse proxy rules
+# Imported by the main Caddy gateway via: import /etc/caddy/sites/*
+
+api-chess.cannyboiz.com {
+    handle /predict/* {
+        reverse_proxy chess-ml-api:8000
+    }
+    handle /predict-angriness* {
+        reverse_proxy chess-ml-api:8000
+    }
+    handle /angriness/* {
+        reverse_proxy chess-ml-api:8000
+    }
+    handle /recommend-environment* {
+        reverse_proxy chess-ml-api:8000
+    }
+    handle /factor-impact/* {
+        reverse_proxy chess-ml-api:8000
+    }
+    handle /health {
+        reverse_proxy chess-ml-api:8000
+    }
+    handle {
+        reverse_proxy chess-api-gateway:3001
+    }
+}

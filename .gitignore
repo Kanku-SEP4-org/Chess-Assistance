@@ -11,8 +11,14 @@
 *.sln.docstates
 *.env
 
+# VS Code C# Dev Kit language service cache
+*.lscache
+
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
+
+# C# Dev Kit cache
+*.lscache
 
 # Mono auto generated files
 mono_crash.*
@@ -398,7 +404,7 @@ FodyWeavers.xsd
 
 # VS Code files for those working on multiple tools
 .vscode/*
-!.vscode/settings.json
+# !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
@@ -423,3 +429,30 @@ FodyWeavers.xsd
 *.iml
 *.ipr
 out/
+
+
+# Virtual environments
+**/venv/
+**/.venv/
+**/env/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pkl
+
+# ML artifacts
+*.pkl
+**/models/metrics.json
+**/models/eval_metrics.json
+*_cache.json
+
+# prompts
+prompts/
+/prompts/
+prompts/
+/.claude
+
+# cannyboiz's notes
+cannyboizs-notes/

@@ -1,0 +1,402 @@
+name: ML Team CI/CD
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - "machine_learning/**"
+      - "services/LichessApiService.grpc/**"
+      - "services/LichessApiService.grpc.Tests/**"
+      - "shared/LichessApi.proto"
+      - "docker-compose.yml"
+      - "docker-compose.prod.yml"
+      - "infrastructure/chess.Caddyfile"
+      - ".github/workflows/ml-team-ci-cd.yml"
+  pull_request:
+    branches: [develop, main]
+    paths:
+      - "machine_learning/**"
+      - "services/LichessApiService.grpc/**"
+      - "services/LichessApiService.grpc.Tests/**"
+      - "shared/LichessApi.proto"
+      - ".github/workflows/ml-team-ci-cd.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+# ───────────────────────────────────────────────────────────────
+# CI
+# ───────────────────────────────────────────────────────────────
+jobs:
+  lichess-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj
+
+      - name: Build
+        run: dotnet build services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj --configuration Release --no-restore
+
+      - name: Test with coverage
+        run: >-
+          dotnet test services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj
+          --configuration Release --no-build
+          /p:CollectCoverage=true
+          /p:CoverletOutputFormat=cobertura
+          /p:CoverletOutput=./coverage/
+          /p:Threshold=80
+          /p:ThresholdType=line
+          /p:Exclude="[*]LichessApiService.Grpc.Data.*%2c[*]LichessApiService.Grpc.Protos.*"
+          /p:ExcludeByFile="**/Program.cs"
+          /p:ExcludeByAttribute="GeneratedCodeAttribute%2cCompilerGeneratedAttribute"
+
+      - name: Validate Docker build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/LichessApiService.grpc/Dockerfile
+          push: false
+
+  ml-ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: machine_learning
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r trainers/trainer-winrate/requirements.txt
+          pip install -r trainers/trainer-angriness-predictor/requirements.txt
+          pip install -r trainers/trainer-ap/requirements.txt
+          pip install -r trainers/trainer-factor-imp/requirements.txt
+          pip install -r api/requirements.txt
+
+      - name: Run winrate training pipeline
+        working-directory: machine_learning/trainers/trainer-winrate
+        run: python run_pipeline.py
+
+      - name: Verify winrate pipeline artifacts
+        working-directory: machine_learning/trainers/trainer-winrate
+        run: |
+          echo "Checking pipeline artifacts..."
+          test -f models/model.pkl         || { echo "FAIL: models/model.pkl not found";         exit 1; }
+          test -f models/metrics.json      || { echo "FAIL: models/metrics.json not found";      exit 1; }
+          test -f models/eval_metrics.json || { echo "FAIL: models/eval_metrics.json not found"; exit 1; }
+          echo "All artifacts present."
+          echo "--- metrics.json ---"
+          cat models/metrics.json
+          echo ""
+          echo "--- eval_metrics.json ---"
+          cat models/eval_metrics.json
+
+      - name: Run angriness training pipeline
+        working-directory: machine_learning/trainers/trainer-angriness-predictor
+        run: python run_pipeline.py
+
+      - name: Verify angriness pipeline artifacts
+        working-directory: machine_learning/trainers/trainer-angriness-predictor
+        run: |
+          echo "Checking pipeline artifacts..."
+          test -f models/model.pkl             || { echo "FAIL: models/model.pkl not found";             exit 1; }
+          test -f models/scaler.pkl            || { echo "FAIL: models/scaler.pkl not found";            exit 1; }
+          test -f models/angriness_bins.json   || { echo "FAIL: models/angriness_bins.json not found";   exit 1; }
+          test -f models/metrics.json          || { echo "FAIL: models/metrics.json not found";          exit 1; }
+          test -f models/eval_metrics.json     || { echo "FAIL: models/eval_metrics.json not found";     exit 1; }
+          echo "All artifacts present."
+          echo "--- metrics.json ---"
+          cat models/metrics.json
+          echo ""
+          echo "--- eval_metrics.json ---"
+          cat models/eval_metrics.json
+
+      - name: Run accuracy predictor training pipeline
+        working-directory: machine_learning/trainers/trainer-ap
+        run: python run_pipeline.py
+
+      - name: Verify accuracy predictor pipeline artifacts
+        working-directory: machine_learning/trainers/trainer-ap
+        run: |
+          echo "Checking pipeline artifacts..."
+          test -f models/model_pipeline.pkl || { echo "FAIL: models/model_pipeline.pkl not found"; exit 1; }
+          test -f models/metrics.json       || { echo "FAIL: models/metrics.json not found";       exit 1; }
+          test -f models/eval_metrics.json  || { echo "FAIL: models/eval_metrics.json not found";  exit 1; }
+          echo "All artifacts present."
+          echo "--- metrics.json ---"
+          cat models/metrics.json
+          echo ""
+          echo "--- eval_metrics.json ---"
+          cat models/eval_metrics.json
+
+      - name: Run factor impact analysis pipeline
+        working-directory: machine_learning/trainers/trainer-factor-imp
+        run: python run_pipeline.py
+
+      - name: Verify factor impact pipeline artifacts
+        working-directory: machine_learning/trainers/trainer-factor-imp
+        run: |
+          echo "Checking pipeline artifacts..."
+          test -f models/factor_impact_report.json     || { echo "FAIL: factor_impact_report.json not found";     exit 1; }
+          test -f models/factor_impact_validation.json || { echo "FAIL: factor_impact_validation.json not found"; exit 1; }
+          test -f models/model_comparison.json         || { echo "FAIL: model_comparison.json not found";         exit 1; }
+          echo "All artifacts present."
+          echo "--- factor_impact_validation.json ---"
+          cat models/factor_impact_validation.json
+
+      - name: FastAPI health check
+        working-directory: machine_learning/api
+        env:
+          MODEL_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-winrate/models/model.pkl
+          ANGRINESS_MODEL_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-angriness-predictor/models/model.pkl
+          ANGRINESS_SCALER_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-angriness-predictor/models/scaler.pkl
+          ANGRINESS_BINS_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-angriness-predictor/models/angriness_bins.json
+          AP_PIPELINE_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-ap/models/model_pipeline.pkl
+          AP_ECO_MAP_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-ap/data/eco_frequency_map.json
+          FACTOR_IMPACT_REPORT_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-factor-imp/models/factor_impact_report.json
+          FACTOR_IMPACT_COMPARISON_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-factor-imp/models/model_comparison.json
+          FACTOR_IMPACT_VALIDATION_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-factor-imp/models/factor_impact_validation.json
+        run: |
+          uvicorn main:app --host 127.0.0.1 --port 8000 &
+          SERVER_PID=$!
+
+          for i in 1 2 3 4 5; do
+            if curl -sf http://127.0.0.1:8000/health; then
+              echo ""
+              echo "Health check passed."
+              kill $SERVER_PID
+              exit 0
+            fi
+            echo "Attempt $i: server not ready, waiting 2s..."
+            sleep 2
+          done
+
+          echo "FAIL: FastAPI server did not respond to /health within 10 seconds."
+          kill $SERVER_PID 2>/dev/null || true
+          exit 1
+
+  # ───────────────────────────────────────────────────────────────
+  # PUBLISH TO GHCR
+  # ───────────────────────────────────────────────────────────────
+  lichess-publish:
+    needs: lichess-test
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata (develop)
+        if: github.ref_name == 'develop'
+        id: meta_develop
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/lichessapi-grpc
+          tags: |
+            type=raw,value=dev
+            type=sha,prefix=sha-
+
+      - name: Extract image metadata (main)
+        if: github.ref_name == 'main'
+        id: meta_main
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/lichessapi-grpc
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - name: Build and push Docker image (develop)
+        if: github.ref_name == 'develop'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/LichessApiService.grpc/Dockerfile
+          push: true
+          tags: ${{ steps.meta_develop.outputs.tags }}
+          labels: ${{ steps.meta_develop.outputs.labels }}
+
+      - name: Build and push Docker image (main)
+        if: github.ref_name == 'main'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: services/LichessApiService.grpc/Dockerfile
+          push: true
+          tags: ${{ steps.meta_main.outputs.tags }}
+          labels: ${{ steps.meta_main.outputs.labels }}
+
+  ml-publish:
+    needs: ml-ci
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract image metadata (develop)
+        if: github.ref_name == 'develop'
+        id: meta_develop
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/chess-ml-api
+          tags: |
+            type=raw,value=dev
+            type=sha,prefix=sha-
+
+      - name: Extract image metadata (main)
+        if: github.ref_name == 'main'
+        id: meta_main
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/chess-ml-api
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=sha-
+
+      - name: Build and push Docker image (develop)
+        if: github.ref_name == 'develop'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: machine_learning/api/.dockerfile
+          push: true
+          tags: ${{ steps.meta_develop.outputs.tags }}
+          labels: ${{ steps.meta_develop.outputs.labels }}
+
+      - name: Build and push Docker image (main)
+        if: github.ref_name == 'main'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: machine_learning/api/.dockerfile
+          push: true
+          tags: ${{ steps.meta_main.outputs.tags }}
+          labels: ${{ steps.meta_main.outputs.labels }}
+
+  # ───────────────────────────────────────────────────────────────
+  # DEPLOY TO VPS
+  # ───────────────────────────────────────────────────────────────
+  deploy:
+    needs: [lichess-publish, ml-publish]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy deployment files to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: >-
+            docker-compose.yml,
+            docker-compose.prod.yml,
+            scripts/databases/init.sql,
+            scripts/databases/triggers.sql
+          target: "/opt/chess-assistance"
+
+      - name: Copy Caddyfile to Caddy config directory
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          source: "infrastructure/chess.Caddyfile"
+          target: "/opt/caddy/sites"
+          strip_components: 1
+
+      - name: Deploy services via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          GHCR_USER: ${{ github.actor }}
+          PROD_POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          PROD_POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          PROD_POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          PROD_CONNECTIONSTRINGS: ${{ secrets.CONNECTIONSTRINGS__DEFAULTCONNECTION }}
+          PROD_RABBITMQ_USERNAME: ${{ secrets.RABBITMQ_USERNAME }}
+          PROD_RABBITMQ_PASSWORD: ${{ secrets.RABBITMQ_PASSWORD }}
+          PROD_FRONTEND_URL: ${{ secrets.PROD_FRONTEND_URL }}
+          PROD_LICHESS_REDIRECT_URI: ${{ secrets.PROD_LICHESS_REDIRECT_URI }}
+          PROD_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: GHCR_PAT,GHCR_USER,PROD_POSTGRES_DB,PROD_POSTGRES_USER,PROD_POSTGRES_PASSWORD,PROD_CONNECTIONSTRINGS,PROD_RABBITMQ_USERNAME,PROD_RABBITMQ_PASSWORD,PROD_FRONTEND_URL,PROD_LICHESS_REDIRECT_URI,PROD_JWT_SECRET
+          script: |
+            set -euo pipefail
+            cd /opt/chess-assistance
+
+            # Write .env.prod from secrets
+            cat > .env.prod <<EOF
+            POSTGRES_DB=${PROD_POSTGRES_DB}
+            POSTGRES_USER=${PROD_POSTGRES_USER}
+            POSTGRES_PASSWORD=${PROD_POSTGRES_PASSWORD}
+            CONNECTIONSTRINGS__DEFAULTCONNECTION=${PROD_CONNECTIONSTRINGS}
+            RABBITMQ_USERNAME=${PROD_RABBITMQ_USERNAME}
+            RABBITMQ_PASSWORD=${PROD_RABBITMQ_PASSWORD}
+            FRONTEND_URL=${PROD_FRONTEND_URL}
+            LICHESS_REDIRECT_URI=${PROD_LICHESS_REDIRECT_URI}
+            JWT_SECRET=${PROD_JWT_SECRET}
+            EOF
+
+            # Login to GHCR and pull latest images
+            echo "${GHCR_PAT}" | docker login ghcr.io -u "${GHCR_USER}" --password-stdin
+
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod pull
+
+            # Start/update services
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
+
+            # Reload Caddy to pick up new config
+            docker exec caddy-gateway caddy reload --config /etc/caddy/Caddyfile
+
+            # Remove old dangling images
+            docker image prune -f
+
+            echo "Deployment complete."

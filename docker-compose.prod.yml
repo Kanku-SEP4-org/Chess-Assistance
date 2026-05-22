@@ -1,0 +1,141 @@
+# Production deployment for VPS
+# Production override — merges with docker-compose.yml
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod pull
+#        docker compose -f docker-compose.yml -f docker-compose.prod.yml --env-file .env.prod up -d
+
+
+# TODO: except for postgres and rabbitmq, the image should come from GHCR
+services:
+
+  # ---------------------------------------------------------
+  # BACKEND INFRASTRUCTURE (Completely Isolated)
+  # ---------------------------------------------------------
+  postgres:
+    image: postgres:17
+    container_name: chess-postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports: !reset [] # No external ports exposed for security
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./scripts/databases/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+      - ./scripts/databases/triggers.sql:/docker-entrypoint-initdb.d/02_triggers.sql:ro
+    networks:
+      - default
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:management
+    container_name: respawn_rabbitmq
+    restart: unless-stopped
+    ports: !reset [] # No external ports exposed for security
+    environment:
+      # Change these from 'guest' in your .env file for production!
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - default
+  # ---------------------------------------------------------
+  # INTERNAL MICROSERVICES (No Public Access)
+  # ---------------------------------------------------------
+
+  iot-service:
+    profiles: [iot]
+    build:
+      context: ./services/iot-service
+      dockerfile: Grpc-Server/Dockerfile
+    container_name: chess-iot-service
+    environment:
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__User: ${RABBITMQ_USERNAME}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+    networks:
+      - default
+    restart: unless-stopped
+
+  lichess-api:  # lichessapi-grpc
+    image: ghcr.io/kanku-sep4-org/lichessapi-grpc:latest
+    build: !reset null
+    container_name: chess-lichess-api-grpc
+    ports: !reset [] # No external ports exposed for security
+    expose:
+      - "8082"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      CONNECTIONSTRINGS__DEFAULTCONNECTION: ${CONNECTIONSTRINGS__DEFAULTCONNECTION}
+    networks:
+      - default
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ---------------------------------------------------------
+  # PUBLIC FACING SERVICES (Plugged into Caddy)
+  # ---------------------------------------------------------
+
+  api-gateway:
+    image: ghcr.io/kanku-sep4-org/chess-api-gateway:latest
+    build: !reset null
+    container_name: chess-api-gateway
+    ports: !reset [] # No external ports exposed for security
+    expose:
+      - "3001"
+    environment:
+      GRPC_HOST: chess-api-gateway
+      LICHESS_GRPC_HOST: chess-lichess-api-grpc
+      LICHESS_GRPC_PORT: "8082"
+      FRONTEND_URL: ${FRONTEND_URL}
+      LICHESS_REDIRECT_URI: ${LICHESS_REDIRECT_URI}
+    networks:
+      - caddy_net # <---- connect to caddy_net for reverse proxy
+      - default
+    restart: unless-stopped
+
+  ml-api:
+    image: ghcr.io/kanku-sep4-org/chess-ml-api:latest
+    build: !reset null
+    container_name: chess-ml-api
+    ports: !reset [] # No external ports exposed for security
+    expose:
+      - "8000"
+    environment:
+      MODEL_PATH: /app/models/model.pkl
+      SCALER_PATH: /app/models/scaler.pkl
+      ANGRINESS_MODEL_PATH: /app/angriness_models/model.pkl
+      ANGRINESS_SCALER_PATH: /app/angriness_models/scaler.pkl
+      ANGRINESS_BINS_PATH: /app/angriness_models/angriness_bins.json
+      AP_PIPELINE_PATH: /app/ap_models/model_pipeline.pkl
+      AP_ECO_MAP_PATH: /app/ap_models/eco_frequency_map.json
+      FACTOR_IMPACT_REPORT_PATH: /app/factor_impact_models/factor_impact_report.json
+      FACTOR_IMPACT_COMPARISON_PATH: /app/factor_impact_models/model_comparison.json
+      FACTOR_IMPACT_VALIDATION_PATH: /app/factor_impact_models/factor_impact_validation.json
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@chess-postgres:5432/${POSTGRES_DB}
+      FRONTEND_URL: ${FRONTEND_URL}
+    networks:
+      - caddy_net # <---- connect to caddy_net for reverse proxy
+      - default
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+
+volumes:
+  pgdata:
+
+networks:
+  caddy_net:
+    external: true
+    name: caddy_net
+  chess_internal:
+    driver: bridge
