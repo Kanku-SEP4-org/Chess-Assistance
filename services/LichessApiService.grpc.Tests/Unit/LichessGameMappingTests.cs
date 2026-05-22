@@ -356,11 +356,12 @@ public class LichessGameMappingTests
         var dto = CreateSampleGame(playerColor: "white");
         var game = _fetcher.MapToGameEntity(dto, "testplayer", matchId: 1);
 
-        Assert.Equal(2, game.InaccuracyCnt);
-        Assert.Equal(1, game.MistakeCnt);
-        Assert.Equal(0, game.BlunderCnt);
-        Assert.Equal(15, game.Acpl);
-        Assert.Equal(94, game.Accuracy);
+        Assert.NotNull(game.Analysis);
+        Assert.Equal(2, game.Analysis.InaccuracyCnt);
+        Assert.Equal(1, game.Analysis.MistakeCnt);
+        Assert.Equal(0, game.Analysis.BlunderCnt);
+        Assert.Equal(15, game.Analysis.Acpl);
+        Assert.Equal(94, game.Analysis.Accuracy);
     }
 
     [Fact]
@@ -369,11 +370,12 @@ public class LichessGameMappingTests
         var dto = CreateSampleGame(playerColor: "black", playerUsername: "testplayer");
         var game = _fetcher.MapToGameEntity(dto, "testplayer", matchId: 1);
 
-        Assert.Equal(3, game.InaccuracyCnt);
-        Assert.Equal(2, game.MistakeCnt);
-        Assert.Equal(1, game.BlunderCnt);
-        Assert.Equal(30, game.Acpl);
-        Assert.Equal(85, game.Accuracy);
+        Assert.NotNull(game.Analysis);
+        Assert.Equal(3, game.Analysis.InaccuracyCnt);
+        Assert.Equal(2, game.Analysis.MistakeCnt);
+        Assert.Equal(1, game.Analysis.BlunderCnt);
+        Assert.Equal(30, game.Analysis.Acpl);
+        Assert.Equal(85, game.Analysis.Accuracy);
     }
 
     [Fact]
@@ -383,10 +385,6 @@ public class LichessGameMappingTests
         dto.Players.White.Analysis = null;
         var game = _fetcher.MapToGameEntity(dto, "testplayer", matchId: 1);
 
-        Assert.Null(game.InaccuracyCnt);
-        Assert.Null(game.MistakeCnt);
-        Assert.Null(game.BlunderCnt);
-        Assert.Null(game.Acpl);
-        Assert.Null(game.Accuracy);
+        Assert.Null(game.Analysis);
     }
 }

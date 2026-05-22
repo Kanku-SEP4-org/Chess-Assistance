@@ -379,11 +379,11 @@ public class LichessStreamService(
             Result = game.Result,
             PlayerOpeningWinRate = openingWinRate,
             PlayerOpeningGameCount = openingGameCount > 0 ? openingGameCount : null,
-            InaccuracyCnt = game.InaccuracyCnt,
-            MistakeCnt = game.MistakeCnt,
-            BlunderCnt = game.BlunderCnt,
-            Acpl = game.Acpl,
-            Accuracy = game.Accuracy,
+            InaccuracyCnt = game.Analysis?.InaccuracyCnt,
+            MistakeCnt = game.Analysis?.MistakeCnt,
+            BlunderCnt = game.Analysis?.BlunderCnt,
+            Acpl = game.Analysis?.Acpl,
+            Accuracy = game.Analysis?.Accuracy,
             ConsecutiveLossesPregame = consecutiveLossesPregame,
             AvgTpmSeconds = avgTpmSeconds
         };
