@@ -87,6 +87,26 @@ function getTemperature(arduinoId) {
   });
 }
 
+// GET /iot/light?id={arduinoId}
+app.get("/iot/light", (req, res) => {
+  const arduinoId = parseInt(req.query.id) || 1;
+
+  iotClient.getLight({ arduinoId }, (err, response) => {
+    if (err) {
+      console.error("IoT light error:", err);
+      return res.status(500).json({ error: "IoT request failed" });
+    }
+
+    res.json({
+      value: response.reading?.value ?? 0,
+      type: response.reading?.type ?? 0,
+      timestamp: response.reading?.timestamp ?? 0,
+      success: response.status?.success ?? false,
+      message: response.status?.message ?? "",
+    });
+  });
+});
+
 // ===================== ENDPOINTS =====================
 
 // GET /iot/temp?id={arduinoId}

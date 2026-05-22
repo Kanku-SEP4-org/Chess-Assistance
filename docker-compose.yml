@@ -35,7 +35,23 @@ services:
       timeout: 5s
       retries: 5
 
-  fastapi-service:
+  iot-service:
+    build:
+      context: ./services/iot-service
+      dockerfile: Grpc-Server/Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__User: guest
+      RabbitMQ__Password: guest
+      RabbitMQ__RequestQueue: sensor.requests
+      RabbitMQ__ResponseQueue: sensor.responses
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+
+  ml-api:
     build:
       context: .
       dockerfile: machine_learning/api/.dockerfile
@@ -47,6 +63,11 @@ services:
       - ANGRINESS_MODEL_PATH=/app/angriness_models/model.pkl
       - ANGRINESS_SCALER_PATH=/app/angriness_models/scaler.pkl
       - ANGRINESS_BINS_PATH=/app/angriness_models/angriness_bins.json
+      - AP_PIPELINE_PATH=/app/ap_models/model_pipeline.pkl
+      - AP_ECO_MAP_PATH=/app/ap_models/eco_frequency_map.json
+      - FACTOR_IMPACT_REPORT_PATH=/app/factor_impact_models/factor_impact_report.json
+      - FACTOR_IMPACT_COMPARISON_PATH=/app/factor_impact_models/model_comparison.json
+      - FACTOR_IMPACT_VALIDATION_PATH=/app/factor_impact_models/factor_impact_validation.json
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
     depends_on:
