@@ -63,7 +63,7 @@ services:
     restart: unless-stopped
 
   lichess-api:  # lichessapi-grpc
-    image: ghcr.io/kanku-sep4-org/lichessapi-grpc:latest
+    image: ghcr.io/kanku-sep4-org/chess-assistance/lichessapi-grpc:latest
     build: !reset null
     container_name: chess-lichess-api-grpc
     ports: !reset [] # No external ports exposed for security
@@ -84,7 +84,7 @@ services:
   # ---------------------------------------------------------
 
   api-gateway:
-    image: ghcr.io/kanku-sep4-org/chess-api-gateway:latest
+    image: ghcr.io/kanku-sep4-org/chess-assistance/chess-api-gateway:latest
     build: !reset null
     container_name: chess-api-gateway
     ports: !reset [] # No external ports exposed for security
@@ -102,7 +102,7 @@ services:
     restart: unless-stopped
 
   ml-api:
-    image: ghcr.io/kanku-sep4-org/chess-ml-api:latest
+    image: ghcr.io/kanku-sep4-org/chess-assistance/chess-ml-api:latest
     build: !reset null
     container_name: chess-ml-api
     ports: !reset [] # No external ports exposed for security
