@@ -109,13 +109,19 @@ CREATE TABLE game (
     started_at            TIMESTAMP,
     ended_at              TIMESTAMP,
     duration_min          INTEGER,
-    inaccuracy_cnt        INTEGER,
-    mistake_cnt           INTEGER,
-    blunder_cnt           INTEGER,
-    acpl                  INTEGER,
-    accuracy              INTEGER,
     match_id              INTEGER NOT NULL UNIQUE,
     FOREIGN KEY (match_id) REFERENCES match(id)
+);
+
+CREATE TABLE game_analysis (
+    id             SERIAL PRIMARY KEY,
+    game_id        INTEGER NOT NULL UNIQUE,
+    inaccuracy_cnt INTEGER,
+    mistake_cnt    INTEGER,
+    blunder_cnt    INTEGER,
+    acpl           INTEGER,
+    accuracy       INTEGER,
+    FOREIGN KEY (game_id) REFERENCES game(id)
 );
 
 CREATE TABLE player_opening_stat (
