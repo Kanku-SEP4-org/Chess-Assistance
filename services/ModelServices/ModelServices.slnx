@@ -1,4 +1,0 @@
-<Solution>
-  <Project Path="PredictionService.grpc/PredictionService.grpc.csproj" />
-  <Project Path="PredictionService.grpc.Tests/PredictionService.grpc.Tests.csproj" />
-</Solution>

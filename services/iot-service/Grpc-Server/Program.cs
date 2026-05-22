@@ -5,6 +5,7 @@ using IoTGrpcServer.Contracts;
 using IoTGrpcServer.Services;
 using RabbitMQ.Client;
 using Grpc_Server.Contracts;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -85,6 +86,9 @@ builder.Services.AddSingleton<IMessageQueue>(sp =>
 
 builder.Services.AddHostedService(sp =>
     sp.GetRequiredService<MessageService>());
+
+builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(
+    builder.Configuration.GetConnectionString("DefaultConnection")));
 
 var app = builder.Build();
 Console.WriteLine("GRPC SERVER BUILD TEEEEEST");

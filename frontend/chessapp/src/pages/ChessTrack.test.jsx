@@ -133,4 +133,30 @@ describe('ChessTrack — Lichess search', () => {
     })
     expect(screen.getByText('2800')).toBeInTheDocument()
   })
+
+  test('displays N/A for missing Lichess perf categories', async () => {
+    const mockData = {
+      username: 'newbie',
+      perfs: {},
+      patron: false,
+      online: true,
+    }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => mockData,
+    }))
+
+    renderChessTrack()
+    const inputs = screen.getAllByRole('textbox')
+    fireEvent.change(inputs[1], { target: { value: 'newbie' } })
+    const forms = document.querySelectorAll('form')
+    fireEvent.submit(forms[1])
+
+    await waitFor(() => {
+      expect(screen.getByText(/newbie stats/i)).toBeInTheDocument()
+    })
+    const naElements = screen.getAllByText('N/A')
+    expect(naElements.length).toBeGreaterThanOrEqual(4)
+    expect(screen.getByText('Yes')).toBeInTheDocument()
+  })
 })

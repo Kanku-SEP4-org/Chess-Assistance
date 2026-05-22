@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import heroImg from '../assets/chess-bg.png'
 import Navbar from '../components/Navbar'
-
-const BASE_URL = 'http://localhost:3001'
+import { API_URL } from '../config'
 
 function IotDashboard() {
 
@@ -17,7 +16,7 @@ function IotDashboard() {
 
     try {
 
-      const response = await fetch(`${BASE_URL}/iot/temp?id=1`)
+      const response = await fetch(`${API_URL}/iot/temp?id=1`)
       const data = await response.json()
 
       if (!response.ok || data.error) {
@@ -291,7 +290,7 @@ function IotDashboard() {
 
                 <p className="text-white-70 lh-base">
                   The dashboard is connected to the API gateway at
-                  <strong> {BASE_URL}</strong> and displays the most recent sensor values.
+                  <strong> {API_URL}</strong> and displays the most recent sensor values.
                 </p>
 
               </div>

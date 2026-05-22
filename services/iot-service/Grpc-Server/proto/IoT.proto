@@ -18,6 +18,9 @@ service iotService {
     rpc getWaterLevel(waterLevelReq) returns (waterLevelRes);
     rpc fillCup(fillCupReq) returns (fillCupRes);
     rpc getCO2(co2Req) returns (co2Res);
+
+    rpc startRecording(recReq) returns (Status);
+    rpc stopRecording(recReq) returns (Status);
 }
 
 message tempReq {
@@ -74,6 +77,8 @@ message sensorReading {
     int64 timestamp = 3;
 }
 
-
+message recReq {
+    int32 arduinoId = 1;
+}
 
 

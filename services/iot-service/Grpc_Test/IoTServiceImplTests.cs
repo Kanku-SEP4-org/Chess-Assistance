@@ -6,6 +6,8 @@ using IoTGrpcServer;
 using IotService;
 using Grpc.Core;
 using IoTGrpcServer.Contracts;
+using System.Runtime.InteropServices;
+using Microsoft.EntityFrameworkCore;
 
 namespace Grpc_Test;
 
@@ -111,14 +113,49 @@ public class IoTServiceImplTests
     [Fact]
     public async Task GetCO2_CallsStateStoreWithCorrectType()
     {
-    int arduinoId = 5;
-    _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Co2))
-              .Returns((SensorState)null!);
+        int arduinoId = 5;
+        _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Co2))
+                .Returns((SensorState)null!);
 
-    var request = new co2Req { ArduinoId = arduinoId };
+        var request = new co2Req { ArduinoId = arduinoId };
 
-    await _service.getCO2(request, null!);
+        await _service.getCO2(request, null!);
 
-    _mockStore.Verify(s => s.GetLatest(arduinoId, sensorType.Co2), Times.Once);
+        _mockStore.Verify(s => s.GetLatest(arduinoId, sensorType.Co2), Times.Once);
+    }
+    
+    [Fact]
+    public async Task StartRecording_Found_Success()
+    {
+        int arduinoId = 5;
+
+        var mockState = new SensorState
+        {
+            Value = 22.5f,
+            Timestamp = 12345,
+            Type = sensorType.Temp,
+        };
+
+        _mockStore.Setup(s => s.Record(arduinoId)).Returns([mockState]);
+
+        var request = new recReq { ArduinoId = arduinoId };
+
+        var response = await _service.startRecording(request, null!);
+
+        Assert.True(response.Success);
+    }
+
+    [Fact]
+    public async Task StartRecording_NotFound_Failure()
+    {
+        int arduinoId = 5;
+
+        _mockStore.Setup(s => s.Record(arduinoId)).Returns([]);
+
+        var request = new recReq { ArduinoId = arduinoId };
+
+        var response = await _service.startRecording(request, null!);
+
+        Assert.True(response.Success);
     }
 }

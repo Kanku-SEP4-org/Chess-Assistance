@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
 import heroImg from "../assets/chess-bg.png";
 import "../App.css";
+import { API_URL } from "../config";
 
 const heroTexts = ["Track your environment.", "Improve your game."]
 
@@ -10,8 +11,30 @@ function Home() {
   const [showSleepForm, setShowSleepForm] = useState(false);
   const [sleepTime, setSleepTime] = useState("");
   const [wakeTime, setWakeTime] = useState("");
-  const [sleepResult, setSleepResult] = useState("");
+  const [waterIntake, setWaterIntake] = useState("");
+  const [alerts, setAlerts] = useState(null);
+  const [sessionId, setSessionId] = useState(null);
+  const [sessionLoading, setSessionLoading] = useState(false);
+  const [endingSession, setEndingSession] = useState(false);
+  const [lichessUser, setLichessUser] = useState(null);
   const [heroIndex, setHeroIndex] = useState(0);
+
+  const sessionDates = useRef(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("lichess_user");
+    if (saved) {
+      setLichessUser(JSON.parse(saved));
+      fetch(`${API_URL}/auth/me`, { credentials: "include" })
+        .then((r) => {
+          if (!r.ok) {
+            localStorage.removeItem("lichess_user");
+            setLichessUser(null);
+          }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -20,24 +43,133 @@ function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  const calculateSleepTime = () => {
+  useEffect(() => {
+    const handlePageHide = () => {
+      if (!sessionId) return;
+      const body = JSON.stringify({ session_id: sessionId });
+      navigator.sendBeacon(
+        `${API_URL}/session/end`,
+        new Blob([body], { type: "application/json" })
+      );
+    };
+
+    window.addEventListener("pagehide", handlePageHide);
+    return () => window.removeEventListener("pagehide", handlePageHide);
+  }, [sessionId]);
+
+  const buildDates = () => {
+    const now = new Date();
+    const [wh, wm] = wakeTime.split(":").map(Number);
+    const [sh, sm] = sleepTime.split(":").map(Number);
+
+    const wake = new Date(now);
+    wake.setHours(wh, wm, 0, 0);
+    if (wake > now) wake.setDate(wake.getDate() - 1);
+
+    const sleep = new Date(wake);
+    sleep.setHours(sh, sm, 0, 0);
+    if (sleep >= wake) sleep.setDate(sleep.getDate() - 1);
+
+    return { sleep, wake, now };
+  };
+
+  const handleStartSession = async () => {
     if (!sleepTime || !wakeTime) return;
 
-    const [sleepHour, sleepMinute] = sleepTime.split(":").map(Number);
-    const [wakeHour, wakeMinute] = wakeTime.split(":").map(Number);
+    const dates = buildDates();
+    sessionDates.current = dates;
 
-    let sleepTotal = sleepHour * 60 + sleepMinute;
-    let wakeTotal = wakeHour * 60 + wakeMinute;
+    try {
+      const res = await fetch(`${API_URL}/session/evaluate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          sleep_time: dates.sleep.toISOString(),
+          awaken_time: dates.wake.toISOString(),
+          water_intake_ml: Number(waterIntake) || 0,
+        }),
+      });
+      const data = await res.json();
 
-    if (wakeTotal <= sleepTotal) {
-      wakeTotal += 24 * 60;
+      setAlerts({
+        items: data.alerts,
+        sleepDuration: data.sleep_duration,
+        awakeDuration: data.awake_duration,
+      });
+
+      if (data.alerts.length === 0) {
+        startSession();
+      }
+    } catch (err) {
+      console.error("Evaluate error:", err);
+      alert("Failed to evaluate readiness");
     }
+  };
 
-    const totalMinutes = wakeTotal - sleepTotal;
-    const hours = Math.floor(totalMinutes / 60);
-    const minutes = totalMinutes % 60;
+  const startSession = async () => {
+    if (!lichessUser) return;
+    setSessionLoading(true);
 
-    setSleepResult(`${hours}h ${minutes}m`);
+    const { sleep, wake, now } = sessionDates.current || buildDates();
+
+    try {
+      const res = await fetch(`${API_URL}/session/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          sleep_time: sleep.toISOString(),
+          awaken_time: wake.toISOString(),
+          confirmed_at: now.toISOString(),
+          water_intake_initial_ml: Number(waterIntake) || 0,
+        }),
+      });
+      if (res.status === 401) {
+        localStorage.removeItem("lichess_user");
+        setLichessUser(null);
+        setShowSleepForm(false);
+        setAlerts(null);
+        alert("Your session expired — please log in again");
+        return;
+      }
+      const data = await res.json();
+      if (data.success) {
+        setSessionId(data.session_id);
+        setMonitoringStarted(true);
+        setShowSleepForm(false);
+        setAlerts(null);
+      } else {
+        alert(data.message || "Failed to start session");
+      }
+    } catch (err) {
+      console.error("StartSession error:", err);
+      alert("Failed to connect to server");
+    } finally {
+      setSessionLoading(false);
+    }
+  };
+
+  const handleEndSession = async () => {
+    setEndingSession(true);
+    try {
+      const res = await fetch(`${API_URL}/session/end`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ session_id: sessionId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSessionId(null);
+      } else {
+        alert(data.message || "Failed to end session");
+      }
+    } catch (err) {
+      console.error("EndSession error:", err);
+      alert("Failed to connect to server");
+    } finally {
+      setEndingSession(false);
+    }
   };
 
   return (
@@ -80,46 +212,116 @@ function Home() {
 
       {showSleepForm && (
         <section className="sleep-card">
-          <h2>Sleep Tracker</h2>
+          <h2>Start Chess Session</h2>
 
-          <div className="sleep-inputs">
+          {!alerts ? (
+            <>
+              <div className="sleep-inputs">
+                <div>
+                  <p>Time you went to sleep</p>
+                  <input
+                    type="time"
+                    value={sleepTime}
+                    onChange={(e) => setSleepTime(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <p>Time you woke up</p>
+                  <input
+                    type="time"
+                    value={wakeTime}
+                    onChange={(e) => setWakeTime(e.target.value)}
+                  />
+                </div>
+
+                <div>
+                  <p>Water intake so far (ml)</p>
+                  <input
+                    type="number"
+                    min="0"
+                    step="100"
+                    placeholder="e.g. 500"
+                    value={waterIntake}
+                    onChange={(e) => setWaterIntake(e.target.value)}
+                  />
+                </div>
+
+                <button onClick={handleStartSession}>Start Session</button>
+              </div>
+            </>
+          ) : (
             <div>
-              <p>Time you went to sleep</p>
-              <input
-                type="time"
-                value={sleepTime}
-                onChange={(e) => setSleepTime(e.target.value)}
-              />
+              <h3>Session Readiness Check</h3>
+              <p>
+                You slept <strong>{alerts.sleepDuration}</strong> and have been
+                awake <strong>{alerts.awakeDuration}</strong>
+              </p>
+
+              {alerts.items.length === 0 ? (
+                <p style={{ color: "#4caf50" }}>
+                  All good — you're ready to play!
+                </p>
+              ) : (
+                <ul style={{ listStyle: "none", padding: 0, margin: "16px 0" }}>
+                  {alerts.items.map((a, i) => (
+                    <li
+                      key={i}
+                      style={{
+                        color: a.level === "red" ? "#ff5252" : "#ffb300",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      ● {a.message}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="sleep-inputs">
+                <button onClick={startSession} disabled={sessionLoading}>
+                  {sessionLoading
+                    ? "Starting..."
+                    : alerts.items.length > 0
+                      ? "Start Anyway"
+                      : "Start Session"}
+                </button>
+                {alerts.items.length > 0 && (
+                  <button onClick={() => setAlerts(null)}>Cancel</button>
+                )}
+              </div>
             </div>
-
-            <div>
-              <p>Time you woke up</p>
-              <input
-                type="time"
-                value={wakeTime}
-                onChange={(e) => setWakeTime(e.target.value)}
-              />
-            </div>
-
-            <button onClick={calculateSleepTime}>Calculate Sleep</button>
-          </div>
-
-          {sleepResult && (
-            <p>
-              You slept for: <strong>{sleepResult}</strong>
-            </p>
           )}
         </section>
       )}
 
       {monitoringStarted && (
         <section id="track" className="dashboard">
-          <button
-            className="sleep-toggle-btn"
-            onClick={() => setShowSleepForm(!showSleepForm)}
-          >
-            How much time did I sleep?
-          </button>
+          {lichessUser && !sessionId ? (
+            <button
+              className="sleep-toggle-btn"
+              onClick={() => setShowSleepForm(!showSleepForm)}
+            >
+              Start Chess Session
+            </button>
+          ) : !lichessUser ? (
+            <p style={{ color: "#ffb300", marginBottom: "24px" }}>
+              Log in with Lichess to start a session.
+            </p>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
+              <p style={{ color: "#4caf50", margin: 0 }}>
+                Session #{sessionId} is active
+              </p>
+              <button
+                className="sleep-toggle-btn"
+                onClick={handleEndSession}
+                disabled={endingSession}
+              >
+                {endingSession ? "Ending..." : "End Session"}
+              </button>
+            </div>
+          )}
 
           <h2>Live Metrics</h2>
 
