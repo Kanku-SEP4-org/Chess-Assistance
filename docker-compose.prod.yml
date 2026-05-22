@@ -53,6 +53,10 @@ services:
       context: ./services/iot-service
       dockerfile: Grpc-Server/Dockerfile
     container_name: chess-iot-service
+    environment:
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__User: ${RABBITMQ_USERNAME}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
     networks:
       - default
     restart: unless-stopped
@@ -89,6 +93,8 @@ services:
       GRPC_HOST: chess-api-gateway
       LICHESS_GRPC_HOST: chess-lichess-api-grpc
       LICHESS_GRPC_PORT: "8082"
+      FRONTEND_URL: ${FRONTEND_URL}
+      LICHESS_REDIRECT_URI: ${LICHESS_REDIRECT_URI}
     networks:
       - caddy_net # <---- connect to caddy_net for reverse proxy
       - default
@@ -107,7 +113,13 @@ services:
       ANGRINESS_MODEL_PATH: /app/angriness_models/model.pkl
       ANGRINESS_SCALER_PATH: /app/angriness_models/scaler.pkl
       ANGRINESS_BINS_PATH: /app/angriness_models/angriness_bins.json
+      AP_PIPELINE_PATH: /app/ap_models/model_pipeline.pkl
+      AP_ECO_MAP_PATH: /app/ap_models/eco_frequency_map.json
+      FACTOR_IMPACT_REPORT_PATH: /app/factor_impact_models/factor_impact_report.json
+      FACTOR_IMPACT_COMPARISON_PATH: /app/factor_impact_models/model_comparison.json
+      FACTOR_IMPACT_VALIDATION_PATH: /app/factor_impact_models/factor_impact_validation.json
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@chess-postgres:5432/${POSTGRES_DB}
+      FRONTEND_URL: ${FRONTEND_URL}
     networks:
       - caddy_net # <---- connect to caddy_net for reverse proxy
       - default
