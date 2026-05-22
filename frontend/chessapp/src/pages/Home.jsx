@@ -18,6 +18,7 @@ function Home() {
   const [endingSession, setEndingSession] = useState(false);
   const [lichessUser, setLichessUser] = useState(null);
   const [heroIndex, setHeroIndex] = useState(0);
+  const [temperature, setTemperature] = useState(null);
 
   const sessionDates = useRef(null);
 
@@ -42,6 +43,24 @@ function Home() {
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => {
+  const fetchTemperature = async () => {
+    try {
+      const response = await fetch(`${API_URL}/iot/temp?id=1`)
+      const data = await response.json()
+      if (response.ok && data.value != null) {
+        setTemperature(data.value.toFixed(1))
+      }
+    } catch (err) {
+      console.error('Failed to fetch temperature:', err)
+    }
+  }
+  fetchTemperature()
+  const interval = setInterval(fetchTemperature, 10000)
+  return () => clearInterval(interval)
+}, [])
+
 
   useEffect(() => {
     const handlePageHide = () => {
@@ -328,7 +347,7 @@ function Home() {
           <div className="cards-grid">
             <div className="metric-card">
               <span>Temperature</span>
-              <strong>22°C</strong>
+              <strong>{temperature != null ? `${temperature}°C` : '—'}</strong>
               <p>Optimal playing condition</p>
             </div>
 
