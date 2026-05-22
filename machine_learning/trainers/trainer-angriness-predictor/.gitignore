@@ -4,10 +4,7 @@ __pycache__/
 
 # Data
 data/processed/
-data/legacy/
 data/cache/
-data/raw/processed_player_data_v2.csv
-data/raw/Chess games stats.csv
 
 # Exploration artifacts
 steps/init-v1/plots/

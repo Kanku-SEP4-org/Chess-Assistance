@@ -784,6 +784,61 @@ def predict_accuracy(data: AccuracyPredictorFeatures):
         "opening_ply":              row["opening_ply"],
     }
 
+# ---------------------------------------------------------------------------
+# Factor impact reports
+# ---------------------------------------------------------------------------
+
+FACTOR_IMPACT_REPORT_PATH = os.getenv(
+    "FACTOR_IMPACT_REPORT_PATH",
+    "../trainers/trainer-factor-imp/models/factor_impact_report.json",
+)
+FACTOR_IMPACT_COMPARISON_PATH = os.getenv(
+    "FACTOR_IMPACT_COMPARISON_PATH",
+    "../trainers/trainer-factor-imp/models/model_comparison.json",
+)
+FACTOR_IMPACT_VALIDATION_PATH = os.getenv(
+    "FACTOR_IMPACT_VALIDATION_PATH",
+    "../trainers/trainer-factor-imp/models/factor_impact_validation.json",
+)
+
+factor_impact_report: dict | None = None
+factor_impact_comparison: dict | None = None
+factor_impact_validation: dict | None = None
+
+if os.path.exists(FACTOR_IMPACT_REPORT_PATH):
+    with open(FACTOR_IMPACT_REPORT_PATH) as f:
+        factor_impact_report = json.load(f)
+
+if os.path.exists(FACTOR_IMPACT_COMPARISON_PATH):
+    with open(FACTOR_IMPACT_COMPARISON_PATH) as f:
+        factor_impact_comparison = json.load(f)
+
+if os.path.exists(FACTOR_IMPACT_VALIDATION_PATH):
+    with open(FACTOR_IMPACT_VALIDATION_PATH) as f:
+        factor_impact_validation = json.load(f)
+
+
+@app.get("/factor-impact/report")
+def get_factor_impact_report():
+    if factor_impact_report is None:
+        raise HTTPException(status_code=503, detail="Factor impact report not loaded")
+    return factor_impact_report
+
+
+@app.get("/factor-impact/comparison")
+def get_factor_impact_comparison():
+    if factor_impact_comparison is None:
+        raise HTTPException(status_code=503, detail="Factor impact comparison not loaded")
+    return factor_impact_comparison
+
+
+@app.get("/factor-impact/validation")
+def get_factor_impact_validation():
+    if factor_impact_validation is None:
+        raise HTTPException(status_code=503, detail="Factor impact validation not loaded")
+    return factor_impact_validation
+
+
 @app.get("/health")
 def health():
     return {"status": "ok"}
