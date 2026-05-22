@@ -511,3 +511,63 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Angriness Predictor */
+.angriness-scale {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.angriness-segment {
+  flex: 1;
+  max-width: 140px;
+  padding: 1rem 0.5rem;
+  border-radius: 10px;
+  text-align: center;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.angriness-level-active {
+  transform: scale(1.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+}
+
+.angriness-segment-number {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  font-family: 'Playfair Display', serif;
+}
+
+.angriness-segment-label {
+  display: block;
+  font-size: 0.7rem;
+  opacity: 0.8;
+  margin-top: 0.25rem;
+}
+
+.game-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  transition: background 0.2s;
+}
+
+.game-list-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.analysis-warning {
+  background: rgba(255, 179, 0, 0.08);
+  border: 1px solid rgba(255, 179, 0, 0.4);
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+}

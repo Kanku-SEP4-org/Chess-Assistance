@@ -7,4 +7,5 @@ chess.cannyboiz.com {
 
 api-chess.cannyboiz.com {
     reverse_proxy chess-api-gateway:3001
+    reverse_proxy ml-fastapi:8000
 }

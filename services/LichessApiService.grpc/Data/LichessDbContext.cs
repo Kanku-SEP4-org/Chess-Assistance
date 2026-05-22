@@ -10,6 +10,7 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Match> Matches => Set<Match>();
     public DbSet<Game> Games => Set<Game>();
+    public DbSet<GameAnalysis> GameAnalyses => Set<GameAnalysis>();
     public DbSet<HealthRecord> HealthRecords => Set<HealthRecord>();
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<Sensor> Sensors => Set<Sensor>();
@@ -125,14 +126,28 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.Property(e => e.StartedAt).HasColumnName("started_at");
             entity.Property(e => e.EndedAt).HasColumnName("ended_at");
             entity.Property(e => e.DurationMin).HasColumnName("duration_min");
+            entity.Property(e => e.MatchId).HasColumnName("match_id");
+
+            entity.HasIndex(e => e.MatchId).IsUnique();
+
+            entity.HasOne(e => e.Analysis)
+                .WithOne(a => a.Game)
+                .HasForeignKey<GameAnalysis>(a => a.GameId);
+        });
+
+        modelBuilder.Entity<GameAnalysis>(entity =>
+        {
+            entity.ToTable("game_analysis");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.GameId).HasColumnName("game_id");
             entity.Property(e => e.InaccuracyCnt).HasColumnName("inaccuracy_cnt");
             entity.Property(e => e.MistakeCnt).HasColumnName("mistake_cnt");
             entity.Property(e => e.BlunderCnt).HasColumnName("blunder_cnt");
             entity.Property(e => e.Acpl).HasColumnName("acpl");
             entity.Property(e => e.Accuracy).HasColumnName("accuracy");
-            entity.Property(e => e.MatchId).HasColumnName("match_id");
 
-            entity.HasIndex(e => e.MatchId).IsUnique();
+            entity.HasIndex(e => e.GameId).IsUnique();
         });
 
         modelBuilder.Entity<Room>(entity =>
