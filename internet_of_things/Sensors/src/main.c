@@ -64,10 +64,6 @@ int main(void) {
                 break;
             case '6':
                 co2_start_measure();
-                // A small delay (e.g., 20-30ms) gives the UART interrupt time
-                // to receive the 9 bytes from the sensor
-                //so that the first read doesn't come up empty
-                _delay_ms(30);
                 get_and_report_co2();
                 break;
 

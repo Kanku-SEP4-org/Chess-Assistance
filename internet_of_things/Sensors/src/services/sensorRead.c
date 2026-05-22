@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stddef.h>
 #include <avr/interrupt.h>
+#include <util/delay.h>
 
 static volatile uint16_t latest_co2_ppm = 0; // Global variable to store the latest CO2 reading
 //volatile to mark that it can change unexpectedly (16-bit can be corrupted by an interrupt, so this accounts for that)
@@ -79,16 +80,30 @@ void get_and_report_co2(void) {
     
     char buffer[50];
     uint16_t co2_local_copy;
+    uint8_t data_received = 0;
 
-    // ATOMIC BLOCK: Guard the 16-bit multi-byte copy operation
-    cli(); // Clear Global Interrupts - stops the UART ISR from firing
-    co2_local_copy = latest_co2_ppm; // Safe 2-byte read transaction
-    sei(); // Re-enable Global Interrupts
+    for (int timeout = 0; timeout <15; timeout++) {
+        // ATOMIC BLOCK: Guard the 16-bit multi-byte copy operation for safe reading
+        cli(); // Clear Global Interrupts - stops the UART ISR from firing
+        co2_local_copy = latest_co2_ppm; // Safe 2-byte read transaction
+        sei(); // Re-enable Global Interrupts
 
-    if (co2_local_copy > 0) {
-        sprintf(buffer, "CO2:%u", co2_local_copy);
-    } else {
-        sprintf(buffer, "ERROR:CO2_NO_DATA_YET");
+        if (co2_local_copy > 0) {
+            data_received = 1;
+            break; // Exit the loop if we have valid data
+        }
+        _delay_ms(1);
     }
-    transmit_data(buffer);
+    //result handling
+    if (data_received) {
+        sprintf(buffer, "CO2:%u\n", co2_local_copy);
+        transmit_data(buffer);
+    } else {
+        transmit_data("ERROR:CO2_READ_FAIL\n");
+    }
+    // ATOMIC BLOCK: Reset the global variable back to 0
+    // so the next request starts with a clean slate.
+    cli();
+    latest_co2_ppm = 0;
+    sei();
 }
