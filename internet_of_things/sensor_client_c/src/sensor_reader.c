@@ -124,7 +124,7 @@ int read_water(int *water)
     close(serial);
 
     char *water_pos = strstr(buffer, "WAT:");
-    if (water_pos && sscanf(water_pos, "WAT:%f", water) == 1)
+    if (water_pos && sscanf(water_pos, "WAT:%d", water) == 1)
     {
         return 1;
     }
