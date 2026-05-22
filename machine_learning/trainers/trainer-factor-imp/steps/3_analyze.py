@@ -5,7 +5,7 @@ import joblib
 import pandas as pd
 
 
-MODEL_PATH = "../trainer-winrate/models/model_pipeline.pkl"
+MODEL_PATH = "../trainer-winrate/models/model.pkl"
 INPUT_PATH = "data/factor_candidates.csv"
 OUT_PATH = "models/factor_impact_report.json"
 FEATURES = ["minutes_slept", "minutes_awake", "env_score", "light"]
