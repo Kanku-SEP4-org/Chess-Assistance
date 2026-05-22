@@ -48,6 +48,7 @@ services:
       - ANGRINESS_SCALER_PATH=/app/angriness_models/scaler.pkl
       - ANGRINESS_BINS_PATH=/app/angriness_models/angriness_bins.json
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
     depends_on:
       postgres:
         condition: service_healthy
