@@ -9,12 +9,18 @@ var builder = WebApplication.CreateBuilder(args);
 
 var dataSource = new NpgsqlDataSourceBuilder(
         builder.Configuration.GetConnectionString("DefaultConnection"))
+    // gean: map enums to the schema where init.sql creates them, so Npgsql sends Postgres enum values instead of integers.
     .MapEnum<TimeControlType>("time_control_type")
     .MapEnum<GameResultType>("game_result_type")
     .Build();
 
 builder.Services.AddDbContext<LichessDbContext>(options =>
-    options.UseNpgsql(dataSource));
+    options.UseNpgsql(dataSource, npgsqlOptions =>
+    {
+        // gean: EF also needs enum mappings so inserts use Postgres enum parameters, not C# integer values.
+        npgsqlOptions.MapEnum<TimeControlType>("time_control_type", "chess_assistant");
+        npgsqlOptions.MapEnum<GameResultType>("game_result_type", "chess_assistant");
+    }));
 
 builder.Services.AddGrpc();
 
