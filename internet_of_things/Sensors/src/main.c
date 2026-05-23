@@ -4,7 +4,7 @@
 #include <util/delay.h>
 
 #include "uart_stdio.h"
-
+#include "pump.h"
 #include "services/sensorRead.h" // access interface
 #include "services/communication.h"
 
@@ -31,12 +31,13 @@ int main(void) {
 
     //initialize ADC sensors
     ADC_Error_t light = light_init();
+    pump_init();
     ADC_Error_t water = soil_init(ADC_PK0);
     if (co2_init(co2_incoming_data_handler) == CO2_OK) {
         // CO2 Initialized successfully!
-        transmit_data("CO2:OK\n");
+        transmit_data("CO2_INIT:OK\n");
     } else {
-        transmit_data("CO2:INIT_FAIL\n");
+        transmit_data("CO2_INIT:INIT_FAIL\n");
     }
 
 
@@ -59,8 +60,7 @@ int main(void) {
                 get_and_report_water(water);
                 break;
             case '5':
-                //your code here
-                transmit_data("Not yet implemented");
+                fill_and_report_done();
                 break;
             case '6':
                 co2_start_measure();
