@@ -52,18 +52,29 @@ public class IoTServiceImpl : iotService.iotServiceBase
     }
 
     //COMMANDS
-    public override async Task<fillCupRes> fillCup(fillCupReq req, ServerCallContext ctx)
+    public override async Task<fillCupRes> fillCup(fillCupReq request, ServerCallContext context)
     {
         var payload = new {
-            //TODO: determine if we set the default here, in the arduino code
-            //or if we want to have it stored from previous commands
-            Amount = req.HasAmount ? req.Amount : 200.0f,//if not specified, default to 200ml
             Action = "Fill"
         };
 
-        var status = await SendCommandAsync(req.ArduinoId, sensorType.FillCup, payload);
+        var status = await SendCommandAsync(request.ArduinoId, sensorType.Pump, payload);
 
-        return new fillCupRes { Status = status };
+        if (!status.Success)
+        {
+            return new fillCupRes { Status = status };
+        }
+
+        // pump works for 2s, including small communication delays we give it a grace period
+        // waiting 3s for a response
+        Thread.Sleep(3000);
+
+        var pump = _stateStore.GetLatest(request.ArduinoId, sensorType.Pump);
+
+        return new fillCupRes { 
+            Reading = BuildReading(pump, sensorType.Pump),
+            Status = BuildStatus(pump, "water pump", request.ArduinoId)
+        };
     }
 
     public override Task<co2Res> getCO2(co2Req request,
