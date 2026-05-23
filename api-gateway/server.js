@@ -129,6 +129,26 @@ app.get("/iot/temp", (req, res) => {
   });
 });
 
+// GET /iot/co2?id={arduinoId}
+app.get("/iot/co2", (req, res) => {
+  const arduinoId = parseInt(req.query.id) || 1;
+
+  iotClient.getCO2({ arduinoId }, (err, response) => {
+    if (err) {
+      console.error("IoT CO2 error:", err);
+      return res.status(500).json({ error: "IoT request failed" });
+    }
+
+    res.json({
+      value: response.reading?.value ?? 0,
+      type: response.reading?.type ?? 0,
+      timestamp: response.reading?.timestamp ?? 0,
+      success: response.status?.success ?? false,
+      message: response.status?.message ?? "",
+    });
+  });
+});
+
 // POST /auth/lichess/callback
 // Body: { code, code_verifier }
 // Exchanges the Lichess authorization code for an access token,
