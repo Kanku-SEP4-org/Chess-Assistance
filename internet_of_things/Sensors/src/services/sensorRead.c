@@ -92,7 +92,7 @@ void get_and_report_co2(void) {
             data_received = 1;
             break; // Exit the loop if we have valid data
         }
-        _delay_ms(1);
+        _delay_ms(10);//giving the sensor time to read
     }
     //result handling
     if (data_received) {

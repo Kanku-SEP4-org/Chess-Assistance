@@ -1,101 +1,115 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
+#include <util/delay.h>
 
 #include "uart_stdio.h"
-
-#include "services/sensorRead.h" // access interface
+#include "services/sensorRead.h"
 #include "services/communication.h"
 
 #include "light.h"
 #include "soil.h"
 #include "co2.h"
+#include "wifi.h"
 
-//#include "wifi.h" // Include WiFi driver
-//#define USE_WIFI_COMM 0 // Change this to 1 when ready to use WiFi
-//no longer needed here
+// Hardware descriptor for the soil moisture sensor pin
+static ADC_Error_t water_sensor_pin;
+static ADC_Error_t light_sensor_pin;
+
+/**
+ * @brief Unified command processing center.
+ * Evaluates instructions identically whether they originate from USB or Wi-Fi TCP.
+ */
+void process_system_command(char command, uint16_t total_bytes, const char* full_buffer) {
+    // Filter out blank spacing arrays safely
+    if (command == '\r' || command == '\n' || command == ' ') {
+        return;
+    }
+
+    switch (command)
+    {
+        case '1':
+            get_and_report_temperature();
+            break;
+        case '2':
+            get_and_report_humidity();
+            break;
+        case '3':
+            get_and_report_light(light_sensor_pin);
+            break;
+        case '4':
+            get_and_report_water(water_sensor_pin);
+            break;
+        case '5': {
+            transmit_data("DIAGNOSTIC:SENDING_AT_PING...\n");
+            WIFI_ERROR_MESSAGE_t at_status = wifi_command_AT();
+
+            if (at_status == WIFI_OK) {
+                transmit_data("DIAGNOSTIC_RESULT:ESP01_ALIVE_AND_RESPONDING_OK\n");
+            } else {
+                char err_msg[50];
+                sprintf(err_msg, "DIAGNOSTIC_RESULT:ERR_CODE_%d\n", at_status);
+                transmit_data(err_msg);
+            }
+            break;
+        }
+        case '6':
+            co2_start_measure();
+            get_and_report_co2();
+            break;
+        case '7':
+            if (total_bytes > 1) {
+                // Pass the offset pointer safely bypassing token index 0
+                communication_connect_wifi(&full_buffer[1]);
+            } else {
+                transmit_data("ERROR:MISSING_WIFI_CREDENTIALS\n");
+            }
+            break;
+
+        default: {
+            char unknown_msg[40];
+            sprintf(unknown_msg, "Invalid input '%c'. Please enter 1 - 7.\n", command);
+            transmit_data(unknown_msg);
+            break;
+        }
+    }
+}
 
 int main(void) {
-    char input; // has to be one character if using case switches
-    // Buffer to hold incoming serial commands non-blockingly (replaces input)
     char serial_input_buffer[96] = {0};
 
     uart_stdio_init(115200);
+    sei(); // Enable background interrupt queues early
 
-    //new unified communication control layer
     communication_init();
-    communication_dev_autoconnect("ana"); // Temporary auto-connect for development, can be removed when wifi_connect() is ready for user setting
+    communication_dev_autoconnect("ana");
 
-    // WiFi Setup (deprecated)
-    //#if USE_WIFI_COMM
-    //    wifi_init();
-        //dev_connect("ana"); // Temporary function to connect to wifi without user input, can be removed when wifi_connect() is ready
-        // Add your credentials here when ready
-        // wifi_command_join_AP("SSID", "PASSWORD"); 
-        // wifi_command_create_TCP_connection("192.168.1.XX", 23, NULL, NULL);
-    //#endif
+    // Flush any power-on junk characters out of your stdio buffer
+    char boot_flush[32];
+    _delay_ms(100);
+    while(gets_nonblocking(boot_flush, sizeof(boot_flush)) > 0 || uart_read_byte(UART0_ID, (uint8_t*)boot_flush) == UART_OK);
 
-    sei();
+    // Initialize ADC drivers
+    light_sensor_pin = light_init();
+    water_sensor_pin = soil_init(ADC_PK0);
 
-    //initialize ADC sensors
-    ADC_Error_t light = light_init();
-    ADC_Error_t water = soil_init(ADC_PK0);
     if (co2_init(co2_incoming_data_handler) == CO2_OK) {
-        // CO2 Initialized successfully!
         transmit_data("CO2:OK\n");
     } else {
         transmit_data("CO2:INIT_FAIL\n");
     }
 
-
     while (1) {
-        communication_poll_network(); //process bg network events without blocking
-        // Wait for a prompt from the PC/RabbitMQ Producer
-        //" %c" allows us to skip any whitespace characters, including newlines (note the space before %c)
+        // Continuous non-blocking background network polling processing
+        communication_poll_network();
 
-        // 2. Non-blocking check: See if sensor_client_c has sent a full command line
+        // Non-blocking check: See if a command line arrived from the USB terminal link
         uint16_t bytes_read = gets_nonblocking(serial_input_buffer, sizeof(serial_input_buffer));
 
-       // if (scanf(" %c", &input) == 1) {
-        //no longer using input
         if (bytes_read > 0) {
-            // The first character is the switch case menu command identifier
-            char command = serial_input_buffer[0];
-
-            switch (command)
-            {
-                case '1':
-                    get_and_report_temperature();
-                    break;
-                case '2':
-                    get_and_report_humidity();
-                    break;
-                case '3':
-                    get_and_report_light(light);
-                    break;
-                case '4':
-                    get_and_report_water(water);
-                    break;
-                case '5':
-                    //your code here
-                    transmit_data("Not yet implemented");
-                    break;
-                case '6':
-                    co2_start_measure();
-                    get_and_report_co2();
-                    break;
-                case '7':
-                    // Pass the string *starting after the '7'* directly to the Wi-Fi connector.
-                    // points cleanly to "MySSID,Pass,192.168.1.1"
-                    //!!! make sure they are separated by commas, to avoid confussions thanks to IP nature, for example
-                    communication_connect_wifi(&serial_input_buffer[1]);
-                    break;
-
-
-                default:
-                    transmit_data("Invalid input. Please enter 1 - 7.\n");
-                    break;
-                }
+            // Process the USB input command locally
+            process_system_command(serial_input_buffer[0], bytes_read, serial_input_buffer);
         }
     }
+    return 0;
 }
