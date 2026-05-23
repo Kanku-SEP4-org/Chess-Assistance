@@ -49,15 +49,17 @@ services:
   # ---------------------------------------------------------
 
   iot-service:
-    profiles: [iot]
-    build:
-      context: ./services/iot-service
-      dockerfile: Grpc-Server/Dockerfile
+    image: ghcr.io/kanku-sep4-org/chess-assistance/iot-grpc-server:latest
+    build: !reset null
     container_name: chess-iot-service
+    ports: !reset []
+    expose: 
+      - "8080" 
     environment:
       RabbitMQ__Host: rabbitmq
       RabbitMQ__User: ${RABBITMQ_USERNAME}
       RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      CONNECTIONSTRINGS__DEFAULTCONNECTION: ${CONNECTIONSTRINGS__DEFAULTCONNECTION}
     networks:
       - default
     restart: unless-stopped
@@ -74,6 +76,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       CONNECTIONSTRINGS__DEFAULTCONNECTION: ${CONNECTIONSTRINGS__DEFAULTCONNECTION}
     networks:
+      - caddy_net
       - default
     depends_on:
       postgres:

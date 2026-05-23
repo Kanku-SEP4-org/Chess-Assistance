@@ -10,12 +10,14 @@ enum sensorType {
     light = 2;
     water = 3;
     fillCup = 4;
+    co2 = 5;
 }
 service iotService {
     rpc getTemperature(tempReq) returns (tempRes);
     rpc getLight(lightReq) returns (lightRes);
     rpc getWaterLevel(waterLevelReq) returns (waterLevelRes);
     rpc fillCup(fillCupReq) returns (fillCupRes);
+    rpc getCO2(co2Req) returns (co2Res);
 
     rpc startRecording(recReq) returns (Status);
     rpc stopRecording(recReq) returns (Status);
@@ -52,7 +54,16 @@ message fillCupReq {
     optional float amount = 2; //amount of water to fill in milliliters, optional because we can also just request a standard quantity fill, set up previously
 }
 message fillCupRes {
-     Status status = 1;
+    Status status = 1;
+}
+
+message co2Req {
+    int32 arduinoId = 1;
+}
+
+message co2Res {
+    sensorReading reading = 1;
+    Status status = 2;
 }
 
 message Status {
@@ -62,7 +73,7 @@ message Status {
 
 message sensorReading {
     float value = 1;
-    sensorType type = 2; //to identify the kind of sensor. possibly use an enum
+    sensorType type = 2; //to identify the kind of sensor. use the enum
     int64 timestamp = 3;
 }
 
