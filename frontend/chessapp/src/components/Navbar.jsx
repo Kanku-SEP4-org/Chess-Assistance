@@ -86,6 +86,7 @@ function Navbar() {
             <a href="#about" onClick={() => setNavOpen(false)}>About</a>
             <Link to="/chesstrack" onClick={() => setNavOpen(false)}>ChessTrack</Link>
             <Link to="/angriness" onClick={() => setNavOpen(false)}>Tilt Predictor</Link>
+            <Link to="/recommend-environment" onClick={() => setNavOpen(false)}>Environment</Link>
 
             {/* Desktop only: knight icon inside nav links */}
             <div className="profile-menu-container d-none d-md-flex">
