@@ -1,7 +1,7 @@
-import { useState } from 'react'
-import Navbar from '../components/Navbar'
-import { ML_API_URL } from '../config'
-import '../App.css'
+import { useState, useEffect } from "react";
+import Navbar from "../components/Navbar";
+import { ML_API_URL, API_URL } from "../config";
+import "../App.css";
 
 const initialForm = {
   minutes_slept: 540,
@@ -9,49 +9,80 @@ const initialForm = {
   temperature_celsius: 21,
   co2: 1300,
   light: 1500,
-}
+};
 
 const FACTOR_LABELS = {
-  temperature_celsius: 'Temperature',
-  co2: 'CO2',
-  light: 'Light',
-}
+  temperature_celsius: "Temperature",
+  co2: "CO2",
+  light: "Light",
+};
 
 const FACTOR_UNITS = {
-  temperature_celsius: 'C',
-  co2: 'ppm',
-  light: 'lux',
-}
+  temperature_celsius: "C",
+  co2: "ppm",
+  light: "lux",
+};
 
 function formatFactorValue(factor, value) {
-  if (value == null) return 'N/A'
-  const unit = FACTOR_UNITS[factor]
-  return unit ? `${value} ${unit}` : value
+  if (value == null) return "N/A";
+  const unit = FACTOR_UNITS[factor];
+  return unit ? `${value} ${unit}` : value;
 }
 
 function EnvironmentRecommendation() {
-  const [form, setForm] = useState(initialForm)
-  const [recommendation, setRecommendation] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
+  const [form, setForm] = useState(initialForm);
+  const [recommendation, setRecommendation] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchSensorData = async () => {
+      try {
+        const [tempRes, lightRes] = await Promise.all([
+          fetch(`${API_URL}/iot/temp?id=1`),
+          fetch(`${API_URL}/iot/light?id=1`),
+        ]);
+        const tempData = await tempRes.json();
+        const lightData = await lightRes.json();
+        if (tempRes.ok && tempData.value != null) {
+          updateField("temperature_celsius", tempData.value.toFixed(1));
+        }
+        if (lightRes.ok && lightData.value != null) {
+          updateField("light", lightData.value.toFixed(1));
+        }
+      } catch (err) {
+        console.error("Failed to fetch sensor data:", err);
+      }
+    };
+    fetchSensorData();
+    const savedMinutesSlept = localStorage.getItem("session_minutes_slept");
+    if (savedMinutesSlept) {
+      updateField("minutes_slept", Number(savedMinutesSlept));
+    }
+
+    const savedMinutesAwake = localStorage.getItem("session_minutes_awake");
+    if (savedMinutesAwake) {
+      updateField("minutes_awake", Number(savedMinutesAwake));
+    }
+  }, []);
 
   const updateField = (field, value) => {
     setForm((current) => ({
       ...current,
       [field]: value,
-    }))
-  }
+    }));
+  };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setLoading(true)
-    setError('')
-    setRecommendation(null)
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setRecommendation(null);
 
     try {
       const response = await fetch(`${ML_API_URL}/recommend-environment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           minutes_slept: Number(form.minutes_slept),
           minutes_awake: Number(form.minutes_awake),
@@ -59,21 +90,21 @@ function EnvironmentRecommendation() {
           co2: Number(form.co2),
           light: Number(form.light),
         }),
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.detail || data.error || 'Recommendation failed.')
+        throw new Error(data.detail || data.error || "Recommendation failed.");
       }
 
-      setRecommendation(data)
+      setRecommendation(data);
     } catch (err) {
-      setError(err.message || 'Could not connect to the ML API.')
+      setError(err.message || "Could not connect to the ML API.");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   return (
     <>
@@ -94,8 +125,9 @@ function EnvironmentRecommendation() {
                 <input
                   type="number"
                   value={form.minutes_slept}
-                  onChange={(e) => updateField('minutes_slept', e.target.value)}
+                  readOnly
                   min="0"
+                  style={{ opacity: 0.7, cursor: "not-allowed" }}
                 />
               </label>
 
@@ -104,7 +136,8 @@ function EnvironmentRecommendation() {
                 <input
                   type="number"
                   value={form.minutes_awake}
-                  onChange={(e) => updateField('minutes_awake', e.target.value)}
+                  readOnly
+                  onChange={(e) => updateField("minutes_awake", e.target.value)}
                   min="0"
                 />
               </label>
@@ -114,8 +147,9 @@ function EnvironmentRecommendation() {
                 <input
                   type="number"
                   value={form.temperature_celsius}
-                  onChange={(e) => updateField('temperature_celsius', e.target.value)}
+                  readOnly
                   step="0.1"
+                  style={{ opacity: 0.7, cursor: "not-allowed" }}
                 />
               </label>
 
@@ -124,7 +158,7 @@ function EnvironmentRecommendation() {
                 <input
                   type="number"
                   value={form.co2}
-                  onChange={(e) => updateField('co2', e.target.value)}
+                  onChange={(e) => updateField("co2", e.target.value)}
                   min="0"
                 />
               </label>
@@ -134,14 +168,15 @@ function EnvironmentRecommendation() {
                 <input
                   type="number"
                   value={form.light}
-                  onChange={(e) => updateField('light', e.target.value)}
+                  readOnly
                   min="0"
+                  style={{ opacity: 0.7, cursor: "not-allowed" }}
                 />
               </label>
             </div>
 
             <button type="submit" disabled={loading}>
-              {loading ? 'Checking...' : 'Get Recommendation'}
+              {loading ? "Checking..." : "Get Recommendation"}
             </button>
           </form>
 
@@ -156,7 +191,7 @@ function EnvironmentRecommendation() {
                 <h2>
                   {recommendation.recommended_factor
                     ? FACTOR_LABELS[recommendation.recommended_factor]
-                    : 'No change recommended'}
+                    : "No change recommended"}
                 </h2>
                 <p>{recommendation.message}</p>
               </div>
@@ -168,14 +203,16 @@ function EnvironmentRecommendation() {
                 </div>
                 <div>
                   <span>Improved</span>
-                  <strong>{recommendation.improved_win_probability ?? 'N/A'}</strong>
+                  <strong>
+                    {recommendation.improved_win_probability ?? "N/A"}
+                  </strong>
                 </div>
                 <div>
                   <span>Increase</span>
                   <strong>
                     {recommendation.increase_percentage_points != null
                       ? `${recommendation.increase_percentage_points} pp`
-                      : '0 pp'}
+                      : "0 pp"}
                   </strong>
                 </div>
               </div>
@@ -185,7 +222,9 @@ function EnvironmentRecommendation() {
               <div className="cards-grid recommendation-cards">
                 <div className="metric-card">
                   <span>Factor</span>
-                  <strong>{FACTOR_LABELS[recommendation.recommended_factor]}</strong>
+                  <strong>
+                    {FACTOR_LABELS[recommendation.recommended_factor]}
+                  </strong>
                   <p>Best positive model response.</p>
                 </div>
                 <div className="metric-card">
@@ -193,7 +232,7 @@ function EnvironmentRecommendation() {
                   <strong>
                     {formatFactorValue(
                       recommendation.recommended_factor,
-                      recommendation.current_value
+                      recommendation.current_value,
                     )}
                   </strong>
                   <p>Current input value.</p>
@@ -203,7 +242,7 @@ function EnvironmentRecommendation() {
                   <strong>
                     {formatFactorValue(
                       recommendation.recommended_factor,
-                      recommendation.recommended_value
+                      recommendation.recommended_value,
                     )}
                   </strong>
                   <p>Target tested by the model.</p>
@@ -223,9 +262,15 @@ function EnvironmentRecommendation() {
                   <div>
                     <strong>{FACTOR_LABELS[candidate.factor]}</strong>
                     <p>
-                      {formatFactorValue(candidate.factor, candidate.current_value)}
-                      {' -> '}
-                      {formatFactorValue(candidate.factor, candidate.recommended_value)}
+                      {formatFactorValue(
+                        candidate.factor,
+                        candidate.current_value,
+                      )}
+                      {" -> "}
+                      {formatFactorValue(
+                        candidate.factor,
+                        candidate.recommended_value,
+                      )}
                     </p>
                   </div>
                   <div>
@@ -243,7 +288,7 @@ function EnvironmentRecommendation() {
         )}
       </main>
     </>
-  )
+  );
 }
 
-export default EnvironmentRecommendation
+export default EnvironmentRecommendation;

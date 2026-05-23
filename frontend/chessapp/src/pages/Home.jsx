@@ -4,7 +4,7 @@ import heroImg from "../assets/chess-bg.png";
 import "../App.css";
 import { API_URL } from "../config";
 
-const heroTexts = ["Track your environment.", "Improve your game."]
+const heroTexts = ["Track your environment.", "Improve your game."];
 
 function Home() {
   const [monitoringStarted, setMonitoringStarted] = useState(false);
@@ -46,29 +46,29 @@ function Home() {
   }, []);
 
   useEffect(() => {
-  const fetchSensorData = async () => {
-    try {
-      const [tempRes, lightRes] = await Promise.all([
-        fetch(`${API_URL}/iot/temp?id=1`),
-        fetch(`${API_URL}/iot/light?id=1`)
-      ])
-      const tempData = await tempRes.json()
-      const lightData = await lightRes.json()
-      if (tempRes.ok && tempData.value != null) {
-        setTemperature(tempData.value.toFixed(1))
+    const fetchSensorData = async () => {
+      try {
+        const [tempRes, lightRes] = await Promise.all([
+          fetch(`${API_URL}/iot/temp?id=1`),
+          fetch(`${API_URL}/iot/light?id=1`),
+        ]);
+        const tempData = await tempRes.json();
+        const lightData = await lightRes.json();
+        if (tempRes.ok && tempData.value != null) {
+          setTemperature(tempData.value.toFixed(1));
+        }
+        if (lightRes.ok && lightData.value != null) {
+          setLightLevel(lightData.value.toFixed(1));
+        }
+      } catch (err) {
+        console.error("Failed to fetch sensor data:", err);
       }
-      if (lightRes.ok && lightData.value != null) {
-        setLightLevel(lightData.value.toFixed(1))
-      }
-    } catch (err) {
-      console.error('Failed to fetch sensor data:', err)
-    }
-  }
+    };
 
-  fetchSensorData()
-  const interval = setInterval(fetchSensorData, 10000)
-  return () => clearInterval(interval)
-}, [])
+    fetchSensorData();
+    const interval = setInterval(fetchSensorData, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const handlePageHide = () => {
@@ -76,7 +76,7 @@ function Home() {
       const body = JSON.stringify({ session_id: sessionId });
       navigator.sendBeacon(
         `${API_URL}/session/end`,
-        new Blob([body], { type: "application/json" })
+        new Blob([body], { type: "application/json" }),
       );
     };
 
@@ -165,6 +165,13 @@ function Home() {
         setMonitoringStarted(true);
         setShowSleepForm(false);
         setAlerts(null);
+
+        // Save minutes slept for Environment Recommendation page
+        const { sleep, wake } = sessionDates.current || buildDates();
+        const minutesSlept = Math.round((wake - sleep) / 60000);
+        localStorage.setItem("session_minutes_slept", minutesSlept);
+        const minutesAwake = Math.round((now - wake) / 60000);
+        localStorage.setItem('session_minutes_awake', minutesAwake);
       } else {
         alert(data.message || "Failed to start session");
       }
@@ -208,10 +215,14 @@ function Home() {
           <p className="eyebrow">Chess Performance Assistant</p>
           <h1 className="hero-title-split">
             <span className="hero-line-wrapper">
-              <span className={heroIndex === 0 ? "hero-line active" : "hero-line"}>
+              <span
+                className={heroIndex === 0 ? "hero-line active" : "hero-line"}
+              >
                 Track
               </span>
-              <span className={heroIndex === 1 ? "hero-line active" : "hero-line"}>
+              <span
+                className={heroIndex === 1 ? "hero-line active" : "hero-line"}
+              >
                 Improve
               </span>
             </span>
@@ -219,10 +230,14 @@ function Home() {
             <span className="hero-static-line">Your</span>
 
             <span className="hero-line-wrapper">
-              <span className={heroIndex === 0 ? "hero-line active" : "hero-line"}>
+              <span
+                className={heroIndex === 0 ? "hero-line active" : "hero-line"}
+              >
                 Environment.
               </span>
-              <span className={heroIndex === 1 ? "hero-line active" : "hero-line"}>
+              <span
+                className={heroIndex === 1 ? "hero-line active" : "hero-line"}
+              >
                 Game.
               </span>
             </span>
@@ -336,7 +351,14 @@ function Home() {
               Log in with Lichess to start a session.
             </p>
           ) : (
-            <div style={{ display: "flex", alignItems: "center", gap: "16px", marginBottom: "24px" }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "16px",
+                marginBottom: "24px",
+              }}
+            >
               <p style={{ color: "#4caf50", margin: 0 }}>
                 Session #{sessionId} is active
               </p>
@@ -354,16 +376,16 @@ function Home() {
 
           <div className="cards-grid">
             <div className="metric-card">
-  <span>Temperature</span>
-  <strong>{temperature != null ? `${temperature}°C` : '—'}</strong>
-  <p>Optimal playing condition</p>
-</div>
+              <span>Temperature</span>
+              <strong>{temperature != null ? `${temperature}°C` : "—"}</strong>
+              <p>Optimal playing condition</p>
+            </div>
 
             <div className="metric-card">
-  <span>Light Level</span>
-  <strong>{lightLevel != null ? `${lightLevel} lux` : '—'}</strong>
-  <p>Good visibility for focus</p>
-</div>
+              <span>Light Level</span>
+              <strong>{lightLevel != null ? `${lightLevel} lux` : "—"}</strong>
+              <p>Good visibility for focus</p>
+            </div>
 
             <div className="metric-card">
               <span>Light Level</span>
