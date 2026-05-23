@@ -54,7 +54,7 @@ message fillCupReq {
 }
 message fillCupRes {
     sensorReading reading = 1;
-    Status status = 1;
+    Status status = 2;
 }
 
 message co2Req {

@@ -6,16 +6,12 @@
 #include "co2.h"
 #include <stdio.h>
 #include <stddef.h>
-<<<<<<< HEAD:internet_of_things/Sensors/lib/Util/sensorRead.c
 #include "pump.h"
 #include <util/delay.h>
-=======
 #include <avr/interrupt.h>
-#include <util/delay.h>
 
 static volatile uint16_t latest_co2_ppm = 0; // Global variable to store the latest CO2 reading
 //volatile to mark that it can change unexpectedly (16-bit can be corrupted by an interrupt, so this accounts for that)
->>>>>>> develop:internet_of_things/Sensors/src/services/sensorRead.c
 
 void get_and_report_temperature(void) {
     uint8_t h_int, h_dec, t_int, t_dec;
