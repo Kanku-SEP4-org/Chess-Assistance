@@ -20,6 +20,7 @@ function Home() {
   const [heroIndex, setHeroIndex] = useState(0);
   const [temperature, setTemperature] = useState(null);
   const [lightLevel, setLightLevel] = useState(null);
+  const [co2Level, setCo2Level] = useState(null);
 
   const sessionDates = useRef(null);
 
@@ -48,18 +49,23 @@ function Home() {
   useEffect(() => {
     const fetchSensorData = async () => {
       try {
-        const [tempRes, lightRes] = await Promise.all([
+        const [tempRes, lightRes, co2Res] = await Promise.all([
           fetch(`${API_URL}/iot/temp?id=1`),
           fetch(`${API_URL}/iot/light?id=1`),
+          fetch(`${API_URL}/iot/co2?id=1`),
         ]);
         const tempData = await tempRes.json();
         const lightData = await lightRes.json();
+        const co2Data = await co2Res.json();
         if (tempRes.ok && tempData.value != null) {
           setTemperature(tempData.value.toFixed(1));
         }
         if (lightRes.ok && lightData.value != null) {
           setLightLevel(lightData.value.toFixed(1));
         }
+        if (co2Res.ok && co2Data.value != null) {
+        setCo2Level(co2Data.value.toFixed(1));
+      }
       } catch (err) {
         console.error("Failed to fetch sensor data:", err);
       }
@@ -171,7 +177,7 @@ function Home() {
         const minutesSlept = Math.round((wake - sleep) / 60000);
         localStorage.setItem("session_minutes_slept", minutesSlept);
         const minutesAwake = Math.round((now - wake) / 60000);
-        localStorage.setItem('session_minutes_awake', minutesAwake);
+        localStorage.setItem("session_minutes_awake", minutesAwake);
       } else {
         alert(data.message || "Failed to start session");
       }
@@ -388,9 +394,9 @@ function Home() {
             </div>
 
             <div className="metric-card">
-              <span>Light Level</span>
-              <strong>74%</strong>
-              <p>Good visibility for focus</p>
+              <span>CO2 Level</span>
+              <strong>{co2Level != null ? `${co2Level} ppm` : "—"}</strong>
+              <p>Room air quality</p>
             </div>
 
             <div className="metric-card">

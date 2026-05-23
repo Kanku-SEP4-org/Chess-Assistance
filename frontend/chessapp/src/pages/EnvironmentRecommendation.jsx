@@ -38,17 +38,22 @@ function EnvironmentRecommendation() {
   useEffect(() => {
     const fetchSensorData = async () => {
       try {
-        const [tempRes, lightRes] = await Promise.all([
+        const [tempRes, lightRes, co2Res] = await Promise.all([
           fetch(`${API_URL}/iot/temp?id=1`),
           fetch(`${API_URL}/iot/light?id=1`),
+          fetch(`${API_URL}/iot/co2?id=1`),
         ]);
         const tempData = await tempRes.json();
         const lightData = await lightRes.json();
+        const co2Data = await co2Res.json();
         if (tempRes.ok && tempData.value != null) {
           updateField("temperature_celsius", tempData.value.toFixed(1));
         }
         if (lightRes.ok && lightData.value != null) {
           updateField("light", lightData.value.toFixed(1));
+        }
+        if (co2Res.ok && co2Data.value != null) {
+          updateField("co2", co2Data.value.toFixed(1));
         }
       } catch (err) {
         console.error("Failed to fetch sensor data:", err);
@@ -158,8 +163,9 @@ function EnvironmentRecommendation() {
                 <input
                   type="number"
                   value={form.co2}
-                  onChange={(e) => updateField("co2", e.target.value)}
+                  readOnly
                   min="0"
+                  style={{ opacity: 0.7, cursor: "not-allowed" }}
                 />
               </label>
 
