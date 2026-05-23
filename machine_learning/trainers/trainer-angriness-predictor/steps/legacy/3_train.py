@@ -78,7 +78,7 @@ def main():
         raw_test.to_csv(TEST_RAW_CSV, index=False)
         print(f"  Saved splits: raw_{{train,val,test}}.csv")
 
-    # --- Stage 1: Isolation Forest (label generation on scaled features) ---
+    # --- Stage 1: Isolation Forest (label generation) ---
     print(f"\n  IF features ({len(IF_FEATURES)}): {IF_FEATURES}")
 
     if_model = IsolationForest(
@@ -105,17 +105,18 @@ def main():
         count = (y_train == level).sum()
         print(f"    Level {level}: {count:,} rows ({count / len(df_train):.1%})")
 
-    # --- Stage 2: Random Forest Classifier (unscaled behavioral features) ---
-    print(f"\nStage 2: Training Random Forest Classifier ({len(IF_FEATURES)} unscaled features)...")
+    # --- Stage 2: Random Forest Classifier (supervised, all features) ---
+    all_features = list(df_train.columns)
+    print(f"\nStage 2: Training Random Forest Classifier ({len(all_features)} features)...")
 
     rf_model = RandomForestClassifier(
         n_estimators=200,
         random_state=42,
         n_jobs=-1,
     )
-    rf_model.fit(raw_train[IF_FEATURES].values, y_train)
+    rf_model.fit(df_train.values, y_train)
 
-    rf_pred_train = rf_model.predict(raw_train[IF_FEATURES].values)
+    rf_pred_train = rf_model.predict(df_train.values)
     rf_accuracy = (rf_pred_train == y_train).mean()
     print(f"  Train accuracy (vs IF labels): {rf_accuracy:.4f}")
 
@@ -123,10 +124,9 @@ def main():
     if raw_train is not None:
         available_tilt = [c for c in tilt_cols if c in raw_train.columns]
         if available_tilt:
-            raw_train_copy = raw_train.copy()
-            raw_train_copy["_angriness"] = rf_pred_train
+            raw_train["_angriness"] = rf_pred_train
             print(f"\n  Sanity check (unscaled means by angriness level, train set):")
-            grouped = raw_train_copy.groupby("_angriness")[available_tilt].mean().round(1)
+            grouped = raw_train.groupby("_angriness")[available_tilt].mean().round(1)
             print(grouped.to_string())
 
     os.makedirs("models", exist_ok=True)
@@ -140,10 +140,9 @@ def main():
         "percentiles": PERCENTILE_EDGES,
         "bin_edges": bin_edges,
         "if_features": IF_FEATURES,
-        "model_features": IF_FEATURES,
+        "model_features": all_features,
         "model_type": "random_forest",
         "supervised": True,
-        "requires_scaling": False,
     }
     with open(BINS_PATH, "w") as f:
         json.dump(bins_data, f, indent=2)
@@ -158,7 +157,7 @@ def main():
         "n_rows": len(df),
         "n_rows_train": len(df_train),
         "n_if_features": len(IF_FEATURES),
-        "n_rf_features": len(IF_FEATURES),
+        "n_rf_features": len(all_features),
         "n_anomalies": int(n_anomalies),
         "anomaly_rate": round(n_anomalies / len(df_train), 4),
         "rf_train_accuracy": round(float(rf_accuracy), 4),
