@@ -111,5 +111,5 @@ int main(void) {
             process_system_command(serial_input_buffer[0], bytes_read, serial_input_buffer);
         }
     }
-    return 0;
+    return 0; //outside while loop so that the loop is constant but also main can still return 0
 }
