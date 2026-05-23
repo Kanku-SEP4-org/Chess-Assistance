@@ -25,10 +25,6 @@ int main()
         char waterMessage[MESSAGE_SIZE];
         char pumpMessage[MESSAGE_SIZE];        
 
-
-        create_water_message(waterMessage);
-        send_response(connection, waterMessage);
-
         int requestReceived = wait_for_request(connection);
 
         if (requestReceived == 1)
@@ -47,8 +43,8 @@ int main()
         create_temperature_message(tempMessage);
         send_response(connection, tempMessage);
 
-        create_pump_response_message(pumpMessage);
-        send_response(connection, pumpMessage);
+        create_water_message(waterMessage);
+        send_response(connection, waterMessage);
 
         sleep(5);
     }

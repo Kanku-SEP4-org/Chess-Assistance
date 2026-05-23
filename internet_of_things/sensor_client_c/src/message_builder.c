@@ -108,10 +108,10 @@ void create_pump_response_message(char *message)
             "{"
                 "\"arduinoId\":1,"
                 "\"type\":\"pump\","
-                "\"status\":\"%s\","
+                "\"value\":\"%d\","
                 "\"timestamp\":%ld"
             "}",
-            success ? "done" : "fail",
+            success,
             timestamp
         );
     }
@@ -122,7 +122,7 @@ void create_pump_response_message(char *message)
             "{"
                 "\"arduinoId\":1,"
                 "\"type\":\"pump\","
-                "\"status\":\"error\","
+                "\"value\":-1,"
                 "\"timestamp\":%ld"
             "}",
             timestamp

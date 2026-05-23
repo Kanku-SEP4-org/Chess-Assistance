@@ -73,7 +73,7 @@ void fill_and_report_done(void)
     //start pump, wait briefly, stop pump, then report done.
     //safe for relay testing without real pump power connected.
     pump_start();
-    _delay_ms(500);
+    _delay_ms(2000);
     pump_stop();
 
     transmit_data("PUMP:DONE\n");

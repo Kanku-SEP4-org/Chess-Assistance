@@ -7,7 +7,7 @@ namespace IoTGrpcServer;
 public class IoTStateStore : IIoTStateStore
 {
     private readonly ConcurrentDictionary<SensorKey, SensorState> _states = new();
-    //private readonly HashSet<string> _allowedTypes = new() { "temp", "light", "water" };
+    
     public void Update(int arduinoId, float value, long timestamp,
         sensorType type)
     {
