@@ -103,10 +103,20 @@ void communication_dev_autoconnect(const char* developer_name) {
     if (status == WIFI_OK) {
         current_mode = COMM_WIFI;
         tcp_receive_buffer[0] = '\0';
+        // FIX: Purge any hardware noise characters accumulated on the USB line (UART0)
+        // during the 4-second boot delay, right before we go live!
+        uint8_t usb_noise_clear;
+        while (uart_read_byte(UART0_ID, &usb_noise_clear) == UART_OK);
+
         transmit_data("SYSTEM_STATUS:WIFI_TCP_ONLINE\n");
     } else {
         printf("Auto-connect failed with error code: %d. Falling back to USB Serial.\n", status);
         current_mode = COMM_SERIAL;
+
+        // FIX: Also purge the USB line here if the connection failed, ensuring
+        // your standard serial fallback mode is perfectly clean.
+        uint8_t usb_noise_clear;
+        while (uart_read_byte(UART0_ID, &usb_noise_clear) == UART_OK);
     }
 }
 
