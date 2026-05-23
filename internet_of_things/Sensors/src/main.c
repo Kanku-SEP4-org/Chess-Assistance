@@ -1,11 +1,16 @@
 #include <avr/io.h>
 #include <avr/interrupt.h>
 #include <stdio.h>
+#include <util/delay.h>
+
 #include "uart_stdio.h"
 #include "pump.h"
-#include "sensorRead.h" // access interface
+#include "services/sensorRead.h" // access interface
+#include "services/communication.h"
+
 #include "light.h"
-#include "communication.h"
+#include "soil.h"
+#include "co2.h"
 
 #include "wifi.h" // Include WiFi driver
 #define USE_WIFI_COMM 0 // Change this to 1 when ready to use WiFi
@@ -28,6 +33,13 @@ int main(void) {
     ADC_Error_t light = light_init();
     pump_init();
     ADC_Error_t water = soil_init(ADC_PK0);
+    if (co2_init(co2_incoming_data_handler) == CO2_OK) {
+        // CO2 Initialized successfully!
+        transmit_data("CO2_INIT:OK\n");
+    } else {
+        transmit_data("CO2_INIT:INIT_FAIL\n");
+    }
+
 
     while (1) {
         // Wait for a prompt from the PC/RabbitMQ Producer
@@ -50,9 +62,13 @@ int main(void) {
             case '5':
                 fill_and_report_done();
                 break;
+            case '6':
+                co2_start_measure();
+                get_and_report_co2();
+                break;
 
             default:
-                transmit_data("Invalid input. Please enter 1 - 5.\n");
+                transmit_data("Invalid input. Please enter 1 - 6.\n");
                 break;
             }
         }

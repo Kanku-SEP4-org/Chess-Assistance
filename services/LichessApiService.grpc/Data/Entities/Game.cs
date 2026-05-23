@@ -30,4 +30,5 @@ public class Game
     public int MatchId { get; set; }
 
     public Match Match { get; set; } = null!;
+    public GameAnalysis? Analysis { get; set; }
 }

@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import './Login.css'
-
-const API_BASE = 'http://localhost:3001'
+import { API_URL } from '../config'
 
 function Callback() {
   const [status, setStatus] = useState('Completing Lichess login...')
@@ -37,9 +36,10 @@ function Callback() {
       sessionStorage.removeItem('lichess_code_verifier')
 
       try {
-        const response = await fetch(`${API_BASE}/auth/lichess/callback`, {
+        const response = await fetch(`${API_URL}/auth/lichess/callback`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify({ code, code_verifier: codeVerifier }),
         })
 
@@ -49,7 +49,10 @@ function Callback() {
           throw new Error(data.error || 'Lichess login failed')
         }
 
-        localStorage.setItem('lichess_user', JSON.stringify(data))
+        localStorage.setItem('lichess_user', JSON.stringify({
+          player_id: data.player_id,
+          player_username: data.player_username,
+        }))
         setUsername(data.player_username)
         setStatus('Successfully logged into Lichess.')
 
@@ -58,7 +61,11 @@ function Callback() {
 
       } catch (err) {
         console.error(err)
-        setStatus(err.message)
+        if (err instanceof TypeError) {
+          setStatus(`Cannot reach the API gateway at ${API_URL} — is it running?`)
+        } else {
+          setStatus(err.message)
+        }
       }
     }
 

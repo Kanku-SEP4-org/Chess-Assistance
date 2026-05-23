@@ -15,7 +15,7 @@ public class LichessGameFetcher(IHttpClientFactory httpClientFactory)
         var client = httpClientFactory.CreateClient("Lichess"); 
 
         using var request = new HttpRequestMessage(HttpMethod.Get,
-            $"/api/games/user/{username}?max=1&sort=dateDesc&pgnInJson=true&opening=true");
+            $"/api/games/user/{username}?max=1&sort=dateDesc&pgnInJson=true&opening=true&evals=true");
         request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", lichessToken);
         request.Headers.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/x-ndjson"));
 
@@ -82,7 +82,17 @@ public class LichessGameFetcher(IHttpClientFactory httpClientFactory)
             StartedAt = startedAt,
             EndedAt = endedAt,
             DurationMin = durationMin,
-            MatchId = matchId
+            MatchId = matchId,
+            Analysis = playerSide.Analysis is not null
+                ? new GameAnalysis
+                {
+                    InaccuracyCnt = playerSide.Analysis.Inaccuracy,
+                    MistakeCnt = playerSide.Analysis.Mistake,
+                    BlunderCnt = playerSide.Analysis.Blunder,
+                    Acpl = playerSide.Analysis.Acpl,
+                    Accuracy = playerSide.Analysis.Accuracy,
+                }
+                : null
         };
     }
 

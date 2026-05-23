@@ -2,13 +2,13 @@ CREATE SCHEMA chess_assistant;
 SET search_path TO chess_assistant;
 
 -- Enums
-CREATE TYPE session_status    AS ENUM ('pending', 'complete', 'exported');
 CREATE TYPE time_control_type AS ENUM ('bullet', 'blitz', 'rapid', 'classical');
 CREATE TYPE game_result_type  AS ENUM ('win', 'loss', 'draw');
 
 CREATE TABLE player (
-    id       SERIAL PRIMARY KEY,
-    username VARCHAR(255) NOT NULL
+    id         SERIAL PRIMARY KEY,
+    lichess_id VARCHAR(50) NOT NULL UNIQUE,
+    username   VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE room (
@@ -17,6 +17,23 @@ CREATE TABLE room (
     player_id INTEGER NOT NULL,
     FOREIGN KEY (player_id) REFERENCES player(id)
 );
+
+CREATE TABLE health_record (
+    id              SERIAL PRIMARY KEY,
+    sleep_time      TIMESTAMP NOT NULL,
+    awaken_time     TIMESTAMP NOT NULL,
+    sleep_duration  INTERVAL GENERATED ALWAYS AS (awaken_time - sleep_time) STORED,
+    confirmed_at    TIMESTAMP NOT NULL,
+    awake_duration  INTERVAL GENERATED ALWAYS AS (confirmed_at - awaken_time) STORED,
+    water_intake_ml INTEGER,
+    player_id       INTEGER NOT NULL,
+    FOREIGN KEY (player_id) REFERENCES player(id),
+    CONSTRAINT chk_sleep_order CHECK (awaken_time > sleep_time),
+    CONSTRAINT chk_awake_order CHECK (confirmed_at > awaken_time)
+);
+
+CREATE UNIQUE INDEX uq_one_health_record_per_day
+ON health_record (player_id, (confirmed_at::date));
 
 -- "session" replaces the old "play_block" table
 CREATE TABLE session (
@@ -27,7 +44,9 @@ CREATE TABLE session (
     game_count     INTEGER DEFAULT 0,
     total_water_ml INTEGER DEFAULT 0,
     player_id      INTEGER NOT NULL,
-    FOREIGN KEY (player_id) REFERENCES player(id)
+    health_record_id INTEGER NOT NULL,
+    FOREIGN KEY (player_id) REFERENCES player(id),
+    FOREIGN KEY (health_record_id) REFERENCES health_record(id)
 );
 
 CREATE UNIQUE INDEX uq_one_active_session
@@ -48,7 +67,6 @@ CREATE TABLE player_preference (
 CREATE TABLE match (
     id                       SERIAL PRIMARY KEY,
     match_date               DATE NOT NULL,
-    status                   session_status NOT NULL DEFAULT 'pending',
     duration_from_prev_match INTERVAL,
     session_id               INTEGER NOT NULL,
     player_id                INTEGER NOT NULL,
@@ -56,45 +74,16 @@ CREATE TABLE match (
     FOREIGN KEY (player_id)  REFERENCES player(id)
 );
 
-CREATE TABLE light_sensor (
+CREATE TABLE sensor (
     id         SERIAL PRIMARY KEY,
-    time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    lumen      NUMERIC(4,2),
     room_id    INTEGER NOT NULL,
-    match_id   INTEGER NOT NULL,
-    FOREIGN KEY (room_id)  REFERENCES room(id),
-    FOREIGN KEY (match_id) REFERENCES match(id)
+    type       VARCHAR(20) NOT NULL,
+    value      DOUBLE PRECISION NOT NULL,
+    time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (room_id) REFERENCES room(id)
 );
 
-CREATE TABLE temperature_sensor (
-    id         SERIAL PRIMARY KEY,
-    time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    celsius    INTEGER,
-    room_id    INTEGER NOT NULL,
-    match_id   INTEGER NOT NULL,
-    FOREIGN KEY (room_id)  REFERENCES room(id),
-    FOREIGN KEY (match_id) REFERENCES match(id)
-);
-
-CREATE TABLE water_sensor (
-    id         SERIAL PRIMARY KEY,
-    time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ml         INTEGER,
-    room_id    INTEGER NOT NULL,
-    match_id   INTEGER NOT NULL,
-    FOREIGN KEY (room_id)  REFERENCES room(id),
-    FOREIGN KEY (match_id) REFERENCES match(id)
-);
-
-CREATE TABLE co2_sensor (
-    id         SERIAL PRIMARY KEY,
-    time_stamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    ppm        INTEGER,
-    room_id    INTEGER NOT NULL,
-    match_id   INTEGER NOT NULL,
-    FOREIGN KEY (room_id)  REFERENCES room(id),
-    FOREIGN KEY (match_id) REFERENCES match(id)
-);
+CREATE INDEX idx_sensor_room_timestamp ON sensor (room_id, time_stamp);
 
 CREATE TABLE game (
     id                    SERIAL PRIMARY KEY,
@@ -124,15 +113,15 @@ CREATE TABLE game (
     FOREIGN KEY (match_id) REFERENCES match(id)
 );
 
-CREATE TABLE sleep_record (
+CREATE TABLE game_analysis (
     id             SERIAL PRIMARY KEY,
-    sleep_time     TIMESTAMP NOT NULL,
-    awaken_time    TIMESTAMP NOT NULL,
-    sleep_duration INTERVAL GENERATED ALWAYS AS (awaken_time - sleep_time) STORED,
-    record_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    match_id       INTEGER NOT NULL UNIQUE,
-    FOREIGN KEY (match_id) REFERENCES match(id),
-    CONSTRAINT chk_sleep_order CHECK (awaken_time > sleep_time)
+    game_id        INTEGER NOT NULL UNIQUE,
+    inaccuracy_cnt INTEGER,
+    mistake_cnt    INTEGER,
+    blunder_cnt    INTEGER,
+    acpl           INTEGER,
+    accuracy       INTEGER,
+    FOREIGN KEY (game_id) REFERENCES game(id)
 );
 
 CREATE TABLE player_opening_stat (
@@ -157,12 +146,15 @@ CREATE TABLE player_opening_stat (
 CREATE TABLE dataset (
     id                         SERIAL PRIMARY KEY,
     match_id                   INTEGER NOT NULL UNIQUE,
-    avg_lumen                  NUMERIC(6,2),
+    avg_lux                    NUMERIC(6,2),
     avg_celsius                NUMERIC(6,2),
     avg_ppm                    NUMERIC(6,2),
-    avg_ml                     NUMERIC(6,2),
+    water_intake_ml            INTEGER,
     sleep_duration             INTERVAL,
+    awake_duration             INTERVAL,
     eco_code                   VARCHAR(3),
+    opening_name               VARCHAR(100),
+    is_rated                   BOOLEAN,
     total_ply                  INTEGER,
     opening_ply                INTEGER,
     player_move_count          INTEGER,
@@ -180,5 +172,12 @@ CREATE TABLE dataset (
     result                     game_result_type,
     player_opening_win_rate    NUMERIC(5,2),
     player_opening_game_count  INTEGER,
+    inaccuracy_cnt                 INTEGER,
+    mistake_cnt                    INTEGER,
+    blunder_cnt                    INTEGER,
+    acpl                           INTEGER,
+    accuracy                       INTEGER,
+    consecutive_losses_pregame     INTEGER,
+    avg_tpm_seconds                NUMERIC(10,6),
     FOREIGN KEY (match_id) REFERENCES match(id)
 );

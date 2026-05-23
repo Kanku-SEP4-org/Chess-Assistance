@@ -16,14 +16,15 @@ int main()
 
     setup_rabbitmq_queues(connection);
 
-    printf("Producing temperature and light messages and listening for fill-cup requests...\n");
+    printf("Reading sensor data and listening for requests\n");
 
     while (1)
     {
         char lightMessage[MESSAGE_SIZE];
         char tempMessage[MESSAGE_SIZE];
         char waterMessage[MESSAGE_SIZE];
-        char pumpMessage[MESSAGE_SIZE];        
+        char pumpMessage[MESSAGE_SIZE];
+        char co2Message[MESSAGE_SIZE];     
 
         int requestReceived = wait_for_request(connection);
 
@@ -46,6 +47,8 @@ int main()
         create_water_message(waterMessage);
         send_response(connection, waterMessage);
 
+        create_co2_message(co2Message);
+        send_response(connection, co2Message);
         sleep(5);
     }
 

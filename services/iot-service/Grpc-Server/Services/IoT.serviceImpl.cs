@@ -1,9 +1,9 @@
-using Grpc_Server.Messaging;
 using Grpc.Core;
 using IotService;
 using IoTGrpcServer;
 using IoTGrpcServer.Contracts;
 using ProtoStatus = IotService.Status;
+using Grpc_Server.Messaging;
 
 namespace Grpc_Server.Services;
 
@@ -77,6 +77,48 @@ public class IoTServiceImpl : iotService.iotServiceBase
         };
     }
 
+    public override Task<co2Res> getCO2(co2Req request,
+        ServerCallContext context)
+    {
+        var latest = _stateStore.GetLatest(request.ArduinoId, sensorType.Co2);
+
+        if (latest == null)
+        {
+            return Task.FromResult(new co2Res
+            {
+                Reading = new sensorReading
+                {
+                    Value = 0,
+                    Type = sensorType.Co2,
+                    Timestamp = 0
+                },
+                Status = new ProtoStatus
+                {
+                    Success = false,
+                    Message =
+                        $"No CO2 reading available yet for Arduino {request.ArduinoId}."
+                }
+            });
+        }
+
+        return Task.FromResult(new co2Res
+        {
+            Reading = new sensorReading
+            {
+                Value = latest.Value,
+                Type = latest.Type,
+                Timestamp = latest.Timestamp
+            },
+            Status = new ProtoStatus
+            {
+                Success = true,
+                Message =
+                    $"Latest CO2 reading for Arduino {request.ArduinoId} retrieved successfully."
+            }
+        });
+    }
+
+
 
 // HELPER methods
 
@@ -116,7 +158,7 @@ public class IoTServiceImpl : iotService.iotServiceBase
             };
 
             // One single place where we talk to RabbitMQ
-            await _messageQueue.EnqueueObjectAsync(command);
+            await _messageQueue.EnqueueObjectAsync( command);
 
             return new ProtoStatus {
                 Success = true,
@@ -134,4 +176,67 @@ public class IoTServiceImpl : iotService.iotServiceBase
     }
 
 
+    public override Task<ProtoStatus> startRecording(recReq request, ServerCallContext context)
+    {
+        var sensors = _stateStore.Record(request.ArduinoId);
+        if(sensors != null || !sensors.Any())
+        {
+            return Task.FromResult(
+                new ProtoStatus
+                {
+                    Success = true,
+                    Message = $"Recording for Arduino {request.ArduinoId} started"
+                }
+            );
+        }
+        else
+        {
+            return Task.FromResult(
+                new ProtoStatus
+                {
+                    Success = false,
+                    Message = $"Recording for Arduino {request.ArduinoId} failed"
+                }
+            );
+        }
+    }
+    public override Task<ProtoStatus> stopRecording(recReq request, ServerCallContext context)
+    {
+        var sensors = _stateStore.StopRecord(request.ArduinoId);
+        if(sensors != null || !sensors.Any())
+        {
+            return Task.FromResult(
+                new ProtoStatus
+                {
+                    Success = true,
+                    Message = $"Recording for Arduino {request.ArduinoId} stopped"
+                }
+            );
+        }
+        else
+        {
+            return Task.FromResult(
+                new ProtoStatus
+                {
+                    Success = false,
+                    Message = $"Recording for Arduino {request.ArduinoId} stop failed"
+                }
+            );
+        }
+
+
+    }
+
+    private static sensorType MapSensorType(string type)
+    {
+        return type.ToLower() switch
+        {
+            "temp" => sensorType.Temp,
+            "light" => sensorType.Light,
+            "water" => sensorType.Water,
+            _ => sensorType.Error // default case, should not happen if we control the input types properly
+            //!!! all cases must be added lowercase in declaration too, so the unit tests pass without a hitch
+            //in the methods, camelcase must match the proto enum
+        };
+    }
 }

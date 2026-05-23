@@ -10,6 +10,10 @@ on:
     paths:
       - 'frontend/chessapp/**'
 
+permissions:
+  contents: read
+  packages: write
+      
 jobs:
   ci:
     name: Test & Build
@@ -32,7 +36,7 @@ jobs:
         run: npm ci
 
       - name: Run tests
-        run: npm test -- --watchAll=false
+        run: npm run test:coverage
 
       - name: Build
         run: npm run build

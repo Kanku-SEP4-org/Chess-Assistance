@@ -1,0 +1,6 @@
+{
+  "report_path": "models/factor_impact_report.json",
+  "valid": true,
+  "n_examples": 200,
+  "errors": []
+}

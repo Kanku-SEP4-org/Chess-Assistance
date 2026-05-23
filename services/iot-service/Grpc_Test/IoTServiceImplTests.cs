@@ -6,6 +6,8 @@ using IoTGrpcServer;
 using IotService;
 using Grpc.Core;
 using IoTGrpcServer.Contracts;
+using System.Runtime.InteropServices;
+using Microsoft.EntityFrameworkCore;
 
 namespace Grpc_Test;
 
@@ -65,5 +67,95 @@ public class IoTServiceImplTests
         Assert.False(response.Status.Success);
         Assert.Equal(0, response.Reading.Value);
         Assert.Contains("No temperature reading available", response.Status.Message);
+    }
+
+    [Fact]
+    public async Task GetCO2_Found_ReturnsSuccess()
+    {
+        int arduinoId = 1;
+        var mockState = new SensorState
+        {
+            Value = 650.5f,
+            Timestamp = 54321,
+            Type = sensorType.Co2
+        };
+
+        _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Co2)).Returns(mockState);
+
+        var request = new co2Req { ArduinoId = arduinoId };
+
+        var response = await _service.getCO2(request, null!);
+
+        Assert.True(response.Status.Success);
+        Assert.Equal(650.5f, response.Reading.Value);
+        Assert.Equal(sensorType.Co2, response.Reading.Type);
+        Assert.Equal(54321, response.Reading.Timestamp);
+        Assert.Contains("CO2", response.Status.Message);
+    }
+
+    [Fact]
+    public async Task GetCO2_NotFound_ReturnsFailure()
+    {
+        int arduinoId = 99;
+        _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Co2)).Returns((SensorState)null!);
+
+        var request = new co2Req { ArduinoId = arduinoId };
+
+        var response = await _service.getCO2(request, null!);
+
+        Assert.False(response.Status.Success);
+        Assert.Equal(0, response.Reading.Value);
+        Assert.Equal(sensorType.Co2, response.Reading.Type);
+        Assert.Equal(0, response.Reading.Timestamp);
+        Assert.Contains("No CO2 reading available", response.Status.Message);
+    }
+
+    [Fact]
+    public async Task GetCO2_CallsStateStoreWithCorrectType()
+    {
+        int arduinoId = 5;
+        _mockStore.Setup(s => s.GetLatest(arduinoId, sensorType.Co2))
+                .Returns((SensorState)null!);
+
+        var request = new co2Req { ArduinoId = arduinoId };
+
+        await _service.getCO2(request, null!);
+
+        _mockStore.Verify(s => s.GetLatest(arduinoId, sensorType.Co2), Times.Once);
+    }
+    
+    [Fact]
+    public async Task StartRecording_Found_Success()
+    {
+        int arduinoId = 5;
+
+        var mockState = new SensorState
+        {
+            Value = 22.5f,
+            Timestamp = 12345,
+            Type = sensorType.Temp,
+        };
+
+        _mockStore.Setup(s => s.Record(arduinoId)).Returns([mockState]);
+
+        var request = new recReq { ArduinoId = arduinoId };
+
+        var response = await _service.startRecording(request, null!);
+
+        Assert.True(response.Success);
+    }
+
+    [Fact]
+    public async Task StartRecording_NotFound_Failure()
+    {
+        int arduinoId = 5;
+
+        _mockStore.Setup(s => s.Record(arduinoId)).Returns([]);
+
+        var request = new recReq { ArduinoId = arduinoId };
+
+        var response = await _service.startRecording(request, null!);
+
+        Assert.True(response.Success);
     }
 }
