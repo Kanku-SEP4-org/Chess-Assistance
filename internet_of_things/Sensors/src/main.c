@@ -82,7 +82,7 @@ int main(void) {
     sei(); // Enable background interrupt queues early
 
     communication_init();
-    communication_dev_autoconnect("ana");
+    communication_dev_autoconnect("dev");
 
     // Flush any power-on junk characters out of your stdio buffer
     char boot_flush[32];
