@@ -94,9 +94,9 @@ int main(void) {
     water_sensor_pin = soil_init(ADC_PK0);
 
     if (co2_init(co2_incoming_data_handler) == CO2_OK) {
-        transmit_data("CO2:OK\n");
+        transmit_data("CO2_INIT:OK\n");
     } else {
-        transmit_data("CO2:INIT_FAIL\n");
+        transmit_data("CO2_INIT:INIT_FAIL\n");
     }
 
     while (1) {
