@@ -183,7 +183,7 @@ static int execute_serial_transaction (const char* token, const char* response_p
 
         // Set server socket to non-blocking or short timeout if you don't want it hanging forever when testing USB
         active_client_fd = accept(active_server_fd, (struct sockaddr*)&client_metadata, &metadata_length);
-        if (active_client_fd < 0) return -1;
+        if (active_client_fd == INVALID_SOCKET) return -1;
 
         printf("AUTOSWITCH_SERVER: Arduino linked up via WiFi (IP: %s)\n", inet_ntoa(client_metadata.sin_addr));
         return 1;
@@ -216,100 +216,112 @@ static int execute_serial_transaction (const char* token, const char* response_p
         return 0;
     }
 
+// ============================================================================
+// STANDARDIZED CENTRAL TRANSACTION ENGINE
+// ============================================================================
+
+static int execute_unified_transaction(const char* transmit_payload, const char* serial_payload, const char* prefix, void* out_value, int datatype_flag)
+{
+    char payload[STREAM_BUFFER_SIZE] = {0};
+
+    // Step 1: Wireless Network Path
+    if (execute_socket_transaction(transmit_payload, prefix, payload) == 1) {
+        switch (datatype_flag) {
+            case 1:  if (sscanf(payload, prefix, (float*)out_value) == 1) return 1; break;
+            case 0:  if (sscanf(payload, prefix, (int*)out_value) == 1) return 1; break;
+            case 2:  strcpy((char*)out_value, payload); return 1;
+            default: break;
+        }
+    }
+
+    // Step 2: Serial Cable Fallback Path
+    printf("SENSOR_READER: Wireless link quiet. Executing serial fallback tracking for %s...\n", prefix);
+#if !defined(_WIN32) && !defined(UNIT_TESTING)
+    if (execute_serial_transaction(serial_payload, prefix, payload) == 1) {
+        switch (datatype_flag) {
+            case 1:  if (sscanf(payload, prefix, (float*)out_value) == 1) return 1; break;
+            case 0:  if (sscanf(payload, prefix, (int*)out_value) == 1) return 1; break;
+            case 2:  strcpy((char*)out_value, payload); return 1;
+            default: break;
+        }
+    }
+#else
+    execute_serial_transaction(serial_payload, prefix, payload);
+    switch (datatype_flag) {
+        case 1:  if (sscanf(payload, prefix, (float*)out_value) == 1) return 1; break;
+        case 0:  if (sscanf(payload, prefix, (int*)out_value) == 1) return 1; break;
+        case 2:  strcpy((char*)out_value, payload); return 1;
+        default: break;
+    }
+#endif
+
+    return 0;
+}
+
 //-----------------------------------------------
-//UNIFIED AUTOMATED FALLBACK WRAPPERS
+//SENSOR READ METHODS
 //-----------------------------------------------
-    int read_temperature(float *temperature)
-    {
-        char payload[STREAM_BUFFER_SIZE] = {0};
+int read_temperature(float *temperature)
+{
+    return execute_unified_transaction("1", "1\n", "TEMP:%f", temperature, 1);
+}
 
-        // 1. Try Wireless Mode first
-        if (execute_socket_transaction("1", "TEMP:", payload) == 1) {
-            if (sscanf(payload, "TEMP:%f", temperature) == 1) return 1;
-        }
+int read_water(int *water)
+{
+    return execute_unified_transaction("4", "4\n", "WAT:%d", water, 0);
+}
 
-        // 2. Fallback to physical Serial wire automatically if Wi-Fi isn't linked
-        printf("SENSOR_READER: Wireless link quiet. Switching to direct Serial connection...\n");
-        #if !defined(_WIN32) && !defined(UNIT_TESTING)
-            // Real Linux Mode: Evaluate the true return code dynamically from hardware
-            if (execute_serial_transaction("1\n", "TEMP:", payload) == 1) {
-                if (sscanf(payload, "TEMP:%f", temperature) == 1) return 1;
-            }
-        #else
-            // Windows Dev / Cloud Simulation Mode: Directly execute to bypass Clang-Tidy static logic tracking
-            execute_serial_transaction("1\n", "TEMP:", payload);
-            if (sscanf(payload, "TEMP:%f", temperature) == 1) return 1;
-        #endif
-        return 0;
+int read_light(short *light)
+{
+    int temp_light = 0;
+    if (execute_unified_transaction("3", "3\n", "LIG:%d", &temp_light, 0) == 1) {
+        *light = (short)temp_light;
+        return 1;
     }
+    return 0;
+}
 
-    int read_water(int *water)
-    {
-        char payload[STREAM_BUFFER_SIZE] = {0};
+int read_co2(int *co2)
+{
+    return execute_unified_transaction("6", "6\n", "CO2:%d", co2, 0);
+}
 
-        if (execute_socket_transaction("4", "WAT:", payload) == 1) {
-            if (sscanf(payload, "WAT:%d", water) == 1) return 1;
+// ============================================================================
+// USER PROVISIONING METHODS
+// ============================================================================
+
+int provision_remote_arduino_wifi(const char *ssid, const char *password, const char *server_ip)
+{
+    char wifi_payload_buffer[128] = {0};
+    char serial_payload_buffer[128] = {0};
+    char arduino_response_destination[STREAM_BUFFER_SIZE] = {0};
+
+    // Package the raw string payloads cleanly
+    sprintf(wifi_payload_buffer, "7%s,%s,%s", ssid, password, server_ip);
+    sprintf(serial_payload_buffer, "7%s,%s,%s\n", ssid, password, server_ip);
+
+    printf("SENSOR_READER: Sending standardized setup payload downstream...\n");
+
+#if !defined(_WIN32) && !defined(UNIT_TESTING)
+    // Real Linux Mode: Dynamically evaluate the transaction's true hardware response
+    if (execute_unified_transaction(wifi_payload_buffer, serial_payload_buffer, "WIFI:", arduino_response_destination, 2) == 1) {
+        if (strstr(arduino_response_destination, "CONNECTED")) {
+            printf("SENSOR_READER: Success! Credentials stored into remote board EEPROM space.\n");
+            return 1;
         }
-
-        printf("SENSOR_READER: Wireless link quiet. Switching to direct Serial connection...\n");
-
-        #if !defined(_WIN32) && !defined(UNIT_TESTING)
-            if (execute_serial_transaction("4\n", "WAT:", payload) == 1) {
-                if (sscanf(payload, "WAT:%d", water) == 1) return 1;
-            }
-        #else
-            execute_serial_transaction("4\n", "WAT:", payload);
-            if (sscanf(payload, "WAT:%d", water) == 1) return 1;
-        #endif
-        return 0;
     }
-
-    int read_light(short *light)
-    {
-        char payload[STREAM_BUFFER_SIZE] = {0};
-
-        if (execute_socket_transaction("3", "LIG:", payload) == 1) {
-            if (sscanf(payload, "LIG:%hd", light) == 1) return 1;
-        }
-
-        printf("SENSOR_READER: Wireless link quiet. Switching to direct Serial connection...\n");
-
-        #if !defined(_WIN32) && !defined(UNIT_TESTING)
-            if (execute_serial_transaction("3\n", "LIG:", payload) == 1) {
-                if (sscanf(payload, "LIG:%hd", light) == 1) return 1;
-            }
-        #else
-            execute_serial_transaction("3\n", "LIG:", payload);
-            if (sscanf(payload, "LIG:%hd", light) == 1) return 1;
-        #endif
-            return 0;
+#else
+    // Windows Dev / Cloud Simulation Mode: Execute directly to bypass Clang-Tidy's static assumption tracker
+    execute_unified_transaction(wifi_payload_buffer, serial_payload_buffer, "WIFI:", arduino_response_destination, 2);
+    if (strstr(arduino_response_destination, "CONNECTED")) {
+        printf("SENSOR_READER: [MOCK] Success! Credentials stored into remote board EEPROM space.\n");
+        return 1;
     }
+#endif
 
-    int read_co2(int *co2)
-    {
-        char payload[STREAM_BUFFER_SIZE] = {0};
-
-        if (execute_socket_transaction("6", "CO2:", payload) == 1) {
-            if (sscanf(payload, "CO2:%d", co2) == 1) return 1;
-        }
-
-        printf("SENSOR_READER: Wireless link quiet. Switching to direct Serial connection...\n");
-
-        #if !defined(_WIN32) && !defined(UNIT_TESTING)
-            if (execute_serial_transaction("6\n", "CO2:", payload) == 1) {
-                if (sscanf(payload, "CO2:%d", co2) == 1) return 1;
-            }
-        #else
-            execute_serial_transaction("6\n", "CO2:", payload);
-            if (sscanf(payload, "CO2:%d", co2) == 1) return 1;
-        #endif
-
-        return 0;
-    }
-
-
-
-
+    printf("SENSOR_READER ERROR: Initial provisioning handshake failed.\n");
+    return 0;
+}
 /*
 //  Wrap the Temperature Reading logic
 int read_temperature(float *temperature)
