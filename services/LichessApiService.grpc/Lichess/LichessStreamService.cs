@@ -23,6 +23,7 @@ public class LichessStreamService(
     {
         const int maxRetries = 5;
         var attempt = 0;
+        var hasConnectedBefore = false;
 
         while (!ct.IsCancellationRequested)
         {
@@ -50,6 +51,10 @@ public class LichessStreamService(
 
                 attempt = 0;
                 logger.LogInformation("SSE stream connected for session {SessionId}", sessionId);
+
+                if (hasConnectedBefore)
+                    await RecoverMissedGameAsync(sessionId, playerId, playerUsername, lichessToken, ct);
+                hasConnectedBefore = true;
 
                 await using var stream = await response.Content.ReadAsStreamAsync(ct);
                 using var reader = new StreamReader(stream);
@@ -107,7 +112,7 @@ public class LichessStreamService(
         string lichessToken,
         CancellationToken ct)
     {
-        int? currentMatchId = null;
+        LichessStreamGameInfo? currentGame = null;
 
         while (!ct.IsCancellationRequested)
         {
@@ -124,8 +129,8 @@ public class LichessStreamService(
             if (line == null)
                 break;
 
-            currentMatchId = await ParseAndDispatchAsync(
-                line, currentMatchId, sessionId, playerId, playerUsername, lichessToken, ct);
+            currentGame = await ParseAndDispatchAsync(
+                line, currentGame, sessionId, playerId, playerUsername, lichessToken, ct);
         }
     }
 
@@ -138,7 +143,7 @@ public class LichessStreamService(
         CancellationToken ct)
     {
         const int timeoutSeconds = 60;
-        int? currentMatchId = null;
+        LichessStreamGameInfo? currentGame = null;
 
         while (!ct.IsCancellationRequested)
         {
@@ -159,14 +164,14 @@ public class LichessStreamService(
             if (line == null)
                 break;
 
-            currentMatchId = await ParseAndDispatchAsync(
-                line, currentMatchId, sessionId, playerId, playerUsername, lichessToken, ct);
+            currentGame = await ParseAndDispatchAsync(
+                line, currentGame, sessionId, playerId, playerUsername, lichessToken, ct);
         }
     }
 
-    private async Task<int?> ParseAndDispatchAsync(
+    private async Task<LichessStreamGameInfo?> ParseAndDispatchAsync(
         string line,
-        int? currentMatchId,
+        LichessStreamGameInfo? currentGame,
         int sessionId,
         int playerId,
         string playerUsername,
@@ -174,7 +179,7 @@ public class LichessStreamService(
         CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(line))
-            return currentMatchId;
+            return currentGame;
 
         LichessStreamEvent? streamEvent;
         try
@@ -184,29 +189,38 @@ public class LichessStreamService(
         catch (JsonException ex)
         {
             logger.LogWarning(ex, "Failed to parse stream event: {Line}", line);
-            return currentMatchId;
+            return currentGame;
         }
 
         if (streamEvent == null)
-            return currentMatchId;
+            return currentGame;
 
         switch (streamEvent.Type)
         {
             case "gameStart":
-                return await HandleGameStartAsync(sessionId, playerId, playerUsername, ct);
+                if (streamEvent.Game == null)
+                {
+                    logger.LogWarning("Received gameStart without game info for session {SessionId}", sessionId);
+                    return currentGame;
+                }
 
-            case "gameFinish" when currentMatchId.HasValue:
+                logger.LogInformation(
+                    "Game {GameId} started for session {SessionId}; match row will be created when it finishes",
+                    streamEvent.Game.GameId, sessionId);
+                return streamEvent.Game;
+
+            case "gameFinish" when currentGame != null:
                 await HandleGameFinishAsync(
-                    currentMatchId.Value, playerUsername, lichessToken, ct);
+                    sessionId, playerId, currentGame, playerUsername, lichessToken, ct);
                 return null;
 
             default:
-                return currentMatchId;
+                return currentGame;
         }
     }
 
-    private async Task<int> HandleGameStartAsync(
-        int sessionId, int playerId, string playerUsername, CancellationToken ct)
+    private async Task<int> CreateMatchAsync(
+        int sessionId, int playerId, string? lichessGameId, CancellationToken ct)
     {
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LichessDbContext>();
@@ -230,13 +244,62 @@ public class LichessStreamService(
         await db.SaveChangesAsync(ct);
 
         logger.LogInformation(
-            "Match {MatchId} created for session {SessionId}", match.Id, sessionId);
+            "Match {MatchId} created for session {SessionId} after game {GameId} finished",
+            match.Id, sessionId, lichessGameId);
 
         return match.Id;
     }
 
+    internal async Task RecoverMissedGameAsync(
+        int sessionId, int playerId, string playerUsername, string lichessToken, CancellationToken ct)
+    {
+        try
+        {
+            using var scope = serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<LichessDbContext>();
+            var gameFetcher = scope.ServiceProvider.GetRequiredService<LichessGameFetcher>();
+
+            var lichessGame = await gameFetcher.FetchLatestGameAsync(playerUsername, lichessToken, ct);
+            if (lichessGame == null)
+                return;
+
+            var alreadyRecorded = await db.Games
+                .AnyAsync(g => g.LichessGameId == lichessGame.Id
+                            && g.Match.SessionId == sessionId, ct);
+            if (alreadyRecorded)
+                return;
+
+            var matchId = await CreateMatchAsync(sessionId, playerId, lichessGame.Id, ct);
+
+            var gameEntity = gameFetcher.MapToGameEntity(lichessGame, playerUsername, matchId);
+            db.Games.Add(gameEntity);
+            await db.SaveChangesAsync(ct);
+
+            logger.LogInformation(
+                "Recovered missed game {LichessGameId} for session {SessionId}",
+                lichessGame.Id, sessionId);
+
+            await CreateDatasetAsync(db, gameEntity, matchId, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex,
+                "Recovery check failed for session {SessionId}; continuing with stream",
+                sessionId);
+        }
+    }
+
     private async Task HandleGameFinishAsync(
-        int matchId, string playerUsername, string lichessToken, CancellationToken ct)
+        int sessionId,
+        int playerId,
+        LichessStreamGameInfo streamGame,
+        string playerUsername,
+        string lichessToken,
+        CancellationToken ct)
     {
         using var scope = serviceProvider.CreateScope();
         var db = scope.ServiceProvider.GetRequiredService<LichessDbContext>();
@@ -255,8 +318,8 @@ public class LichessStreamService(
                 if (lichessGame != null) break;
 
                 logger.LogWarning(
-                    "Fetch returned null for match {MatchId}, attempt {Attempt}/{Max}",
-                    matchId, attempt, maxFetchAttempts);
+                    "Fetch returned null for Lichess game {GameId} in session {SessionId}, attempt {Attempt}/{Max}",
+                    streamGame.GameId, sessionId, attempt, maxFetchAttempts);
             }
             catch (OperationCanceledException) when (ct.IsCancellationRequested)
             {
@@ -265,8 +328,8 @@ public class LichessStreamService(
             catch (Exception ex)
             {
                 logger.LogWarning(ex,
-                    "Fetch failed for match {MatchId}, attempt {Attempt}/{Max}",
-                    matchId, attempt, maxFetchAttempts);
+                    "Fetch failed for Lichess game {GameId} in session {SessionId}, attempt {Attempt}/{Max}",
+                    streamGame.GameId, sessionId, attempt, maxFetchAttempts);
             }
 
             if (attempt < maxFetchAttempts)
@@ -275,9 +338,13 @@ public class LichessStreamService(
 
         if (lichessGame == null)
         {
-            logger.LogWarning("Could not fetch game data for match {MatchId} after retries", matchId);
+            logger.LogWarning(
+                "Could not fetch game data for Lichess game {GameId} in session {SessionId} after retries",
+                streamGame.GameId, sessionId);
             return;
         }
+
+        var matchId = await CreateMatchAsync(sessionId, playerId, streamGame.GameId, ct);
 
         var gameEntity = gameFetcher.MapToGameEntity(lichessGame, playerUsername, matchId);
         db.Games.Add(gameEntity);

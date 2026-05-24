@@ -4,10 +4,10 @@ import knightLogo from "../assets/knight-logo.png";
 import { API_URL } from "../config";
 import lichessLogo from "../assets/lichess-logo.png";
 
-function Navbar() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [navOpen, setNavOpen] = useState(false);
-  const [lichessUser, setLichessUser] = useState(null);
+function Navbar({ onLogout }) {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
+  const [lichessUser, setLichessUser] = useState(null)
 
   useEffect(() => {
     const savedUser = localStorage.getItem("lichess_user");
@@ -17,37 +17,32 @@ function Navbar() {
   }, []);
 
   const handleLogout = async () => {
+    const activeSessionId = localStorage.getItem('active_session_id')
+    if (activeSessionId) {
+      navigator.sendBeacon(
+        `${API_URL}/session/end`,
+        new Blob([JSON.stringify({ session_id: Number(activeSessionId) })], { type: 'text/plain' }),
+      )
+      localStorage.removeItem('active_session_id')
+    }
     try {
       await fetch(`${API_URL}/auth/lichess/logout`, {
         method: "POST",
         credentials: "include",
       });
     } catch (_) {}
-    localStorage.removeItem("lichess_user");
-    setLichessUser(null);
-  };
+    localStorage.removeItem('lichess_user')
+    setLichessUser(null)
+    onLogout?.()
+  }
 
   const DropdownMenu = () => (
     <div className="profile-dropdown">
       {lichessUser ? (
-        <button>
-          <img
-            src={lichessLogo}
-            alt="Lichess"
-            style={{ width: "18px", height: "18px", filter: "invert(1)" }}
-          />
-          {lichessUser.player_username}
-        </button>
+        <button>👤 {lichessUser.player_username}</button>
       ) : (
         <Link to="/login">
-          <button>
-            <img
-              src={lichessLogo}
-              alt="Lichess"
-              style={{ width: "18px", height: "18px", filter: "invert(1)" }}
-            />
-            Login
-          </button>
+          <button>👤 Login</button>
         </Link>
       )}
       <Link to="/iot-dashboard">
