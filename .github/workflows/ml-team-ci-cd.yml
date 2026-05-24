@@ -375,6 +375,9 @@ jobs:
 
   #IoT CD forkflow
   iot-grpc-publish:
+    if: >-
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+      && (github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main')
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -389,6 +392,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract image metadata (develop)
+        if: github.ref_name == 'develop'
         id: meta_develop
         uses: docker/metadata-action@v5
         with:
@@ -408,6 +412,7 @@ jobs:
             type=sha,prefix=sha-
 
       - name: Build and push Docker image (develop)
+        if: github.ref_name == 'develop'
         uses: docker/build-push-action@v5
         with:
           context: .
