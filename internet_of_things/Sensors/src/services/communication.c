@@ -3,15 +3,27 @@
  * @brief Secure communication provisioning layer with persistent EEPROM caching.
  */
 
-#include "credentials_private.h" //git-ignored configuration layer
-
 #include "communication.h"
 #include "wifi.h"
 #include "uart_stdio.h"
 #include <stdio.h>
 #include <string.h>
 #include <util/delay.h>
-#include <avr/eeprom.h>          // Native AVR flash storage engine
+#include <avr/eeprom.h>    // Native AVR flash storage engine
+
+#if __has_include("credentials_private.h")
+    #include "credentials_private.h"
+#else
+    // File is missing (GitHub Actions). Inject safe compiler dummy placeholders
+    // so the remote pipeline finishes building successfully without errors.
+    #define DEV_PROFILE_NAME "dev"
+    #define DEV_WIFI_SSID    "CI_HOTSPOT_DUMMY"
+    #define DEV_WIFI_PASS    "CI_PASSWORD_DUMMY"
+    #define DEV_SERVER_IP    "127.0.0.1"
+
+    #define EEPROM_MAGIC_NUM 0xABCD
+    #define EEPROM_STR_LEN   32
+#endif
 
 #define TCP_BUFF_SIZE 128
 
