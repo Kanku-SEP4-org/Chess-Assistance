@@ -439,6 +439,7 @@ function Home() {
                       }}
                     />
                     <button
+                      aria-label="confirm water"
                       onClick={() => {
                         setTotalWater(
                           (prev) => prev + (Number(addWaterAmount) || 0),
@@ -459,6 +460,7 @@ function Home() {
                       ✓
                     </button>
                     <button
+                      aria-label="cancel water"
                       onClick={() => setShowAddWater(false)}
                       style={{
                         padding: "6px 10px",
@@ -474,6 +476,7 @@ function Home() {
                   </>
                 ) : (
                   <button
+                    aria-label="add water"
                     onClick={() => setShowAddWater(true)}
                     style={{
                       padding: "4px 12px",
