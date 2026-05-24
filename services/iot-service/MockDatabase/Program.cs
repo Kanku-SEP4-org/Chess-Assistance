@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using IoTGrpcServer;
-using System.Data;
+using Microsoft.Extensions.Configuration;
+using DotNetEnv;
 
 namespace MockDatabase;
 
@@ -10,8 +11,19 @@ public class Program
     {
         const string schema = "chess_assistant";
 
-        var connectionString =
-            "Host=localhost;Port=5433;Database=chess_test;Username=chess;Password=chess";
+        Env.TraversePath().Load();
+
+        var configuration = new ConfigurationBuilder()
+            .AddEnvironmentVariables()
+            .Build();
+
+        var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            Console.WriteLine("Connection string was not found.");
+            return;
+        }
 
         var options = new DbContextOptionsBuilder<MockDbContext>()
             .UseNpgsql(connectionString)
