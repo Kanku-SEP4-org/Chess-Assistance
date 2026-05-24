@@ -23,4 +23,7 @@ api-chess.cannyboiz.com {
     handle {
         reverse_proxy chess-api-gateway:3001
     }
+    handle {
+        reverse_proxy rabbitmq:5672
+    }
 }

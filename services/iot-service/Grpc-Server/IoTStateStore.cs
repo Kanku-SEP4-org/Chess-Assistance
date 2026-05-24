@@ -10,7 +10,6 @@ public class IoTStateStore : IIoTStateStore
 {
     private readonly DbContext dbContext;
     private readonly ConcurrentDictionary<SensorKey, SensorState> _states = new();
-    private readonly HashSet<string> _allowedTypes = new() { "temp", "light", "water" };
 
     public IoTStateStore(DbContext dbContext)
     {

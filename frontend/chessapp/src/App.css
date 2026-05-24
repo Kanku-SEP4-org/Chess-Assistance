@@ -52,7 +52,7 @@ body {
 .settings-btn {
   color: #f4f4f4;
   text-decoration: none;
-  font-size: 16px;
+  font-size: 18px;
   background: none;
   border: none;
   cursor: pointer;
@@ -104,7 +104,7 @@ body {
 .hero-content h1 {
   font-size: clamp(48px, 7vw, 92px);
   line-height: 0.95;
-  margin: 0 0 100px;
+  margin: 0 0 32px;
 }
 
 .hero-text {
@@ -572,6 +572,107 @@ body {
   padding: 1.25rem 1.5rem;
 }
 
+/* Environment Recommendation */
+.environment-page .track-hero {
+  max-width: 980px;
+}
+
+.recommendation-form {
+  margin-top: 28px;
+}
+
+.recommendation-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(140px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.recommendation-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.recommendation-grid span {
+  color: #f4f4f4;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.recommendation-grid input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.06);
+  color: white;
+  outline: none;
+}
+
+.recommendation-form button {
+  padding: 14px 24px;
+  border-radius: 999px;
+  border: 1px solid rgba(216, 170, 85, 0.6);
+  background: linear-gradient(135deg, #d8aa55, #8f6425);
+  color: #111;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.recommendation-form button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.recommendation-summary {
+  margin-bottom: 28px;
+}
+
+.recommendation-summary h2 {
+  margin: 0 0 12px;
+}
+
+.recommendation-stats {
+  grid-template-columns: repeat(3, 120px);
+}
+
+.recommendation-cards {
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+}
+
+.candidate-list {
+  margin-top: 28px;
+}
+
+.candidate-row {
+  display: grid;
+  grid-template-columns: 1fr 180px 160px;
+  gap: 20px;
+  align-items: center;
+  padding: 16px 18px;
+  margin-bottom: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.candidate-row p {
+  margin: 6px 0 0;
+  color: #cfcfcf;
+}
+
+.candidate-row span {
+  display: block;
+  margin-bottom: 6px;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 13px;
+}
+
+.candidate-row strong {
+  color: white;
+}
+
 /* ===================== RESPONSIVE / MOBILE ===================== */
 
 @media (max-width: 767px) {
@@ -646,6 +747,19 @@ body {
 
   .metric-card strong {
     font-size: 24px;
+  }
+
+  .recommendation-grid,
+  .recommendation-cards {
+    grid-template-columns: 1fr;
+  }
+
+  .recommendation-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .candidate-row {
+    grid-template-columns: 1fr;
   }
 
   /* Sleep card */

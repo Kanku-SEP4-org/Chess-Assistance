@@ -3,6 +3,7 @@
 
 #include "rabbitmq_client.h"
 #include "message_builder.h"
+#include "sensor_reader.h"
 
 #define MESSAGE_SIZE 512
 
@@ -15,15 +16,31 @@ int main()
 
     setup_rabbitmq_queues(connection);
 
-    printf("Producing temperature, CO2, light and water messages every 5 seconds...\n");
+    printf("Reading sensor data and listening for requests\n");
 
     while (1)
     {
         char lightMessage[MESSAGE_SIZE];
         char tempMessage[MESSAGE_SIZE];
         char waterMessage[MESSAGE_SIZE];
-        char co2Message[MESSAGE_SIZE];
-        
+        char pumpMessage[MESSAGE_SIZE];
+        char co2Message[MESSAGE_SIZE];     
+
+        int requestReceived = wait_for_request(connection);
+
+        if (requestReceived == 1)
+        {
+            printf("Fill-cup request received.\n");
+            
+            create_pump_response_message(pumpMessage);
+            printf("Pump message: %s\n", pumpMessage);
+            send_response(connection, pumpMessage);
+
+        }
+
+        create_light_message(lightMessage);
+        send_response(connection, lightMessage);
+
         create_temperature_message(tempMessage);
         send_response(connection, tempMessage);
 
@@ -32,10 +49,6 @@ int main()
 
         create_co2_message(co2Message);
         send_response(connection, co2Message);
-        sleep(5);
-
-        create_light_message(lightMessage);
-        send_response(connection, lightMessage);
         sleep(5);
     }
 

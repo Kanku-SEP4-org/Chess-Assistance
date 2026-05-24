@@ -46,6 +46,7 @@ add_executable(test_message_builder
         "${UNITY_SRC}"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/message_builder.c"
         "${CMAKE_CURRENT_SOURCE_DIR}/src/sensor_reader.c"
+
 )
 
 add_executable(test_sensor_reader

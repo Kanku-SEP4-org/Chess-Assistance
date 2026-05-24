@@ -448,6 +448,51 @@ int read_light(short *light)
 #endif
 }
 
+int fill_cup(int *success)
+{
+#if !defined(_WIN32) && !defined(UNIT_TESTING)
+    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
+    if (serial == -1)
+    {
+        printf("open_port: Unable to open");
+        return -1;
+    }
+
+    setup_serial(serial);
+    char buffer[100] = {0};
+
+    sleep(2);
+    tcflush(serial, TCIOFLUSH);
+
+    write(serial, "5\n", 2);
+
+    usleep(500000);
+
+    read(serial, buffer, sizeof(buffer) - 1);
+
+    close(serial);
+
+    if (strstr(buffer, "PUMP:DONE"))
+    {
+        *success = 1;
+        return 1;
+    }
+
+    if (strstr(buffer, "PUMP:FAIL"))
+    {
+        *success = 0;
+        return 1;
+    }
+
+    return 0;
+#else
+    // Windows / testing mock
+    *success =1;
+    printf("Mock: Fill cup command sent to Arduino\n");
+    return 1;
+#endif
+}
+
 int read_co2(int *co2)
 {
 #if !defined(_WIN32) && !defined(UNIT_TESTING)
@@ -488,7 +533,6 @@ int read_co2(int *co2)
 #endif
 }
 */
-
 
 // in administrator powershell
 
