@@ -70,6 +70,7 @@ function Navbar() {
         <div className="d-flex align-items-center gap-3 d-md-none">
           <div className="profile-menu-container">
             <button
+              aria-label="open menu"
               className="settings-btn"
               onClick={() => setMenuOpen(!menuOpen)}
             >
@@ -107,6 +108,7 @@ function Navbar() {
             {/* Desktop only: knight icon inside nav links */}
             <div className="profile-menu-container d-none d-md-flex">
               <button
+                aria-label="open menu"  
                 className="settings-btn"
                 onClick={() => setMenuOpen(!menuOpen)}
               >
