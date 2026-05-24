@@ -23,6 +23,7 @@ public class LichessStreamService(
     {
         const int maxRetries = 5;
         var attempt = 0;
+        var hasConnectedBefore = false;
 
         while (!ct.IsCancellationRequested)
         {
@@ -50,6 +51,10 @@ public class LichessStreamService(
 
                 attempt = 0;
                 logger.LogInformation("SSE stream connected for session {SessionId}", sessionId);
+
+                if (hasConnectedBefore)
+                    await RecoverMissedGameAsync(sessionId, playerId, playerUsername, lichessToken, ct);
+                hasConnectedBefore = true;
 
                 await using var stream = await response.Content.ReadAsStreamAsync(ct);
                 using var reader = new StreamReader(stream);
@@ -243,6 +248,49 @@ public class LichessStreamService(
             match.Id, sessionId, lichessGameId);
 
         return match.Id;
+    }
+
+    internal async Task RecoverMissedGameAsync(
+        int sessionId, int playerId, string playerUsername, string lichessToken, CancellationToken ct)
+    {
+        try
+        {
+            using var scope = serviceProvider.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<LichessDbContext>();
+            var gameFetcher = scope.ServiceProvider.GetRequiredService<LichessGameFetcher>();
+
+            var lichessGame = await gameFetcher.FetchLatestGameAsync(playerUsername, lichessToken, ct);
+            if (lichessGame == null)
+                return;
+
+            var alreadyRecorded = await db.Games
+                .AnyAsync(g => g.LichessGameId == lichessGame.Id
+                            && g.Match.SessionId == sessionId, ct);
+            if (alreadyRecorded)
+                return;
+
+            var matchId = await CreateMatchAsync(sessionId, playerId, lichessGame.Id, ct);
+
+            var gameEntity = gameFetcher.MapToGameEntity(lichessGame, playerUsername, matchId);
+            db.Games.Add(gameEntity);
+            await db.SaveChangesAsync(ct);
+
+            logger.LogInformation(
+                "Recovered missed game {LichessGameId} for session {SessionId}",
+                lichessGame.Id, sessionId);
+
+            await CreateDatasetAsync(db, gameEntity, matchId, ct);
+        }
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            throw;
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex,
+                "Recovery check failed for session {SessionId}; continuing with stream",
+                sessionId);
+        }
     }
 
     private async Task HandleGameFinishAsync(
