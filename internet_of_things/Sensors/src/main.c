@@ -45,7 +45,6 @@ void process_system_command(char command, uint16_t total_bytes, const char* full
         //add function here
             fill_and_report_done();
             break;
-            break;
         }
         case '6':
             co2_start_measure();
@@ -86,6 +85,7 @@ int main(void) {
     while(gets_nonblocking(boot_flush, sizeof(boot_flush)) > 0 || uart_read_byte(UART0_ID, (uint8_t*)boot_flush) == UART_OK);
 
     // Initialize ADC drivers
+    pump_init();
     light_sensor_pin = light_init();
     water_sensor_pin = soil_init(ADC_PK0);
 
