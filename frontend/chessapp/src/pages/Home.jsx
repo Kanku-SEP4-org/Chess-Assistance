@@ -37,6 +37,12 @@ function Home() {
         })
         .catch(() => {});
     }
+
+    const savedSession = localStorage.getItem("active_session_id");
+    if (savedSession) {
+      setSessionId(Number(savedSession));
+      setMonitoringStarted(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -78,12 +84,14 @@ function Home() {
 
   useEffect(() => {
     const handlePageHide = () => {
-      if (!sessionId) return;
-      const body = JSON.stringify({ session_id: sessionId });
+      const sid = sessionId || localStorage.getItem("active_session_id");
+      if (!sid) return;
+      const body = JSON.stringify({ session_id: Number(sid) });
       navigator.sendBeacon(
         `${API_URL}/session/end`,
-        new Blob([body], { type: "application/json" }),
+        new Blob([body], { type: "text/plain" }),
       );
+      localStorage.removeItem("active_session_id");
     };
 
     window.addEventListener("pagehide", handlePageHide);
@@ -159,6 +167,7 @@ function Home() {
       });
       if (res.status === 401) {
         localStorage.removeItem("lichess_user");
+        localStorage.removeItem("active_session_id");
         setLichessUser(null);
         setShowSleepForm(false);
         setAlerts(null);
@@ -168,6 +177,7 @@ function Home() {
       const data = await res.json();
       if (data.success) {
         setSessionId(data.session_id);
+        localStorage.setItem("active_session_id", data.session_id);
         setMonitoringStarted(true);
         setShowSleepForm(false);
         setAlerts(null);
@@ -179,7 +189,18 @@ function Home() {
         const minutesAwake = Math.round((now - wake) / 60000);
         localStorage.setItem("session_minutes_awake", minutesAwake);
       } else {
-        alert(data.message || "Failed to start session");
+        const msg = data.message || "";
+        const activeMatch = msg.match(/active session \(id:\s*(\d+)\)/);
+        if (activeMatch) {
+          const existingId = Number(activeMatch[1]);
+          setSessionId(existingId);
+          localStorage.setItem("active_session_id", existingId);
+          setMonitoringStarted(true);
+          setShowSleepForm(false);
+          setAlerts(null);
+        } else {
+          alert(msg || "Failed to start session");
+        }
       }
     } catch (err) {
       console.error("StartSession error:", err);
@@ -199,8 +220,9 @@ function Home() {
         body: JSON.stringify({ session_id: sessionId }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success || data.message?.includes("not found") || data.message?.includes("already ended")) {
         setSessionId(null);
+        localStorage.removeItem("active_session_id");
       } else {
         alert(data.message || "Failed to end session");
       }
@@ -214,7 +236,13 @@ function Home() {
 
   return (
     <main className="app" style={{ backgroundImage: `url(${heroImg})` }}>
-      <Navbar />
+      <Navbar onLogout={() => {
+        setSessionId(null);
+        setLichessUser(null);
+        setMonitoringStarted(false);
+        setShowSleepForm(false);
+        setAlerts(null);
+      }} />
 
       <section id="home" className="hero-section">
         <div className="hero-content">

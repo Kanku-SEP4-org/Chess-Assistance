@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 import knightLogo from '../assets/knight-logo.png'
 import { API_URL } from '../config'
 
-function Navbar() {
+function Navbar({ onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
   const [lichessUser, setLichessUser] = useState(null)
@@ -16,6 +16,14 @@ function Navbar() {
   }, [])
 
   const handleLogout = async () => {
+    const activeSessionId = localStorage.getItem('active_session_id')
+    if (activeSessionId) {
+      navigator.sendBeacon(
+        `${API_URL}/session/end`,
+        new Blob([JSON.stringify({ session_id: Number(activeSessionId) })], { type: 'text/plain' }),
+      )
+      localStorage.removeItem('active_session_id')
+    }
     try {
       await fetch(`${API_URL}/auth/lichess/logout`, {
         method: 'POST',
@@ -24,6 +32,7 @@ function Navbar() {
     } catch (_) {}
     localStorage.removeItem('lichess_user')
     setLichessUser(null)
+    onLogout?.()
   }
 
   const DropdownMenu = () => (

@@ -18,6 +18,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+app.use(express.text({ type: "text/plain" }));
 
 function requireAuth(req, res, next) {
   const token = req.cookies[COOKIE_NAME];
@@ -353,7 +354,11 @@ app.post("/session/start", requireAuth, async (req, res) => {
 
 // POST /session/end
 app.post("/session/end", async (req, res) => {
-  const { session_id, water_drunk_during_session_ml } = req.body;
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { return res.status(400).json({ error: "Invalid body" }); }
+  }
+  const { session_id, water_drunk_during_session_ml } = body;
 
   if (!session_id) {
     return res.status(400).json({ error: "Missing session_id" });
