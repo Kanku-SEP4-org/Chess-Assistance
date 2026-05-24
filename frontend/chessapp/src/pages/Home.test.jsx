@@ -87,7 +87,7 @@ describe('Home — monitoring dashboard', () => {
     expect(screen.getByText(/temperature/i)).toBeInTheDocument()
     expect(screen.getByText(/co2 level/i)).toBeInTheDocument()
     expect(screen.getByText(/light level/i)).toBeInTheDocument()
-    expect(screen.getByText(/focus score/i)).toBeInTheDocument()
+    expect(screen.getByText(/water drank/i)).toBeInTheDocument()
   })
 
   test('shows login prompt when no user is logged in', () => {
