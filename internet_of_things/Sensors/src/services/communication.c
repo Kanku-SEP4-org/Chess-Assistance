@@ -29,7 +29,7 @@
 
 static comm_mode_t current_mode = COMM_SERIAL;
 static char tcp_receive_buffer[TCP_BUFF_SIZE] = {0};
-static char tcp_setup_ip_buffer[32] = {0};
+static char tcp_setup_ip_buffer[EEPROM_STR_LEN] = {0};//matching memory properties
 static volatile bool new_tcp_packet_ready = false;
 static int port = 23; //localized for easy edit and DRY compliance
 
@@ -78,7 +78,7 @@ void communication_dev_autoconnect(const char* developer_name) {
 
     if (runtime_config.magic == EEPROM_MAGIC_NUM) {
         transmit_data("NETWORK: Saved user profile located in EEPROM. Loading cached links...\n");
-        strcpy(tcp_setup_ip_buffer, runtime_config.server_ip);
+        snprintf(tcp_setup_ip_buffer, sizeof(tcp_setup_ip_buffer), "%s", runtime_config.server_ip);
 
         // Attempt immediate connection utilizing the ESP-01 hardware auto-link background state
         status = wifi_command_create_TCP_connection_n(tcp_setup_ip_buffer, port, internal_wifi_packet_callback, tcp_receive_buffer, TCP_BUFF_SIZE);
@@ -97,7 +97,7 @@ void communication_dev_autoconnect(const char* developer_name) {
     // If no user credentials found, fallback safely to git-ignored developer macro flags
     else if (strcmp(developer_name, DEV_PROFILE_NAME) == 0) {
         transmit_data("NETWORK: No active user profile. Loading private developer profile...\n");
-        strcpy(tcp_setup_ip_buffer, DEV_SERVER_IP);
+        snprintf(tcp_setup_ip_buffer, sizeof(tcp_setup_ip_buffer), "%s", DEV_SERVER_IP);
 
         status = wifi_command_create_TCP_connection_n(tcp_setup_ip_buffer, port, internal_wifi_packet_callback, tcp_receive_buffer, TCP_BUFF_SIZE);
 
@@ -176,7 +176,7 @@ void communication_connect_wifi(const char *config_string) {
     _delay_ms(500);
 
     if (status == WIFI_OK) {
-        strcpy(tcp_setup_ip_buffer, new_config.server_ip);
+        snprintf(tcp_setup_ip_buffer, sizeof(tcp_setup_ip_buffer), "%s", new_config.server_ip);
         status = wifi_command_create_TCP_connection_n(tcp_setup_ip_buffer, port, internal_wifi_packet_callback, tcp_receive_buffer, TCP_BUFF_SIZE);
     }
 
