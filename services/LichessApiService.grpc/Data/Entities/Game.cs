@@ -27,12 +27,8 @@ public class Game
     public DateTime? StartedAt { get; set; }
     public DateTime? EndedAt { get; set; }
     public int? DurationMin { get; set; }
-    public int? InaccuracyCnt { get; set; }
-    public int? MistakeCnt { get; set; }
-    public int? BlunderCnt { get; set; }
-    public int? Acpl { get; set; }
-    public int? Accuracy { get; set; }
     public int MatchId { get; set; }
 
     public Match Match { get; set; } = null!;
+    public GameAnalysis? Analysis { get; set; }
 }

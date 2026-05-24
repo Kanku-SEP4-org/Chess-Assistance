@@ -1,0 +1,259 @@
+{
+  "train_val_path": "data/train_val.csv",
+  "test_path": "data/test.csv",
+  "features": [
+    "minutes_slept",
+    "minutes_awake",
+    "env_score",
+    "light"
+  ],
+  "n_train_val_rows": 80,
+  "n_test_rows": 20,
+  "target_distribution": {
+    "train_val": {
+      "0": 34,
+      "1": 46
+    },
+    "test": {
+      "0": 13,
+      "1": 7
+    }
+  },
+  "selection_rule": "best by F1, then ROC-AUC, then accuracy",
+  "meaningful_probability_delta": 0.05,
+  "baseline_classification": {
+    "majority_class": 0,
+    "accuracy": 0.65,
+    "precision": 0.0,
+    "recall": 0.0,
+    "f1": 0.0,
+    "confusion_matrix": [
+      [
+        13,
+        0
+      ],
+      [
+        7,
+        0
+      ]
+    ]
+  },
+  "models": {
+    "Logistic Regression": {
+      "accuracy": 0.7,
+      "precision": 0.5555555555555556,
+      "recall": 0.7142857142857143,
+      "f1": 0.625,
+      "roc_auc": 0.8131868131868132,
+      "confusion_matrix": [
+        [
+          9,
+          4
+        ],
+        [
+          2,
+          5
+        ]
+      ]
+    },
+    "Random Forest": {
+      "accuracy": 0.7,
+      "precision": 0.5384615384615384,
+      "recall": 1.0,
+      "f1": 0.7,
+      "roc_auc": 0.8076923076923077,
+      "confusion_matrix": [
+        [
+          7,
+          6
+        ],
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    "Gradient Boosting": {
+      "accuracy": 0.7,
+      "precision": 0.5454545454545454,
+      "recall": 0.8571428571428571,
+      "f1": 0.6666666666666666,
+      "roc_auc": 0.8791208791208791,
+      "confusion_matrix": [
+        [
+          8,
+          5
+        ],
+        [
+          1,
+          6
+        ]
+      ]
+    },
+    "HistGradientBoosting": {
+      "accuracy": 0.55,
+      "precision": 0.42857142857142855,
+      "recall": 0.8571428571428571,
+      "f1": 0.5714285714285714,
+      "roc_auc": 0.8241758241758242,
+      "confusion_matrix": [
+        [
+          5,
+          8
+        ],
+        [
+          1,
+          6
+        ]
+      ]
+    },
+    "KNN": {
+      "accuracy": 0.5,
+      "precision": 0.38461538461538464,
+      "recall": 0.7142857142857143,
+      "f1": 0.5,
+      "roc_auc": 0.6043956043956044,
+      "confusion_matrix": [
+        [
+          5,
+          8
+        ],
+        [
+          2,
+          5
+        ]
+      ]
+    },
+    "SVC": {
+      "accuracy": 0.55,
+      "precision": 0.4375,
+      "recall": 1.0,
+      "f1": 0.6086956521739131,
+      "roc_auc": 0.1868131868131868,
+      "confusion_matrix": [
+        [
+          4,
+          9
+        ],
+        [
+          0,
+          7
+        ]
+      ]
+    }
+  },
+  "best_model": {
+    "name": "Random Forest",
+    "metrics": {
+      "accuracy": 0.7,
+      "precision": 0.5384615384615384,
+      "recall": 1.0,
+      "f1": 0.7,
+      "roc_auc": 0.8076923076923077,
+      "confusion_matrix": [
+        [
+          7,
+          6
+        ],
+        [
+          0,
+          7
+        ]
+      ]
+    },
+    "beats_baseline_f1": true,
+    "beats_baseline_accuracy": true
+  },
+  "sensitivity_check": [
+    {
+      "name": "low_sleep_high_co2",
+      "input": {
+        "name": "low_sleep_high_co2",
+        "minutes_slept": 360,
+        "minutes_awake": 480,
+        "temperature_celsius": 24,
+        "co2": 1600,
+        "light": 800
+      },
+      "probabilities": {
+        "current": 0.72,
+        "temperature_toward_20c": 0.695,
+        "co2_toward_500ppm": 0.825,
+        "light_toward_1500": 0.715,
+        "all_environment_targets": 0.735
+      },
+      "deltas_vs_current": {
+        "temperature_toward_20c": -0.025000000000000022,
+        "co2_toward_500ppm": 0.10499999999999998,
+        "light_toward_1500": -0.0050000000000000044,
+        "all_environment_targets": 0.015000000000000013
+      },
+      "meaningful_changes": {
+        "temperature_toward_20c": false,
+        "co2_toward_500ppm": true,
+        "light_toward_1500": false,
+        "all_environment_targets": false
+      }
+    },
+    {
+      "name": "average_sleep_dim_light",
+      "input": {
+        "name": "average_sleep_dim_light",
+        "minutes_slept": 450,
+        "minutes_awake": 420,
+        "temperature_celsius": 18,
+        "co2": 1000,
+        "light": 900
+      },
+      "probabilities": {
+        "current": 0.58,
+        "temperature_toward_20c": 0.64,
+        "co2_toward_500ppm": 0.54,
+        "light_toward_1500": 0.55,
+        "all_environment_targets": 0.545
+      },
+      "deltas_vs_current": {
+        "temperature_toward_20c": 0.06000000000000005,
+        "co2_toward_500ppm": -0.039999999999999925,
+        "light_toward_1500": -0.029999999999999916,
+        "all_environment_targets": -0.03499999999999992
+      },
+      "meaningful_changes": {
+        "temperature_toward_20c": true,
+        "co2_toward_500ppm": false,
+        "light_toward_1500": false,
+        "all_environment_targets": false
+      }
+    },
+    {
+      "name": "good_sleep_bright_room",
+      "input": {
+        "name": "good_sleep_bright_room",
+        "minutes_slept": 520,
+        "minutes_awake": 180,
+        "temperature_celsius": 21,
+        "co2": 700,
+        "light": 1700
+      },
+      "probabilities": {
+        "current": 0.53,
+        "temperature_toward_20c": 0.495,
+        "co2_toward_500ppm": 0.495,
+        "light_toward_1500": 0.615,
+        "all_environment_targets": 0.59
+      },
+      "deltas_vs_current": {
+        "temperature_toward_20c": -0.03500000000000003,
+        "co2_toward_500ppm": -0.03500000000000003,
+        "light_toward_1500": 0.08499999999999996,
+        "all_environment_targets": 0.05999999999999994
+      },
+      "meaningful_changes": {
+        "temperature_toward_20c": false,
+        "co2_toward_500ppm": false,
+        "light_toward_1500": true,
+        "all_environment_targets": true
+      }
+    }
+  ]
+}

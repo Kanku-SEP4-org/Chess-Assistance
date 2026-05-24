@@ -25,7 +25,7 @@ services:
     networks:
       - default
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -33,7 +33,7 @@ services:
 
   rabbitmq:
     image: rabbitmq:management
-    container_name: respawn_rabbitmq
+    container_name: chess-rabbitmq
     restart: unless-stopped
     ports: !reset [] # No external ports exposed for security
     environment:
@@ -49,17 +49,25 @@ services:
   # ---------------------------------------------------------
 
   iot-service:
-    build:
-      context: ./services/iot-service
-      dockerfile: Grpc-Server/Dockerfile
+    image: ghcr.io/kanku-sep4-org/chess-assistance/iot-grpc-server:latest
+    build: !reset null
     container_name: chess-iot-service
+    ports: !reset []
+    expose: 
+      - "8080" 
+    environment:
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__User: ${RABBITMQ_USERNAME}
+      RabbitMQ__Password: ${RABBITMQ_PASSWORD}
+      CONNECTIONSTRINGS__DEFAULTCONNECTION: ${CONNECTIONSTRINGS__DEFAULTCONNECTION}
     networks:
       - default
     restart: unless-stopped
 
   lichess-api:  # lichessapi-grpc
-    image: ghcr.io/kanku-sep4-org/lichessapi-grpc:latest
+    image: ghcr.io/kanku-sep4-org/chess-assistance/lichessapi-grpc:latest
     build: !reset null
+    env_file: !reset []
     container_name: chess-lichess-api-grpc
     ports: !reset [] # No external ports exposed for security
     expose:
@@ -68,6 +76,7 @@ services:
       ASPNETCORE_ENVIRONMENT: Production
       CONNECTIONSTRINGS__DEFAULTCONNECTION: ${CONNECTIONSTRINGS__DEFAULTCONNECTION}
     networks:
+      - caddy_net
       - default
     depends_on:
       postgres:
@@ -79,21 +88,26 @@ services:
   # ---------------------------------------------------------
 
   api-gateway:
-    image: ghcr.io/kanku-sep4-org/chess-api-gateway:latest
+    image: ghcr.io/kanku-sep4-org/chess-assistance/chess-api-gateway:latest
     build: !reset null
+    env_file: !reset []
     container_name: chess-api-gateway
     ports: !reset [] # No external ports exposed for security
     expose:
       - "3001"
     environment:
       GRPC_HOST: chess-api-gateway
+      LICHESS_GRPC_HOST: chess-lichess-api-grpc
+      LICHESS_GRPC_PORT: "8082"
+      FRONTEND_URL: ${FRONTEND_URL}
+      LICHESS_REDIRECT_URI: ${LICHESS_REDIRECT_URI}
     networks:
       - caddy_net # <---- connect to caddy_net for reverse proxy
       - default
     restart: unless-stopped
 
   ml-api:
-    image: ghcr.io/kanku-sep4-org/chess-ml-api:latest
+    image: ghcr.io/kanku-sep4-org/chess-assistance/chess-ml-api:latest
     build: !reset null
     container_name: chess-ml-api
     ports: !reset [] # No external ports exposed for security
@@ -105,7 +119,13 @@ services:
       ANGRINESS_MODEL_PATH: /app/angriness_models/model.pkl
       ANGRINESS_SCALER_PATH: /app/angriness_models/scaler.pkl
       ANGRINESS_BINS_PATH: /app/angriness_models/angriness_bins.json
+      AP_PIPELINE_PATH: /app/ap_models/model_pipeline.pkl
+      AP_ECO_MAP_PATH: /app/ap_models/eco_frequency_map.json
+      FACTOR_IMPACT_REPORT_PATH: /app/factor_impact_models/factor_impact_report.json
+      FACTOR_IMPACT_COMPARISON_PATH: /app/factor_impact_models/model_comparison.json
+      FACTOR_IMPACT_VALIDATION_PATH: /app/factor_impact_models/factor_impact_validation.json
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@chess-postgres:5432/${POSTGRES_DB}
+      FRONTEND_URL: ${FRONTEND_URL}
     networks:
       - caddy_net # <---- connect to caddy_net for reverse proxy
       - default

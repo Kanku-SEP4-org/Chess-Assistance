@@ -11,7 +11,6 @@ OUTPUT_CSV = os.path.join(PROCESSED_DIR, "features.csv")
 SCALER_PATH = os.path.join("models", "scaler.pkl")
 
 DROP_IDENTIFIERS = ["game_id", "username", "created_at", "last_move_at"]
-DROP_REDUNDANT = ["consecutive_losses", "avg_tpm"]
 
 FEATURE_ORDER = [
     "consecutive_losses_pregame",
@@ -21,21 +20,6 @@ FEATURE_ORDER = [
     "inaccuracy_cnt_player",
     "acpl_player",
     "accuracy_player",
-    "elo",
-    "elo_diff",
-    "opponent_elo",
-    "elo_gap",
-    "time_control_initial",
-    "time_control_increment",
-    "move_cnt",
-    "move_cnt_player",
-    "sleep_duration",
-    "awaken_duration",
-    "avg_ppm",
-    "avg_celsius",
-    "water_intake_ml",
-    "avg_lux",
-    "is_black",
 ]
 
 
@@ -44,23 +28,16 @@ def main():
     df = pd.read_csv(INPUT_CSV)
     print(f"  Shape: {df.shape}")
 
-    to_drop = [c for c in DROP_IDENTIFIERS + DROP_REDUNDANT if c in df.columns]
-    df.drop(columns=to_drop, inplace=True)
-
-    if "player_color" in df.columns:
-        df["is_black"] = (df["player_color"] == "black").astype(int)
-        df.drop(columns=["player_color"], inplace=True)
-
-    for col in df.select_dtypes(include=[np.number]).columns:
-        if df[col].isnull().any():
-            df[col] = df[col].fillna(df[col].median())
-
     available = [c for c in FEATURE_ORDER if c in df.columns]
     missing = [c for c in FEATURE_ORDER if c not in df.columns]
     if missing:
         print(f"  Warning: missing features: {missing}")
 
     df_features = df[available].copy()
+
+    for col in df_features.columns:
+        if df_features[col].isnull().any():
+            df_features[col] = df_features[col].fillna(df_features[col].median())
 
     scaler = StandardScaler()
     df_features[available] = scaler.fit_transform(df_features[available])

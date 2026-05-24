@@ -38,12 +38,15 @@ public class LichessStreamParsingTests : IDisposable
                 EndedAt = DateTimeOffset.FromUnixTimeMilliseconds(dto.LastMoveAt).UtcDateTime,
                 DurationMin = 10,
                 PlayerMoveCount = 20,
-                InaccuracyCnt = 2,
-                MistakeCnt = 1,
-                BlunderCnt = 0,
-                Acpl = 18,
-                Accuracy = 93,
-                MatchId = matchId
+                MatchId = matchId,
+                Analysis = new GameAnalysis
+                {
+                    InaccuracyCnt = 2,
+                    MistakeCnt = 1,
+                    BlunderCnt = 0,
+                    Acpl = 18,
+                    Accuracy = 93,
+                }
             });
 
         var services = new ServiceCollection();
@@ -114,7 +117,7 @@ public class LichessStreamParsingTests : IDisposable
     // --- Stream parsing tests ---
 
     [Fact]
-    public async Task GameStart_CreatesMatchInDb()
+    public async Task GameStart_StoresGameInfoInMemory_NoMatchCreated()
     {
         var sessionId = await SeedSessionAsync();
 
@@ -129,8 +132,7 @@ public class LichessStreamParsingTests : IDisposable
         var db = CreateDb();
         var matches = await db.Matches.Where(m => m.SessionId == sessionId).ToListAsync();
 
-        Assert.Single(matches);
-        Assert.Equal(1, matches[0].PlayerId);
+        Assert.Empty(matches);
     }
 
     [Fact]
@@ -189,7 +191,7 @@ public class LichessStreamParsingTests : IDisposable
             reader, sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
 
         var db = CreateDb();
-        Assert.Single(await db.Matches.Where(m => m.SessionId == sessionId).ToListAsync());
+        Assert.Empty(await db.Matches.Where(m => m.SessionId == sessionId).ToListAsync());
     }
 
     [Fact]
@@ -201,6 +203,7 @@ public class LichessStreamParsingTests : IDisposable
             not valid json at all
             {"type":"gameStart","game":{"gameId":"abc12345"}}
             {broken json{{{
+            {"type":"gameFinish","game":{"gameId":"abc12345"}}
             """;
         using var reader = new StringReader(ndjson);
 
@@ -379,7 +382,7 @@ public class LichessStreamParsingTests : IDisposable
         var matches = await db.Matches.ToListAsync();
         var games = await db.Games.ToListAsync();
 
-        Assert.Single(matches);
+        Assert.Empty(matches);
         Assert.Empty(games);
     }
 
@@ -390,7 +393,6 @@ public class LichessStreamParsingTests : IDisposable
 
         var cts = new CancellationTokenSource();
 
-        // Create a reader that cancels after first line is read
         var ndjson = """
             {"type":"gameStart","game":{"gameId":"game1"}}
             {"type":"gameStart","game":{"gameId":"game2"}}
@@ -403,7 +405,60 @@ public class LichessStreamParsingTests : IDisposable
         var db = CreateDb();
         var matches = await db.Matches.Where(m => m.SessionId == sessionId).ToListAsync();
 
+        Assert.Empty(matches);
+    }
+
+    [Fact]
+    public async Task Recovery_MissedGame_RecordsMatchGameAndDataset()
+    {
+        var sessionId = await SeedSessionAsync();
+
+        await _streamService.RecoverMissedGameAsync(
+            sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        var matches = await db.Matches.Where(m => m.SessionId == sessionId).ToListAsync();
+        var games = await db.Games.ToListAsync();
+        var datasets = await db.Datasets.ToListAsync();
+
         Assert.Single(matches);
+        Assert.Single(games);
+        Assert.Equal("test1234", games[0].LichessGameId);
+        Assert.Single(datasets);
+    }
+
+    [Fact]
+    public async Task Recovery_GameAlreadyRecorded_Skips()
+    {
+        var sessionId = await SeedSessionAsync();
+
+        await _streamService.RecoverMissedGameAsync(
+            sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        await _streamService.RecoverMissedGameAsync(
+            sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        Assert.Single(await db.Games.ToListAsync());
+        Assert.Single(await db.Matches.Where(m => m.SessionId == sessionId).ToListAsync());
+    }
+
+    [Fact]
+    public async Task Recovery_FetchFails_DoesNotCrash()
+    {
+        var sessionId = await SeedSessionAsync();
+
+        _mockGameFetcher
+            .Setup(f => f.FetchLatestGameAsync(
+                It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ThrowsAsync(new HttpRequestException("Network error"));
+
+        await _streamService.RecoverMissedGameAsync(
+            sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        Assert.Empty(await db.Games.ToListAsync());
+        Assert.Empty(await db.Matches.ToListAsync());
     }
 
     public void Dispose()

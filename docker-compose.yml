@@ -1,16 +1,18 @@
 services:
   postgres:
     image: postgres:17
-    env_file:
-      - .env
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./scripts/databases/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
       - ./scripts/databases/triggers.sql:/docker-entrypoint-initdb.d/02_triggers.sql:ro
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chess}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-chess} -d ${POSTGRES_DB:-chess_postgres}"]
       interval: 5s
       timeout: 3s
       retries: 10
@@ -33,20 +35,24 @@ services:
       timeout: 5s
       retries: 5
 
-  prediction-service-grpc:
+  iot-service:
     build:
-      context: .
-      dockerfile: services/ModelServices/PredictionService.grpc/Dockerfile
+      context: ./services/iot-service
+      dockerfile: Grpc-Server/Dockerfile
     ports:
-      - "5283:5283"
+      - "8080:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Production
-      - ASPNETCORE_URLS=http://+:5283
-      - FastApi__BaseUrl=http://fastapi-service:8000/
+      RabbitMQ__Host: rabbitmq
+      RabbitMQ__User: guest
+      RabbitMQ__Password: guest
+      RabbitMQ__RequestQueue: sensor.requests
+      RabbitMQ__ResponseQueue: sensor.responses
+      CONNECTIONSTRINGS__DEFAULTCONNECTION: ${CONNECTIONSTRINGS__DEFAULTCONNECTION}
     depends_on:
-      - fastapi-service
+      rabbitmq:
+        condition: service_healthy
 
-  fastapi-service:
+  ml-api:
     build:
       context: .
       dockerfile: machine_learning/api/.dockerfile
@@ -58,7 +64,13 @@ services:
       - ANGRINESS_MODEL_PATH=/app/angriness_models/model.pkl
       - ANGRINESS_SCALER_PATH=/app/angriness_models/scaler.pkl
       - ANGRINESS_BINS_PATH=/app/angriness_models/angriness_bins.json
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-chess}:${POSTGRES_PASSWORD:-chess1234}@postgres:5432/${POSTGRES_DB:-chess_postgres}
+      - AP_PIPELINE_PATH=/app/ap_models/model_pipeline.pkl
+      - AP_ECO_MAP_PATH=/app/ap_models/eco_frequency_map.json
+      - FACTOR_IMPACT_REPORT_PATH=/app/factor_impact_models/factor_impact_report.json
+      - FACTOR_IMPACT_COMPARISON_PATH=/app/factor_impact_models/model_comparison.json
+      - FACTOR_IMPACT_VALIDATION_PATH=/app/factor_impact_models/factor_impact_validation.json
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
     depends_on:
       postgres:
         condition: service_healthy
@@ -86,14 +98,15 @@ services:
     ports:
       - "3001:3001"
     environment:
-      - PREDICTION_GRPC_HOST=prediction-service-grpc
-      - PREDICTION_GRPC_PORT=5283
       - IOT_GRPC_HOST=iot-service
       - IOT_GRPC_PORT=8080
+      - LICHESS_GRPC_HOST=lichess-api
+      - LICHESS_GRPC_PORT=8082
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
     env_file:
       - .env
     depends_on:
-      - prediction-service-grpc
+      - lichess-api
 
 volumes:
   pgdata:

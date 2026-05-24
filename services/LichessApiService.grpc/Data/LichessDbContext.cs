@@ -10,6 +10,7 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Match> Matches => Set<Match>();
     public DbSet<Game> Games => Set<Game>();
+    public DbSet<GameAnalysis> GameAnalyses => Set<GameAnalysis>();
     public DbSet<HealthRecord> HealthRecords => Set<HealthRecord>();
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<Sensor> Sensors => Set<Sensor>();
@@ -20,8 +21,9 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
     {
         modelBuilder.HasDefaultSchema("chess_assistant");
 
-        modelBuilder.HasPostgresEnum<TimeControlType>("public", "time_control_type");
-        modelBuilder.HasPostgresEnum<GameResultType>("public", "game_result_type");
+        // gean: these enum types are created in the chess_assistant schema, not public.
+        modelBuilder.HasPostgresEnum<TimeControlType>("chess_assistant", "time_control_type");
+        modelBuilder.HasPostgresEnum<GameResultType>("chess_assistant", "game_result_type");
 
         modelBuilder.Entity<Player>(entity =>
         {
@@ -104,7 +106,8 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.LichessGameId).HasColumnName("lichess_game_id").HasMaxLength(8);
-            entity.Property(e => e.TimeControl).HasColumnName("time_control");
+            entity.Property(e => e.TimeControl).HasColumnName("time_control")
+                .HasColumnType("chess_assistant.time_control_type");
             entity.Property(e => e.IsTimeIncrease).HasColumnName("is_time_increase");
             entity.Property(e => e.TimeIncreaseSec).HasColumnName("time_increase_sec");
             entity.Property(e => e.IsRated).HasColumnName("is_rated");
@@ -120,19 +123,34 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.Property(e => e.OppRating).HasColumnName("opp_rating");
             entity.Property(e => e.RatingDiff).HasColumnName("rating_diff");
             entity.Property(e => e.IsPlayerPieceBlack).HasColumnName("is_player_piece_black");
-            entity.Property(e => e.Result).HasColumnName("result");
+            entity.Property(e => e.Result).HasColumnName("result")
+                .HasColumnType("chess_assistant.game_result_type");
             entity.Property(e => e.TerminationType).HasColumnName("termination_type").HasMaxLength(50);
             entity.Property(e => e.StartedAt).HasColumnName("started_at");
             entity.Property(e => e.EndedAt).HasColumnName("ended_at");
             entity.Property(e => e.DurationMin).HasColumnName("duration_min");
+            entity.Property(e => e.MatchId).HasColumnName("match_id");
+
+            entity.HasIndex(e => e.MatchId).IsUnique();
+
+            entity.HasOne(e => e.Analysis)
+                .WithOne(a => a.Game)
+                .HasForeignKey<GameAnalysis>(a => a.GameId);
+        });
+
+        modelBuilder.Entity<GameAnalysis>(entity =>
+        {
+            entity.ToTable("game_analysis");
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Id).HasColumnName("id");
+            entity.Property(e => e.GameId).HasColumnName("game_id");
             entity.Property(e => e.InaccuracyCnt).HasColumnName("inaccuracy_cnt");
             entity.Property(e => e.MistakeCnt).HasColumnName("mistake_cnt");
             entity.Property(e => e.BlunderCnt).HasColumnName("blunder_cnt");
             entity.Property(e => e.Acpl).HasColumnName("acpl");
             entity.Property(e => e.Accuracy).HasColumnName("accuracy");
-            entity.Property(e => e.MatchId).HasColumnName("match_id");
 
-            entity.HasIndex(e => e.MatchId).IsUnique();
+            entity.HasIndex(e => e.GameId).IsUnique();
         });
 
         modelBuilder.Entity<Room>(entity =>
@@ -179,7 +197,8 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.Property(e => e.OpeningPly).HasColumnName("opening_ply");
             entity.Property(e => e.PlayerMoveCount).HasColumnName("player_move_count");
             entity.Property(e => e.OpponentMoveCount).HasColumnName("opponent_move_count");
-            entity.Property(e => e.TimeControl).HasColumnName("time_control");
+            entity.Property(e => e.TimeControl).HasColumnName("time_control")
+                .HasColumnType("chess_assistant.time_control_type");
             entity.Property(e => e.IsTimeIncrease).HasColumnName("is_time_increase");
             entity.Property(e => e.TimeIncreaseSec).HasColumnName("time_increase_sec");
             entity.Property(e => e.IsBerserk).HasColumnName("is_berserk");
@@ -189,7 +208,8 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.Property(e => e.RatingDiff).HasColumnName("rating_diff");
             entity.Property(e => e.IsPlayerPieceBlack).HasColumnName("is_player_piece_black");
             entity.Property(e => e.TerminationType).HasColumnName("termination_type").HasMaxLength(50);
-            entity.Property(e => e.Result).HasColumnName("result");
+            entity.Property(e => e.Result).HasColumnName("result")
+                .HasColumnType("chess_assistant.game_result_type");
             entity.Property(e => e.PlayerOpeningWinRate).HasColumnName("player_opening_win_rate");
             entity.Property(e => e.PlayerOpeningGameCount).HasColumnName("player_opening_game_count");
             entity.Property(e => e.InaccuracyCnt).HasColumnName("inaccuracy_cnt");

@@ -1,6 +1,0 @@
-@PredictionService.grpc_HostAddress = http://localhost:5283
-
-GET {{PredictionService.grpc_HostAddress}}/weatherforecast/
-Accept: application/json
-
-###
