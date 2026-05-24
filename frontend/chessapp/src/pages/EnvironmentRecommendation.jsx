@@ -85,7 +85,7 @@ function EnvironmentRecommendation() {
     setRecommendation(null);
 
     try {
-      const response = await fetch(`${ML_API_URL}/recommend-environment`, {
+      const response = await fetch(`${ML_API_URL}/recommendations/environment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
