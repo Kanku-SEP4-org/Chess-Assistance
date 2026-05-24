@@ -389,7 +389,6 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract image metadata (develop)
-        if: github.ref_name == 'develop'
         id: meta_develop
         uses: docker/metadata-action@v5
         with:
