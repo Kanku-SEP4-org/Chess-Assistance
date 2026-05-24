@@ -289,7 +289,32 @@ int read_co2(int *co2)
 // ============================================================================
 // USER PROVISIONING METHODS
 // ============================================================================
+int fill_cup(int *success)
+{
+        char response_payload[STREAM_BUFFER_SIZE] = {0};
 
+    #if !defined(_WIN32) && !defined(UNIT_TESTING)
+        if (execute_unified_transaction("5", "5\n", "PUMP:", response_payload, 2) == 1) {
+            if (strstr(response_payload, "DONE")) {
+                *success = 1;
+                return 1;
+            }
+            if (strstr(response_payload, "FAIL")) {
+                *success = 0;
+                return 1;
+            }
+        }
+    #else
+        execute_unified_transaction("5", "5\n", "PUMP:", response_payload, 2);
+        if (strstr(response_payload, "DONE")) {
+            *success = 1;
+            return 1;
+        }
+    #endif
+
+        printf("SENSOR_READER ERROR: Pump execution transaction timed out.\n");
+        return 0;
+}
 int provision_remote_arduino_wifi(const char *ssid, const char *password, const char *server_ip)
 {
     char wifi_payload_buffer[128] = {0};
