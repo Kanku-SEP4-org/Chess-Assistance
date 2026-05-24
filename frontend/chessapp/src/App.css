@@ -52,7 +52,7 @@ body {
 .settings-btn {
   color: #f4f4f4;
   text-decoration: none;
-  font-size: 16px;
+  font-size: 18px;
   background: none;
   border: none;
   cursor: pointer;
@@ -104,7 +104,7 @@ body {
 .hero-content h1 {
   font-size: clamp(48px, 7vw, 92px);
   line-height: 0.95;
-  margin: 0 0 100px;
+  margin: 0 0 32px;
 }
 
 .hero-text {
