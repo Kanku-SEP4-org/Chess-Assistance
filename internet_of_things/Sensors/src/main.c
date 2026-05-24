@@ -43,7 +43,8 @@ void process_system_command(char command, uint16_t total_bytes, const char* full
             break;
         case '5': {
         //add function here
-            transmit_data("Not implemented\n");
+            fill_and_report_done();
+            break;
             break;
         }
         case '6':
@@ -97,31 +98,7 @@ int main(void) {
     while (1) {
         // Continuous non-blocking background network polling processing
         communication_poll_network();
-        // Wait for a prompt from the PC/RabbitMQ Producer
-        //" %c" allows us to skip any whitespace characters, including newlines (note the space before %c)
-        if (scanf(" %c", &input) == 1) {
-            switch (input)
-            {
-            case '1':
-                get_and_report_temperature();
-                break;
-            case '2':
-                get_and_report_humidity();
-                break;
-            case '3':
-                get_and_report_light(light);
-                break;
-            case '4':
-                get_and_report_water(water);
-                break;
-            case '5':
-                fill_and_report_done();
-                break;
-            case '6':
-                co2_start_measure();
-                get_and_report_co2();
-                break;
-
+        //
         // Non-blocking check: See if a command line arrived from the USB terminal link
         uint16_t bytes_read = gets_nonblocking(serial_input_buffer, sizeof(serial_input_buffer));
 
