@@ -41,16 +41,8 @@ void process_system_command(char command, uint16_t total_bytes, const char* full
             get_and_report_water(water_sensor_pin);
             break;
         case '5': {
-            transmit_data("DIAGNOSTIC:SENDING_AT_PING...\n");
-            WIFI_ERROR_MESSAGE_t at_status = wifi_command_AT();
-
-            if (at_status == WIFI_OK) {
-                transmit_data("DIAGNOSTIC_RESULT:ESP01_ALIVE_AND_RESPONDING_OK\n");
-            } else {
-                char err_msg[50];
-                sprintf(err_msg, "DIAGNOSTIC_RESULT:ERR_CODE_%d\n", at_status);
-                transmit_data(err_msg);
-            }
+        //add function here
+            transmit_data("Not implemented\n");
             break;
         }
         case '6':
@@ -60,6 +52,8 @@ void process_system_command(char command, uint16_t total_bytes, const char* full
         case '7':
             if (total_bytes > 1) {
                 // Pass the offset pointer safely bypassing token index 0
+                // !!! message sent from server must be like:
+                // 7SSID,PASSWORD,SERVER_IP
                 communication_connect_wifi(&full_buffer[1]);
             } else {
                 transmit_data("ERROR:MISSING_WIFI_CREDENTIALS\n");

@@ -64,5 +64,10 @@ add_executable(sensor_client
 target_link_libraries(test_sensor_reader PRIVATE ${RABBIT_LIB})
 target_link_libraries(sensor_client PRIVATE ${RABBIT_LIB})
 
+if(WIN32)
+    target_link_libraries(test_sensor_reader PRIVATE ws2_32)
+    target_link_libraries(sensor_client PRIVATE ws2_32)
+endif()
+
 target_compile_definitions(test_message_builder PRIVATE UNIT_TESTING)
 target_compile_definitions(test_sensor_reader PRIVATE UNIT_TESTING)
