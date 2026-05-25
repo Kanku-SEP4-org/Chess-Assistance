@@ -14,7 +14,7 @@ IF_MODEL_PATH = os.path.join("models", "if_model.pkl")
 BINS_PATH = os.path.join("models", "angriness_bins.json")
 METRICS_PATH = os.path.join("models", "metrics.json")
 
-UNSCALED_CSV = os.path.join(PROCESSED_DIR, "raw_validated.csv")
+UNSCALED_CSV = os.path.join(PROCESSED_DIR, "raw_cleaned.csv")
 
 TRAIN_FEATURES_CSV = os.path.join(PROCESSED_DIR, "features_train.csv")
 VAL_FEATURES_CSV = os.path.join(PROCESSED_DIR, "features_val.csv")
@@ -31,6 +31,7 @@ IF_FEATURES = [
     "inaccuracy_cnt_player",
     "acpl_player",
     "accuracy_player",
+    "elo",
 ]
 
 PERCENTILE_EDGES = [0, 10, 35, 65, 90, 100]

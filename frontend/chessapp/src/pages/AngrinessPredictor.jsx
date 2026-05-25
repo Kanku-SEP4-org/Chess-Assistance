@@ -54,7 +54,7 @@ function AngrinessPredictor() {
     setAnalysisRequired(null)
 
     try {
-      const res = await fetch(`${ML_API_URL}/angriness/predict-by-game-id`, {
+      const res = await fetch(`${ML_API_URL}/predictions/angriness/lichess`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -100,7 +100,7 @@ function AngrinessPredictor() {
     setAnalysisRequired(null)
 
     try {
-      const res = await fetch(`${ML_API_URL}/angriness/predict-by-game-id`, {
+      const res = await fetch(`${ML_API_URL}/predictions/angriness/lichess`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

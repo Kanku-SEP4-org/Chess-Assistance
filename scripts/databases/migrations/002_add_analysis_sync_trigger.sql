@@ -16,7 +16,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_sync_analysis_to_dataset
+CREATE OR REPLACE TRIGGER trg_sync_analysis_to_dataset
 AFTER INSERT OR UPDATE ON game_analysis
 FOR EACH ROW
 EXECUTE FUNCTION sync_analysis_to_dataset();
