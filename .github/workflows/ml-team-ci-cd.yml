@@ -556,4 +556,23 @@ jobs:
             # Remove old dangling images
             docker image prune -f
 
+            # DB Migration: Wait for postgres container to be healthy
+            echo "Waiting for postgres to be ready..."
+            sleep 10
+
+            # Run DB migrations
+            echo "Running database migrations..."
+            if [ -d "scripts/databases/migrations" ]; then
+              for sql_file in scripts/databases/migrations/*.sql; do
+                if [ -f "$sql_file" ]; then
+                  echo "Applying migration: $sql_file"
+                  # Pipe the sql file into the running postgres container
+                  docker exec -i chess-postgres psql -U "$PROD_POSTGRES_USER" -d "$PROD_POSTGRES_DB" < "$sql_file"
+                fi
+              done
+              echo "Migrations applied."
+            else
+              echo "No migration directory found."
+            fi
+
             echo "Deployment complete."
