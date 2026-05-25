@@ -2,7 +2,7 @@
  * @file wifi.h
  * @author Laurits Ivar
  * @brief ESP8266 WiFi module interface using UART.
- * @version 0.1
+ * @version 0.9.1 New function: wifi_command_create_TCP_connection_n. Message size for TCP receive callback added as parameter to avoid buffer overflow.
  * @date 2023-08-23
  * 
  * @copyright Copyright (c) 2023
@@ -13,9 +13,10 @@
 #include "uart.h"
 
 /**
- * @brief Define which USART module is used for WiFi communication.
+ * @brief Define BUFFER SIZE. Used to set buffers for reception of data FROM the WiFi module. Larger segments will be truncated.
  * 
  */
+#define WIFI_BUFFER_SIZE 255
 
 /**
  * @brief Enumerated list of possible error messages from the WiFi module.
@@ -98,6 +99,17 @@ WIFI_ERROR_MESSAGE_t wifi_command_get_ip_from_URL(char * url, char *ip_address);
 WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer);
 
 /**
+ * @brief Establish a TCP connection using the WiFi module with specified buffer size for received messages.
+ * @param IP IP address to connect to.
+ * @param port Port number to use for the connection.
+ * @param callback_when_message_received Callback executed when a message is received.
+ * @param received_message_buffer Buffer to hold the received message.
+ * @param buffer_size Size of the received message buffer. Data will be truncated if the received message exceeds this size.
+ * @return WIFI_ERROR_MESSAGE_t Error message based on the response from the module.
+ */
+WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection_n(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer, uint16_t buffer_size);
+
+/**
  * @brief Transmit data over an established TCP connection.
  * 
  * @param data Pointer to the data to transmit.
@@ -118,3 +130,17 @@ WIFI_ERROR_MESSAGE_t wifi_command_quit_AP();
  * @return WIFI_ERROR_MESSAGE_t Error message based on the response from the module.
  */
 WIFI_ERROR_MESSAGE_t wifi_command_close_TCP_connection();
+
+#if defined(UNITY_TEST) || defined(WINDOWS_TEST)
+/**
+ * @brief Test helper to provide a fake AT response for WiFi command processing.
+ * 
+ * The response is fed one byte per _delay_ms() invocation.
+ */
+void wifi_test_set_response(const char *response);
+
+/**
+ * @brief Test helper to feed the next byte of the fake response into the WiFi parser.
+ */
+void wifi_test_feed_response_byte(void);
+#endif
