@@ -232,31 +232,64 @@ describe('Home — alerts display', () => {
     expect(screen.getByText(/time you went to sleep/i)).toBeInTheDocument()
   })
 
-  test('no alerts auto-starts session', async () => {
+  test('no alerts shows prediction before confirming session start', async () => {
     localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
 
-    globalThis.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) })
-      .mockResolvedValueOnce({
-        ok: true, status: 200,
-        json: () => Promise.resolve({
-          alerts: [],
-          sleep_duration: '8h 0m',
-          awake_duration: '1h 0m',
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true, status: 200,
-        json: () => Promise.resolve({ success: true, session_id: 42 }),
-      })
+    globalThis.fetch = vi.fn((url) => {
+      const target = String(url)
+      if (target.includes('/iot/temp')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ value: 21 }) })
+      }
+      if (target.includes('/iot/light')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ value: 1500 }) })
+      }
+      if (target.includes('/iot/co2')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ value: 700 }) })
+      }
+      if (target.includes('/session/evaluate')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: () => Promise.resolve({
+            alerts: [],
+            sleep_duration: '8h 0m',
+            awake_duration: '1h 0m',
+          }),
+        })
+      }
+      if (target.includes('/predict')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: () => Promise.resolve({ prediction: 0.62 }),
+        })
+      }
+      if (target.includes('/session/start')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: () => Promise.resolve({ success: true, session_id: 42 }),
+        })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) })
+    })
 
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
+    await waitFor(() => {
+      expect(screen.getByText(/21\.0/)).toBeInTheDocument()
+    })
     fireEvent.click(screen.getByRole('button', { name: /start chess session/i }))
 
     const [sleepInput, wakeInput] = document.querySelectorAll('input[type="time"]')
     fireEvent.change(sleepInput, { target: { value: '22:00' } })
     fireEvent.change(wakeInput, { target: { value: '06:00' } })
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: /^start session$/i }))
+    })
+
+    await waitFor(() => {
+      expect(screen.getByText(/predicted win chance: 62%/i)).toBeInTheDocument()
+    })
+    expect(screen.getByText(/all good/i)).toBeInTheDocument()
 
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /^start session$/i }))
@@ -272,15 +305,34 @@ describe('Home — session lifecycle', () => {
   async function startActiveSession() {
     localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
 
-    globalThis.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) })
-      .mockResolvedValueOnce({
-        ok: true, status: 200,
-        json: () => Promise.resolve({
-          alerts: [{ level: 'yellow', message: 'warning' }],
-          sleep_duration: '6h', awake_duration: '2h',
-        }),
-      })
+    globalThis.fetch = vi.fn((url) => {
+      const target = String(url)
+      if (target.includes('/iot/temp')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ value: 21 }) })
+      }
+      if (target.includes('/iot/light')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ value: 1500 }) })
+      }
+      if (target.includes('/iot/co2')) {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ value: 700 }) })
+      }
+      if (target.includes('/session/evaluate')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: () => Promise.resolve({
+            alerts: [{ level: 'yellow', message: 'warning' }],
+            sleep_duration: '6h', awake_duration: '2h',
+          }),
+        })
+      }
+      if (target.includes('/predict')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: () => Promise.resolve({ prediction: 0.55 }),
+        })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) })
+    })
 
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
@@ -294,7 +346,7 @@ describe('Home — session lifecycle', () => {
       fireEvent.click(screen.getByRole('button', { name: /^start session$/i }))
     })
 
-    return screen.getByRole('button', { name: /start anyway/i })
+    return screen.findByRole('button', { name: /start anyway/i })
   }
 
   test('Start Anyway calls /session/start and shows active session', async () => {

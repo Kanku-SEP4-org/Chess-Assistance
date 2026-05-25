@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import Navbar from "../components/Navbar";
 import heroImg from "../assets/chess-bg.png";
 import "../App.css";
-import { API_URL } from "../config";
+import { API_URL, ML_API_URL } from "../config";
 
 const heroTexts = ["Track your environment.", "Improve your game."];
 
@@ -111,6 +111,12 @@ function Home() {
 
     const dates = buildDates();
     sessionDates.current = dates;
+    const minutesSlept = Math.round((dates.wake - dates.sleep) / 60000);
+    const minutesAwake = Math.round((dates.now - dates.wake) / 60000);
+    let prediction = {
+      status: "unavailable",
+      message: "Prediction unavailable until room metrics load.",
+    };
 
     try {
       const res = await fetch(`${API_URL}/session/evaluate`, {
@@ -124,15 +130,47 @@ function Home() {
       });
       const data = await res.json();
 
+      if (temperature != null && co2Level != null && lightLevel != null) {
+        try {
+          const predictionRes = await fetch(`${ML_API_URL}/predict`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              minutes_slept: minutesSlept,
+              minutes_awake: minutesAwake,
+              temperature_celsius: Number(temperature),
+              co2: Number(co2Level),
+              light: Number(lightLevel),
+            }),
+          });
+          const predictionData = await predictionRes.json();
+
+          if (predictionRes.ok && predictionData.prediction != null) {
+            prediction = {
+              status: "ok",
+              probability: Math.round(Number(predictionData.prediction) * 100),
+            };
+          } else {
+            prediction = {
+              status: "unavailable",
+              message: predictionData.detail || "Prediction unavailable right now.",
+            };
+          }
+        } catch (err) {
+          console.error("Prediction error:", err);
+          prediction = {
+            status: "unavailable",
+            message: "Prediction unavailable right now.",
+          };
+        }
+      }
+
       setAlerts({
         items: data.alerts,
         sleepDuration: data.sleep_duration,
         awakeDuration: data.awake_duration,
+        prediction,
       });
-
-      if (data.alerts.length === 0) {
-        startSession();
-      }
     } catch (err) {
       console.error("Evaluate error:", err);
       alert("Failed to evaluate readiness");
@@ -305,6 +343,16 @@ function Home() {
                 You slept <strong>{alerts.sleepDuration}</strong> and have been
                 awake <strong>{alerts.awakeDuration}</strong>
               </p>
+
+              {alerts.prediction?.status === "ok" ? (
+                <p style={{ color: "#4caf50", fontWeight: 700 }}>
+                  Predicted win chance: {alerts.prediction.probability}%
+                </p>
+              ) : (
+                <p style={{ color: "#ffb300" }}>
+                  {alerts.prediction?.message}
+                </p>
+              )}
 
               {alerts.items.length === 0 ? (
                 <p style={{ color: "#4caf50" }}>

@@ -31,7 +31,12 @@ describe('ChessTrack — display', () => {
   test('renders both search forms with inputs', () => {
     renderChessTrack()
     const inputs = screen.getAllByRole('textbox')
-    expect(inputs.length).toBeGreaterThanOrEqual(2)
+    expect(inputs.length).toBeGreaterThanOrEqual(3)
+  })
+
+  test('renders game history performance section', () => {
+    renderChessTrack()
+    expect(screen.getByText(/game history performance/i)).toBeInTheDocument()
   })
 })
 
@@ -158,5 +163,99 @@ describe('ChessTrack — Lichess search', () => {
     const naElements = screen.getAllByText('N/A')
     expect(naElements.length).toBeGreaterThanOrEqual(4)
     expect(screen.getByText('Yes')).toBeInTheDocument()
+  })
+})
+
+describe('ChessTrack — game history performance', () => {
+  test('loads recent games and shows predict buttons for analyzed games', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        games: [
+          {
+            game_id: 'abc12345',
+            opponent: 'Opponent',
+            result: 'win',
+            opening: 'Sicilian Defense',
+            time_control: '5+0',
+            speed: 'blitz',
+            has_analysis: true,
+          },
+          {
+            game_id: 'def67890',
+            opponent: 'Other',
+            result: 'loss',
+            opening: 'French Defense',
+            time_control: '10+0',
+            speed: 'rapid',
+            has_analysis: false,
+          },
+        ],
+      }),
+    }))
+
+    renderChessTrack()
+    const inputs = screen.getAllByRole('textbox')
+    fireEvent.change(inputs[2], { target: { value: 'drnykterstein' } })
+    const forms = document.querySelectorAll('form')
+    fireEvent.submit(forms[2])
+
+    await waitFor(() => {
+      expect(screen.getByText(/sicilian defense/i)).toBeInTheDocument()
+    })
+    expect(screen.getByText(/no analysis/i)).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /predict/i })).toHaveLength(2)
+  })
+
+  test('predicts performance and displays verdict', async () => {
+    vi.stubGlobal('fetch', vi.fn((url) => {
+      if (String(url).includes('/accuracy/recent-games/')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            games: [
+              {
+                game_id: 'abc12345',
+                opponent: 'Opponent',
+                result: 'win',
+                opening: 'Sicilian Defense',
+                time_control: '5+0',
+                speed: 'blitz',
+                has_analysis: true,
+              },
+            ],
+          }),
+        })
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          status: 'ok',
+          game_id: 'abc12345',
+          actual_centipawn_loss: 28,
+          predicted_centipawn_loss: 42,
+          verdict: 'overperformed',
+        }),
+      })
+    }))
+
+    renderChessTrack()
+    const inputs = screen.getAllByRole('textbox')
+    fireEvent.change(inputs[2], { target: { value: 'drnykterstein' } })
+    const forms = document.querySelectorAll('form')
+    fireEvent.submit(forms[2])
+
+    await waitFor(() => {
+      expect(screen.getByText(/sicilian defense/i)).toBeInTheDocument()
+    })
+
+    fireEvent.click(screen.getByRole('button', { name: /predict/i }))
+
+    await waitFor(() => {
+      expect(screen.getByText(/overperformed/i)).toBeInTheDocument()
+    })
+    expect(screen.getByText(/actual cpl/i)).toBeInTheDocument()
+    expect(screen.getByText(/predicted cpl/i)).toBeInTheDocument()
   })
 })
