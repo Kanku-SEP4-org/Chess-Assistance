@@ -2,16 +2,13 @@
 # Imported by the main Caddy gateway via: import /etc/caddy/sites/*
 
 api-chess.cannyboiz.com {
-    handle /predict/* {
+    handle /predictions/* {
         reverse_proxy chess-ml-api:8000
     }
-    handle /predict-angriness* {
+    handle /recommendations/* {
         reverse_proxy chess-ml-api:8000
     }
     handle /angriness/* {
-        reverse_proxy chess-ml-api:8000
-    }
-    handle /recommend-environment* {
         reverse_proxy chess-ml-api:8000
     }
     handle /factor-impact/* {

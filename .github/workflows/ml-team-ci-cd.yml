@@ -15,13 +15,6 @@ on:
       - ".github/workflows/ml-team-ci-cd.yml"
   pull_request:
     branches: [develop, main]
-    paths:
-      - "machine_learning/**"
-      - "services/LichessApiService.grpc/**"
-      - "services/LichessApiService.grpc.Tests/**"
-      - "shared/LichessApi.proto"
-      - "api-gateway/**"
-      - ".github/workflows/ml-team-ci-cd.yml"
   workflow_dispatch:
 
 permissions:
@@ -38,19 +31,35 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            lichess:
+              - 'services/LichessApiService.grpc/**'
+              - 'services/LichessApiService.grpc.Tests/**'
+              - 'shared/LichessApi.proto'
 
       - name: Setup .NET
+        if: steps.changes.outputs.lichess == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "10.0.x"
 
       - name: Restore
+        if: steps.changes.outputs.lichess == 'true' || github.event_name == 'workflow_dispatch'
         run: dotnet restore services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj
 
       - name: Build
+        if: steps.changes.outputs.lichess == 'true' || github.event_name == 'workflow_dispatch'
         run: dotnet build services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj --configuration Release --no-restore
 
       - name: Test with coverage
+        if: steps.changes.outputs.lichess == 'true' || github.event_name == 'workflow_dispatch'
         run: >-
           dotnet test services/LichessApiService.grpc.Tests/LichessApiService.grpc.Tests.csproj
           --configuration Release --no-build
@@ -64,6 +73,7 @@ jobs:
           /p:ExcludeByAttribute="GeneratedCodeAttribute%2cCompilerGeneratedAttribute"
 
       - name: Validate Docker build
+        if: steps.changes.outputs.lichess == 'true' || github.event_name == 'workflow_dispatch'
         uses: docker/build-push-action@v5
         with:
           context: .
@@ -80,13 +90,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Detect changes
+        uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            ml:
+              - 'machine_learning/**'
 
       - name: Set up Python 3.11
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install dependencies
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           python -m pip install --upgrade pip
           pip install -r trainers/trainer-winrate/requirements.txt
@@ -96,10 +118,12 @@ jobs:
           pip install -r api/requirements.txt
 
       - name: Run winrate training pipeline
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: machine_learning/trainers/trainer-winrate
         run: python run_pipeline.py
 
       - name: Verify winrate pipeline artifacts
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: machine_learning/trainers/trainer-winrate
         run: |
           echo "Checking pipeline artifacts..."
@@ -114,10 +138,12 @@ jobs:
           cat models/eval_metrics.json
 
       - name: Run angriness training pipeline
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: machine_learning/trainers/trainer-angriness-predictor
         run: python run_pipeline.py
 
       - name: Verify angriness pipeline artifacts
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: machine_learning/trainers/trainer-angriness-predictor
         run: |
           echo "Checking pipeline artifacts..."
@@ -134,10 +160,12 @@ jobs:
           cat models/eval_metrics.json
 
       - name: Run accuracy predictor training pipeline
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: machine_learning/trainers/trainer-ap
         run: python run_pipeline.py
 
       - name: Verify accuracy predictor pipeline artifacts
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: machine_learning/trainers/trainer-ap
         run: |
           echo "Checking pipeline artifacts..."
@@ -152,10 +180,12 @@ jobs:
           cat models/eval_metrics.json
 
       - name: Run factor impact analysis pipeline
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: machine_learning/trainers/trainer-factor-imp
         run: python run_pipeline.py
 
       - name: Verify factor impact pipeline artifacts
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: machine_learning/trainers/trainer-factor-imp
         run: |
           echo "Checking pipeline artifacts..."
@@ -167,6 +197,7 @@ jobs:
           cat models/factor_impact_validation.json
 
       - name: FastAPI health check
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: machine_learning/api
         env:
           MODEL_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-winrate/models/model.pkl
@@ -196,6 +227,14 @@ jobs:
           echo "FAIL: FastAPI server did not respond to /health within 10 seconds."
           kill $SERVER_PID 2>/dev/null || true
           exit 1
+
+      - name: Validate Docker build
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: machine_learning/api/.dockerfile
+          push: false
 
   # ───────────────────────────────────────────────────────────────
   # PUBLISH TO GHCR
@@ -454,7 +493,8 @@ jobs:
             docker-compose.yml,
             docker-compose.prod.yml,
             scripts/databases/init.sql,
-            scripts/databases/triggers.sql
+            scripts/databases/triggers.sql,
+            scripts/databases/migrations/
           target: "/opt/chess-assistance"
 
       - name: Copy Caddyfile to Caddy config directory
@@ -516,5 +556,47 @@ jobs:
 
             # Remove old dangling images
             docker image prune -f
+
+            # DB Migration: Wait for postgres to be ready
+            echo "Waiting for postgres to be ready..."
+            for i in $(seq 1 30); do
+              if docker exec chess-postgres pg_isready -U "$PROD_POSTGRES_USER" -d "$PROD_POSTGRES_DB" > /dev/null 2>&1; then
+                echo "Postgres is ready."
+                break
+              fi
+              echo "  attempt $i/30..."
+              sleep 2
+            done
+
+            # Create migration tracking table if it doesn't exist
+            docker exec -i chess-postgres psql -U "$PROD_POSTGRES_USER" -d "$PROD_POSTGRES_DB" <<'MIGRATION_INIT'
+            SET search_path TO chess_assistant;
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+              filename   VARCHAR(255) PRIMARY KEY,
+              applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+            MIGRATION_INIT
+
+            # Apply only new migrations (sorted by filename)
+            echo "Running database migrations..."
+            if [ -d "scripts/databases/migrations" ]; then
+              for sql_file in $(ls scripts/databases/migrations/*.sql 2>/dev/null | sort); do
+                fname=$(basename "$sql_file")
+                already_applied=$(docker exec -i chess-postgres psql -U "$PROD_POSTGRES_USER" -d "$PROD_POSTGRES_DB" -tAc \
+                  "SELECT 1 FROM chess_assistant.schema_migrations WHERE filename = '$fname';")
+                if [ "$already_applied" = "1" ]; then
+                  echo "  SKIP (already applied): $fname"
+                else
+                  echo "  APPLYING: $fname"
+                  docker exec -i chess-postgres psql -U "$PROD_POSTGRES_USER" -d "$PROD_POSTGRES_DB" < "$sql_file"
+                  docker exec -i chess-postgres psql -U "$PROD_POSTGRES_USER" -d "$PROD_POSTGRES_DB" -c \
+                    "INSERT INTO chess_assistant.schema_migrations (filename) VALUES ('$fname');"
+                  echo "  DONE: $fname"
+                fi
+              done
+              echo "Migrations complete."
+            else
+              echo "No migration directory found — skipping."
+            fi
 
             echo "Deployment complete."
