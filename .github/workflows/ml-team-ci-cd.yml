@@ -415,8 +415,8 @@ jobs:
         if: github.ref_name == 'develop'
         uses: docker/build-push-action@v5
         with:
-          context: services/iot-service
-          file: Grpc-Server/Dockerfile
+          context: .
+          file: ./services/iot-service/Grpc-Server/Dockerfile
           push: true
           tags: ${{ steps.meta_develop.outputs.tags }}
           labels: ${{ steps.meta_develop.outputs.labels }}
@@ -425,8 +425,8 @@ jobs:
         if: github.ref_name == 'main'
         uses: docker/build-push-action@v5
         with:
-          context: services/iot-service
-          file: Grpc-Server/Dockerfile
+          context: .
+          file: ./services/iot-service/Grpc-Server/Dockerfile
           push: true
           tags: ${{ steps.meta_main.outputs.tags }}
           labels: ${{ steps.meta_main.outputs.labels }}
