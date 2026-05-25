@@ -47,13 +47,11 @@ skinparam enum {
 ' ── Core Chess Domain ─────────────────────────────────────────────────
 
 class Player {
-  id
   lichessId
   username
 }
 
 class Session {
-  id
   startedAt
   endedAt
   gameCount
@@ -61,12 +59,10 @@ class Session {
 }
 
 class Match {
-  id
   matchDate
 }
 
 class Game {
-  id
   lichessGameId
   timeControl
   result
@@ -78,7 +74,6 @@ class Game {
 }
 
 class GameAnalysis {
-  id
   accuracy
   acpl
   blunderCount
@@ -87,7 +82,6 @@ class GameAnalysis {
 }
 
 class PlayerOpeningStat {
-  id
   ecoCode
   openingName
   totalGames
@@ -97,7 +91,6 @@ class PlayerOpeningStat {
 }
 
 class Dataset {
-  id
   avgLux
   avgCelsius
   avgPpm
@@ -110,14 +103,12 @@ class Dataset {
 ' ── Health & Preferences ──────────────────────────────────────────────
 
 class HealthRecord {
-  id
   sleepTime
   awakenTime
   waterIntakeMl
 }
 
 class PlayerPreference {
-  id
   dailyGameLimit
   dailyPlayTimeLimitMin
   breakIntervalLimit
@@ -127,12 +118,10 @@ class PlayerPreference {
 ' ── IoT Domain ────────────────────────────────────────────────────────
 
 class Room {
-  id
   perimeter
 }
 
 class Sensor {
-  id
   type
   value
   timestamp
