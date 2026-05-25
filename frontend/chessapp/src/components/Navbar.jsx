@@ -39,10 +39,24 @@ function Navbar({ onLogout }) {
   const DropdownMenu = () => (
     <div className="profile-dropdown">
       {lichessUser ? (
-        <button>👤 {lichessUser.player_username}</button>
+         <button>
+          <img
+            src={lichessLogo}
+            alt="Lichess"
+            style={{ width: "18px", height: "18px", filter: "invert(1)" }}
+          />
+          {lichessUser.player_username}
+        </button>
       ) : (
         <Link to="/login">
-          <button>👤 Login</button>
+          <button>
+            <img
+              src={lichessLogo}
+              alt="Lichess"
+              style={{ width: "18px", height: "18px", filter: "invert(1)" }}
+            />
+            Login
+          </button>
         </Link>
       )}
       <Link to="/iot-dashboard">
