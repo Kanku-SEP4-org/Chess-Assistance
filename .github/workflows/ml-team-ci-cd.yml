@@ -493,7 +493,8 @@ jobs:
             docker-compose.yml,
             docker-compose.prod.yml,
             scripts/databases/init.sql,
-            scripts/databases/triggers.sql
+            scripts/databases/triggers.sql,
+            scripts/databases/migrations/
           target: "/opt/chess-assistance"
 
       - name: Copy Caddyfile to Caddy config directory
@@ -556,23 +557,46 @@ jobs:
             # Remove old dangling images
             docker image prune -f
 
-            # DB Migration: Wait for postgres container to be healthy
+            # DB Migration: Wait for postgres to be ready
             echo "Waiting for postgres to be ready..."
-            sleep 10
+            for i in $(seq 1 30); do
+              if docker exec chess-postgres pg_isready -U "$PROD_POSTGRES_USER" -d "$PROD_POSTGRES_DB" > /dev/null 2>&1; then
+                echo "Postgres is ready."
+                break
+              fi
+              echo "  attempt $i/30..."
+              sleep 2
+            done
 
-            # Run DB migrations
+            # Create migration tracking table if it doesn't exist
+            docker exec -i chess-postgres psql -U "$PROD_POSTGRES_USER" -d "$PROD_POSTGRES_DB" <<'MIGRATION_INIT'
+            SET search_path TO chess_assistant;
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+              filename   VARCHAR(255) PRIMARY KEY,
+              applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+            );
+            MIGRATION_INIT
+
+            # Apply only new migrations (sorted by filename)
             echo "Running database migrations..."
             if [ -d "scripts/databases/migrations" ]; then
-              for sql_file in scripts/databases/migrations/*.sql; do
-                if [ -f "$sql_file" ]; then
-                  echo "Applying migration: $sql_file"
-                  # Pipe the sql file into the running postgres container
+              for sql_file in $(ls scripts/databases/migrations/*.sql 2>/dev/null | sort); do
+                fname=$(basename "$sql_file")
+                already_applied=$(docker exec -i chess-postgres psql -U "$PROD_POSTGRES_USER" -d "$PROD_POSTGRES_DB" -tAc \
+                  "SELECT 1 FROM chess_assistant.schema_migrations WHERE filename = '$fname';")
+                if [ "$already_applied" = "1" ]; then
+                  echo "  SKIP (already applied): $fname"
+                else
+                  echo "  APPLYING: $fname"
                   docker exec -i chess-postgres psql -U "$PROD_POSTGRES_USER" -d "$PROD_POSTGRES_DB" < "$sql_file"
+                  docker exec -i chess-postgres psql -U "$PROD_POSTGRES_USER" -d "$PROD_POSTGRES_DB" -c \
+                    "INSERT INTO chess_assistant.schema_migrations (filename) VALUES ('$fname');"
+                  echo "  DONE: $fname"
                 fi
               done
-              echo "Migrations applied."
+              echo "Migrations complete."
             else
-              echo "No migration directory found."
+              echo "No migration directory found — skipping."
             fi
 
             echo "Deployment complete."
