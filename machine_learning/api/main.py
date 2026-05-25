@@ -37,7 +37,7 @@ class ChanceWinrateFeatures(BaseModel):
     light:  float
 
 
-@app.post("/predict")
+@app.post("/predictions/winrate")
 def predict(data: ChanceWinrateFeatures):
 
     temp_dist = abs(data.temperature_celsius - 20)
@@ -105,7 +105,7 @@ def round_percentage_points(value: float) -> float:
     return round(float(value), 2)
 
 
-@app.post("/recommend-environment")
+@app.post("/recommendations/environment")
 def recommend_environment(data: ChanceWinrateFeatures):
     current_probability = predict_recommendation_win_probability(
         data.minutes_slept,
@@ -194,6 +194,7 @@ ANGRINESS_FEATURES = [
     "inaccuracy_cnt_player",
     "acpl_player",
     "accuracy_player",
+    "elo",
 ]
 
 if os.path.exists(ANGRINESS_MODEL_PATH):
@@ -210,7 +211,8 @@ SELECT
     d.mistake_cnt,
     d.inaccuracy_cnt,
     d.acpl,
-    d.accuracy
+    d.accuracy,
+    d.elo
 FROM chess_assistant.dataset d
 WHERE d.match_id = %s
 """
@@ -232,7 +234,7 @@ class AngrinessPredictionRequest(BaseModel):
     match_id: int
 
 
-@app.post("/predict-angriness")
+@app.post("/predictions/angriness")
 def predict_angriness(data: AngrinessPredictionRequest):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
@@ -256,6 +258,7 @@ def predict_angriness(data: AngrinessPredictionRequest):
         inaccuracy_cnt,
         acpl,
         accuracy,
+        elo,
     ) = row
 
     features = {
@@ -266,6 +269,7 @@ def predict_angriness(data: AngrinessPredictionRequest):
         "inaccuracy_cnt_player": inaccuracy_cnt or 0,
         "acpl_player": acpl or 0,
         "accuracy_player": accuracy or 0,
+        "elo": elo or 0,
     }
 
     return _run_prediction(features)
@@ -279,9 +283,10 @@ class AngrinessPredictionRawRequest(BaseModel):
     inaccuracy_cnt_player: int = 0
     acpl_player: int = 0
     accuracy_player: int = 0
+    elo: int = 0
 
 
-@app.post("/predict-angriness-raw")
+@app.post("/predictions/angriness/raw")
 def predict_angriness_raw(data: AngrinessPredictionRawRequest):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
@@ -309,6 +314,7 @@ def _compute_features_from_lichess(game: dict, side: str) -> dict:
         "inaccuracy_cnt_player": analysis.get("inaccuracy", 0),
         "acpl_player": analysis.get("acpl", 0),
         "accuracy_player": analysis.get("accuracy", 0),
+        "elo": player.get("rating", 0),
     }
 
 
@@ -318,7 +324,7 @@ class GamePredictionRequest(BaseModel):
     consecutive_losses_pregame: int = 0
 
 
-@app.post("/angriness/predict-by-game-id")
+@app.post("/predictions/angriness/lichess")
 async def predict_by_game_id(data: GamePredictionRequest):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
@@ -596,7 +602,7 @@ class AccuracyPredictorFeatures(BaseModel):
     opening_familiarity: int | None = None
 
 
-@app.post("/predict/accuracy")
+@app.post("/predictions/accuracy")
 def predict_accuracy(data: AccuracyPredictorFeatures):
     game     = _fetch_game(data.game_id)
     players  = game.get("players", {})
