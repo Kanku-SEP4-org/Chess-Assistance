@@ -37,7 +37,6 @@ TILT_FEATURES = [
 COMPOSITE_COLS = ["acpl_player", "blunder_cnt_player", "consecutive_losses_pregame"]
 
 R2_GAP_THRESHOLD = 0.05
-SCORE_GAP_THRESHOLD = 0.005
 SPEARMAN_GAP_THRESHOLD = 0.10
 
 
@@ -59,16 +58,14 @@ def compute_composite_tilt(raw_df: pd.DataFrame) -> np.ndarray:
     return np.mean(components, axis=0)
 
 
-def generate_if_labels(if_model, scaled_df, if_features, bin_edges):
-    if_scores = if_model.decision_function(scaled_df[if_features].values)
-    return np.array([score_to_angriness(s, bin_edges) for s in if_scores])
-
-
 def evaluate_split(name, features_df, raw_df, model, bin_edges, is_supervised,
                    if_model=None, if_features=None):
     if is_supervised:
-        angriness = model.predict(features_df.values)
-        y_true = generate_if_labels(if_model, features_df, if_features, bin_edges)
+        # RF trained on unscaled features — predict using raw data
+        angriness = model.predict(raw_df[if_features].values)
+        # IF labels from scaled features for accuracy comparison
+        if_scores = if_model.decision_function(features_df[if_features].values)
+        y_true = np.array([score_to_angriness(s, bin_edges) for s in if_scores])
         acc = round(float(accuracy_score(y_true, angriness)), 4)
         f1 = round(float(f1_score(y_true, angriness, average="weighted")), 4)
     else:
@@ -108,7 +105,7 @@ def evaluate_split(name, features_df, raw_df, model, bin_edges, is_supervised,
         per_level[str(level)] = stats
 
     result = {
-        "n_rows": len(features_df),
+        "n_rows": len(raw_df),
         "proxy_r2": proxy_r2,
         "spearman": spearman_results,
         "angriness_distribution": angriness_dist,
@@ -135,7 +132,6 @@ def compute_overfitting_assessment(split_results, is_supervised):
         reasons.append(f"R2 gap = {r2_gap:.4f} (train {train['proxy_r2']:.4f} vs test {test['proxy_r2']:.4f})")
 
     if is_supervised:
-        # RF achieves ~100% train accuracy by design; compare val vs test instead
         acc_gap = round(val["accuracy"] - test["accuracy"], 4)
         gaps["accuracy_gap_val_test"] = acc_gap
         if abs(acc_gap) > R2_GAP_THRESHOLD:
@@ -247,7 +243,6 @@ def main():
     with open(BINS_PATH) as f:
         bins_data = json.load(f)
     bin_edges = bins_data["bin_edges"]
-    model_features = bins_data.get("model_features")
     is_supervised = bins_data.get("supervised", False)
     if_features = bins_data.get("if_features")
 
@@ -270,13 +265,6 @@ def main():
 
         features_df = pd.read_csv(paths["features"])
         raw_df = pd.read_csv(paths["raw"])
-
-        if is_supervised:
-            if model_features:
-                features_df = features_df[model_features]
-        else:
-            if model_features:
-                features_df = features_df[model_features]
 
         split_results[name] = evaluate_split(
             name, features_df, raw_df, model, bin_edges, is_supervised,

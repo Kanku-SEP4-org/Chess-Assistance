@@ -37,8 +37,8 @@ services:
 
   iot-service:
     build:
-      context: ./services/iot-service
-      dockerfile: Grpc-Server/Dockerfile
+      context: .
+      dockerfile: ./services/iot-service/Grpc-Server/Dockerfile
     ports:
       - "8080:8080"
     environment:
@@ -47,6 +47,7 @@ services:
       RabbitMQ__Password: guest
       RabbitMQ__RequestQueue: sensor.requests
       RabbitMQ__ResponseQueue: sensor.responses
+      CONNECTIONSTRINGS__DEFAULTCONNECTION: ${CONNECTIONSTRINGS__DEFAULTCONNECTION}
     depends_on:
       rabbitmq:
         condition: service_healthy

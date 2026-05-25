@@ -37,7 +37,7 @@ class ChanceWinrateFeatures(BaseModel):
     light:  float
 
 
-@app.post("/predict")
+@app.post("/predictions/winrate")
 def predict(data: ChanceWinrateFeatures):
 
     temp_dist = abs(data.temperature_celsius - 20)
@@ -105,7 +105,7 @@ def round_percentage_points(value: float) -> float:
     return round(float(value), 2)
 
 
-@app.post("/recommend-environment")
+@app.post("/recommendations/environment")
 def recommend_environment(data: ChanceWinrateFeatures):
     current_probability = predict_recommendation_win_probability(
         data.minutes_slept,
@@ -177,10 +177,6 @@ ANGRINESS_MODEL_PATH = os.getenv(
     "ANGRINESS_MODEL_PATH",
     "../trainers/trainer-angriness-predictor/models/model.pkl",
 )
-ANGRINESS_SCALER_PATH = os.getenv(
-    "ANGRINESS_SCALER_PATH",
-    "../trainers/trainer-angriness-predictor/models/scaler.pkl",
-)
 ANGRINESS_BINS_PATH = os.getenv(
     "ANGRINESS_BINS_PATH",
     "../trainers/trainer-angriness-predictor/models/angriness_bins.json",
@@ -188,21 +184,9 @@ ANGRINESS_BINS_PATH = os.getenv(
 DATABASE_URL = os.getenv("DATABASE_URL", "")
 
 angriness_model = None
-angriness_scaler = None
 angriness_bin_edges: list[float] = []
-angriness_model_features: list[str] | None = None
-angriness_is_supervised: bool = False
 
-if os.path.exists(ANGRINESS_MODEL_PATH):
-    angriness_model = joblib.load(ANGRINESS_MODEL_PATH)
-    angriness_scaler = joblib.load(ANGRINESS_SCALER_PATH)
-    with open(ANGRINESS_BINS_PATH) as f:
-        bins_data = json.load(f)
-    angriness_bin_edges = bins_data["bin_edges"]
-    angriness_model_features = bins_data.get("model_features")
-    angriness_is_supervised = bins_data.get("supervised", False)
-
-FEATURE_ORDER = [
+ANGRINESS_FEATURES = [
     "consecutive_losses_pregame",
     "avg_tpm_seconds_player",
     "blunder_cnt_player",
@@ -211,28 +195,13 @@ FEATURE_ORDER = [
     "acpl_player",
     "accuracy_player",
     "elo",
-    "elo_diff",
-    "opponent_elo",
-    "elo_gap",
-    "time_control_initial",
-    "time_control_increment",
-    "move_cnt",
-    "move_cnt_player",
-    "sleep_duration",
-    "awaken_duration",
-    "avg_ppm",
-    "avg_celsius",
-    "water_intake_ml",
-    "avg_lux",
-    "is_black",
 ]
 
-TIME_CONTROL_SECONDS = {
-    "bullet": 60,
-    "blitz": 300,
-    "rapid": 600,
-    "classical": 1800,
-}
+if os.path.exists(ANGRINESS_MODEL_PATH):
+    angriness_model = joblib.load(ANGRINESS_MODEL_PATH)
+    with open(ANGRINESS_BINS_PATH) as f:
+        bins_data = json.load(f)
+    angriness_bin_edges = bins_data["bin_edges"]
 
 DATASET_QUERY = """
 SELECT
@@ -243,21 +212,7 @@ SELECT
     d.inaccuracy_cnt,
     d.acpl,
     d.accuracy,
-    d.user_rating,
-    d.rating_diff,
-    d.opp_rating,
-    d.user_rating - d.opp_rating AS elo_gap,
-    d.time_control,
-    d.time_increase_sec,
-    d.total_ply,
-    d.player_move_count,
-    EXTRACT(EPOCH FROM d.sleep_duration) / 3600.0 AS sleep_hours,
-    EXTRACT(EPOCH FROM d.awake_duration) / 3600.0 AS awake_hours,
-    d.avg_ppm,
-    d.avg_celsius,
-    d.water_intake_ml,
-    d.avg_lux,
-    d.is_player_piece_black
+    d.elo
 FROM chess_assistant.dataset d
 WHERE d.match_id = %s
 """
@@ -269,33 +224,17 @@ def _get_db_connection():
     return psycopg2.connect(DATABASE_URL)
 
 
-def _score_to_angriness(score: float) -> int:
-    for i in range(len(angriness_bin_edges) - 1):
-        if score <= angriness_bin_edges[i + 1]:
-            return 5 - i
-    return 1
-
-
 def _run_prediction(features: dict) -> dict:
-    X = pd.DataFrame([features], columns=FEATURE_ORDER)
-    X_scaled = pd.DataFrame(angriness_scaler.transform(X), columns=FEATURE_ORDER)
-    if angriness_model_features:
-        X_scaled = X_scaled[angriness_model_features]
-
-    if angriness_is_supervised:
-        angriness = int(angriness_model.predict(X_scaled.values)[0])
-        return {"angriness": angriness}
-    else:
-        score = float(angriness_model.decision_function(X_scaled.values)[0])
-        angriness = _score_to_angriness(score)
-        return {"angriness": angriness, "score": round(score, 4)}
+    X = pd.DataFrame([features], columns=ANGRINESS_FEATURES)
+    angriness = int(angriness_model.predict(X.values)[0])
+    return {"angriness": angriness}
 
 
 class AngrinessPredictionRequest(BaseModel):
     match_id: int
 
 
-@app.post("/predict-angriness")
+@app.post("/predictions/angriness")
 def predict_angriness(data: AngrinessPredictionRequest):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
@@ -319,21 +258,7 @@ def predict_angriness(data: AngrinessPredictionRequest):
         inaccuracy_cnt,
         acpl,
         accuracy,
-        user_rating,
-        rating_diff,
-        opp_rating,
-        elo_gap,
-        time_control,
-        time_increase_sec,
-        total_ply,
-        player_move_count,
-        sleep_hours,
-        awake_hours,
-        avg_ppm,
-        avg_celsius,
-        water_intake_ml,
-        avg_lux,
-        is_player_piece_black,
+        elo,
     ) = row
 
     features = {
@@ -344,21 +269,7 @@ def predict_angriness(data: AngrinessPredictionRequest):
         "inaccuracy_cnt_player": inaccuracy_cnt or 0,
         "acpl_player": acpl or 0,
         "accuracy_player": accuracy or 0,
-        "elo": user_rating or 0,
-        "elo_diff": rating_diff or 0,
-        "opponent_elo": opp_rating or 0,
-        "elo_gap": elo_gap or 0,
-        "time_control_initial": TIME_CONTROL_SECONDS.get(time_control, 600),
-        "time_control_increment": time_increase_sec or 0,
-        "move_cnt": total_ply or 0,
-        "move_cnt_player": player_move_count or 0,
-        "sleep_duration": float(sleep_hours or 7.0),
-        "awaken_duration": float(awake_hours or 4.0),
-        "avg_ppm": float(avg_ppm or 1549),
-        "avg_celsius": float(avg_celsius or 25.17),
-        "water_intake_ml": water_intake_ml or 700,
-        "avg_lux": float(avg_lux or 400),
-        "is_black": int(is_player_piece_black) if is_player_piece_black is not None else 0,
+        "elo": elo or 0,
     }
 
     return _run_prediction(features)
@@ -373,23 +284,9 @@ class AngrinessPredictionRawRequest(BaseModel):
     acpl_player: int = 0
     accuracy_player: int = 0
     elo: int = 0
-    elo_diff: int = 0
-    opponent_elo: int = 0
-    elo_gap: int = 0
-    time_control_initial: int = 600
-    time_control_increment: int = 0
-    move_cnt: int = 0
-    move_cnt_player: int = 0
-    sleep_duration: float = 7.0
-    awaken_duration: float = 4.0
-    avg_ppm: float = 1549.0
-    avg_celsius: float = 25.17
-    water_intake_ml: int = 700
-    avg_lux: float = 400.0
-    is_black: int = 0
 
 
-@app.post("/predict-angriness-raw")
+@app.post("/predictions/angriness/raw")
 def predict_angriness_raw(data: AngrinessPredictionRawRequest):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
@@ -399,12 +296,7 @@ def predict_angriness_raw(data: AngrinessPredictionRawRequest):
 
 
 def _compute_features_from_lichess(game: dict, side: str) -> dict:
-    other_side = "black" if side == "white" else "white"
     player = game["players"][side]
-    opponent = game["players"][other_side]
-
-    elo = player.get("rating", 0)
-    opponent_elo = opponent.get("rating", 0)
     moves = game.get("moves", "").split()
     move_cnt = len(moves)
     is_black = 1 if side == "black" else 0
@@ -413,7 +305,6 @@ def _compute_features_from_lichess(game: dict, side: str) -> dict:
     avg_tpm = duration_sec / move_cnt_player if move_cnt_player > 0 else 0
 
     analysis = player.get("analysis", {})
-    clock = game.get("clock", {})
 
     return {
         "consecutive_losses_pregame": 0,
@@ -423,15 +314,7 @@ def _compute_features_from_lichess(game: dict, side: str) -> dict:
         "inaccuracy_cnt_player": analysis.get("inaccuracy", 0),
         "acpl_player": analysis.get("acpl", 0),
         "accuracy_player": analysis.get("accuracy", 0),
-        "elo": elo,
-        "elo_diff": player.get("ratingDiff", 0),
-        "opponent_elo": opponent_elo,
-        "elo_gap": elo - opponent_elo,
-        "time_control_initial": clock.get("initial", 600),
-        "time_control_increment": clock.get("increment", 0),
-        "move_cnt": move_cnt,
-        "move_cnt_player": move_cnt_player,
-        "is_black": is_black,
+        "elo": player.get("rating", 0),
     }
 
 
@@ -441,7 +324,7 @@ class GamePredictionRequest(BaseModel):
     consecutive_losses_pregame: int = 0
 
 
-@app.post("/angriness/predict-by-game-id")
+@app.post("/predictions/angriness/lichess")
 async def predict_by_game_id(data: GamePredictionRequest):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
@@ -635,7 +518,7 @@ def _fetch_game(game_id: str) -> dict:
     resp = requests.post(
         f"{LICHESS_API}/games/export/_ids",
         params={"moves": "false", "clocks": "false", "evals": "false", "opening": "true"},
-        data=game_id[:8],
+        data=game_id,
         headers={"Accept": "application/x-ndjson"},
         timeout=10,
     )
@@ -719,7 +602,7 @@ class AccuracyPredictorFeatures(BaseModel):
     opening_familiarity: int | None = None
 
 
-@app.post("/predict/accuracy")
+@app.post("/predictions/accuracy")
 def predict_accuracy(data: AccuracyPredictorFeatures):
     game     = _fetch_game(data.game_id)
     players  = game.get("players", {})

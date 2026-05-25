@@ -18,6 +18,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+app.use(express.text({ type: "text/plain" }));
 
 function requireAuth(req, res, next) {
   const token = req.cookies[COOKIE_NAME];
@@ -116,6 +117,26 @@ app.get("/iot/temp", (req, res) => {
   iotClient.getTemperature({ arduinoId }, (err, response) => {
     if (err) {
       console.error("IoT error:", err);
+      return res.status(500).json({ error: "IoT request failed" });
+    }
+
+    res.json({
+      value: response.reading?.value ?? 0,
+      type: response.reading?.type ?? 0,
+      timestamp: response.reading?.timestamp ?? 0,
+      success: response.status?.success ?? false,
+      message: response.status?.message ?? "",
+    });
+  });
+});
+
+// GET /iot/co2?id={arduinoId}
+app.get("/iot/co2", (req, res) => {
+  const arduinoId = parseInt(req.query.id) || 1;
+
+  iotClient.getCO2({ arduinoId }, (err, response) => {
+    if (err) {
+      console.error("IoT CO2 error:", err);
       return res.status(500).json({ error: "IoT request failed" });
     }
 
@@ -333,7 +354,11 @@ app.post("/session/start", requireAuth, async (req, res) => {
 
 // POST /session/end
 app.post("/session/end", async (req, res) => {
-  const { session_id, water_drunk_during_session_ml } = req.body;
+  let body = req.body;
+  if (typeof body === "string") {
+    try { body = JSON.parse(body); } catch { return res.status(400).json({ error: "Invalid body" }); }
+  }
+  const { session_id, water_drunk_during_session_ml } = body;
 
   if (!session_id) {
     return res.status(400).json({ error: "Missing session_id" });

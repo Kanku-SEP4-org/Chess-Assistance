@@ -30,6 +30,25 @@ public class LichessGameFetcher(IHttpClientFactory httpClientFactory)
         return JsonSerializer.Deserialize<LichessGameDto>(firstLine);
     }
 
+    public virtual async Task<LichessGameDto?> FetchGameByIdAsync(string gameId, CancellationToken ct = default)
+    {
+        var client = httpClientFactory.CreateClient("Lichess");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get,
+            $"/game/export/{gameId}?evals=true&opening=true&pgnInJson=true");
+        request.Headers.Accept.Add(
+            new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
+
+        using var response = await client.SendAsync(request, ct);
+        response.EnsureSuccessStatusCode();
+
+        var body = await response.Content.ReadAsStringAsync(ct);
+        if (string.IsNullOrWhiteSpace(body))
+            return null;
+
+        return JsonSerializer.Deserialize<LichessGameDto>(body);
+    }
+
     public virtual Game MapToGameEntity(LichessGameDto dto, string playerUsername, int matchId)
     {
         var isBlack = string.Equals(

@@ -1,10 +1,12 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY ["Grpc-Server/Grpc-Server.csproj", "Grpc-Server/"]
+COPY ./shared/IoT.proto ./Grpc-Server/proto/IoT.proto
+
+COPY ["services/iot-service/Grpc-Server/Grpc-Server.csproj", "Grpc-Server/"]
 RUN dotnet restore "Grpc-Server/Grpc-Server.csproj"
 
-COPY . .
+COPY ./services/iot-service .
 WORKDIR "/src/Grpc-Server"
 
 RUN dotnet publish "Grpc-Server.csproj" -c Release -o /app/publish /p:UseAppHost=false

@@ -87,7 +87,7 @@ describe('Home — monitoring dashboard', () => {
     expect(screen.getByText(/temperature/i)).toBeInTheDocument()
     expect(screen.getByText(/co2 level/i)).toBeInTheDocument()
     expect(screen.getByText(/light level/i)).toBeInTheDocument()
-    expect(screen.getByText(/focus score/i)).toBeInTheDocument()
+    expect(screen.getByText(/water drank/i)).toBeInTheDocument()
   })
 
   test('shows login prompt when no user is logged in', () => {
@@ -235,20 +235,25 @@ describe('Home — alerts display', () => {
   test('no alerts auto-starts session', async () => {
     localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
 
-    globalThis.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) })
-      .mockResolvedValueOnce({
-        ok: true, status: 200,
-        json: () => Promise.resolve({
-          alerts: [],
-          sleep_duration: '8h 0m',
-          awake_duration: '1h 0m',
-        }),
-      })
-      .mockResolvedValueOnce({
-        ok: true, status: 200,
-        json: () => Promise.resolve({ success: true, session_id: 42 }),
-      })
+    globalThis.fetch = vi.fn((url) => {
+      if (url.includes('/session/evaluate')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: () => Promise.resolve({
+            alerts: [],
+            sleep_duration: '8h 0m',
+            awake_duration: '1h 0m',
+          }),
+        })
+      }
+      if (url.includes('/session/start')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: () => Promise.resolve({ success: true, session_id: 42 }),
+        })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) })
+    })
 
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
@@ -272,15 +277,18 @@ describe('Home — session lifecycle', () => {
   async function startActiveSession() {
     localStorage.setItem('lichess_user', JSON.stringify({ player_id: 1, player_username: 'Magnus' }))
 
-    globalThis.fetch = vi.fn()
-      .mockResolvedValueOnce({ ok: true, status: 200, json: () => Promise.resolve({}) })
-      .mockResolvedValueOnce({
-        ok: true, status: 200,
-        json: () => Promise.resolve({
-          alerts: [{ level: 'yellow', message: 'warning' }],
-          sleep_duration: '6h', awake_duration: '2h',
-        }),
-      })
+    globalThis.fetch = vi.fn((url) => {
+      if (url.includes('/session/evaluate')) {
+        return Promise.resolve({
+          ok: true, status: 200,
+          json: () => Promise.resolve({
+            alerts: [{ level: 'yellow', message: 'warning' }],
+            sleep_duration: '6h', awake_duration: '2h',
+          }),
+        })
+      }
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) })
+    })
 
     renderHome()
     fireEvent.click(screen.getByRole('button', { name: /start monitoring/i }))
@@ -384,7 +392,7 @@ describe('Home — session lifecycle', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /start chess session/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /start monitoring/i })).toBeInTheDocument()
     })
   })
 
@@ -406,14 +414,14 @@ describe('Home — session lifecycle', () => {
     globalThis.fetch = vi.fn(() =>
       Promise.resolve({
         ok: true, status: 200,
-        json: () => Promise.resolve({ success: false, message: 'already ended' }),
+        json: () => Promise.resolve({ success: false, message: 'server error' }),
       })
     )
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /end session/i }))
     })
 
-    expect(globalThis.alert).toHaveBeenCalledWith('already ended')
+    expect(globalThis.alert).toHaveBeenCalledWith('server error')
   })
 
   test('End Session handles network error', async () => {

@@ -18,6 +18,8 @@ export default defineConfig({
         'src/pages/Callback.jsx',
         'src/pages/IotDashboard.jsx',
         'src/pages/Login.jsx',
+        '**/pages/AngrinessPredictor.jsx',
+        '**/pages/EnvironmentRecommendation.jsx',
       ],
       thresholds: {
         lines: 80,

@@ -30,6 +30,13 @@ void get_and_report_light(ADC_Error_t light_sensor);
 void get_and_report_water(ADC_Error_t water_sensor);
 
 /**
+ * @brief Starts the pump briefly and reports that filling is done.
+ * Current implementation is a simple placeholder using the pump driver.
+ * Format: "PUMP:DONE"
+ */
+void fill_and_report_done(void);
+
+/**
  * @brief Handles message transmission for the CO2 function,
  * accounting for the case where data is not yet ready from the sensor.
  * If data is available, it should print the latest CO2 reading in a machine-friendly format.
