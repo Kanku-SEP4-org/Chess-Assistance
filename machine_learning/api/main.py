@@ -518,7 +518,7 @@ def _fetch_game(game_id: str) -> dict:
     resp = requests.post(
         f"{LICHESS_API}/games/export/_ids",
         params={"moves": "false", "clocks": "false", "evals": "false", "opening": "true"},
-        data=game_id[:8],
+        data=game_id,
         headers={"Accept": "application/x-ndjson"},
         timeout=10,
     )
