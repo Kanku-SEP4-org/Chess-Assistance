@@ -8,10 +8,10 @@ PROCESSED_DIR = Path("data/processed")
 MODELS_DIR = Path("models")
 
 STEPS = [
-    ("Gathering data",      "steps/1_gather.py"),
-    ("Feature engineering", "steps/2_features.py"),
-    ("Training model",      "steps/3_train.py"),
-    ("Evaluating model",    "steps/4_evaluate.py"),
+    ("Tilt Predictor: Gathering data", "steps/1_gather.py"),
+    ("Tilt Predictor: Feature engineering", "steps/2_features.py"),
+    ("Tilt Predictor: Training model", "steps/3_train.py"),
+    ("Tilt Predictor: Evaluating model", "steps/4_evaluate.py"),
 ]
 
 
