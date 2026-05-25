@@ -44,8 +44,8 @@ list(REMOVE_ITEM ALL_SRC_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/main.c")
 add_executable(test_message_builder
         "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_message_builder.c"
         "${UNITY_SRC}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/message_builder.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/src/sensor_reader.c"
+        ${ALL_SRC_FILES}
+
 )
 
 add_executable(test_sensor_reader
@@ -61,8 +61,15 @@ add_executable(sensor_client
 
 # --- 5. LINKING ---
 # We use the ${RABBIT_LIB} variable we set in the IF/ELSE block above
+target_link_libraries(test_message_builder PRIVATE ${RABBIT_LIB})
 target_link_libraries(test_sensor_reader PRIVATE ${RABBIT_LIB})
 target_link_libraries(sensor_client PRIVATE ${RABBIT_LIB})
+
+if(WIN32)
+    target_link_libraries(test_message_builder PRIVATE ws2_32)
+    target_link_libraries(test_sensor_reader PRIVATE ws2_32)
+    target_link_libraries(sensor_client PRIVATE ws2_32)
+endif()
 
 target_compile_definitions(test_message_builder PRIVATE UNIT_TESTING)
 target_compile_definitions(test_sensor_reader PRIVATE UNIT_TESTING)

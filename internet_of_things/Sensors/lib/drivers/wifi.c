@@ -2,11 +2,11 @@
  * @file wifi.h
  * @author Laurits Ivar / Erland Larsen
  * @brief ESP8266 WiFi module interface using UART.
- * @version 0.9
+ * @version 0.9.1 New function: wifi_command_create_TCP_connection_n. Message size for TCP receive callback added as parameter to avoid buffer overflow.
  * @date 2023-08-23
  * Revision history: 0.1 - Initial version
- *                   0.9 - 2026-03-01 Refactored to use common uart driver
- * 
+ *                   0.9.0 - 2026-03-01 Refactored to use common uart driver
+ *                   0.9.1 - 2023-08-23 Added TCP connection functionality
  * @copyright Copyright (c) 2026
  * 
  */
@@ -14,12 +14,15 @@
 #include <string.h>
 #include <stdbool.h>
 #include <stdio.h>
+#if !defined(UNITY_TEST) && !defined(WINDOWS_TEST)
 #include <util/delay.h>
+#else
+extern void _delay_ms(unsigned long ms);
+#endif
 #include "uart.h"
 
-#define WIFI_DATABUFFERSIZE 128
-static uint8_t wifi_dataBuffer[WIFI_DATABUFFERSIZE];
-static uint8_t wifi_dataBufferIndex;
+static uint8_t wifi_dataBuffer[WIFI_BUFFER_SIZE];
+static uint16_t wifi_dataBufferIndex;
 static uint32_t wifi_baudrate;
 static void (*_callback)(uint8_t byte);
 
@@ -44,10 +47,34 @@ void wifi_init()
 
 void static wifi_clear_databuffer_and_index()
 {
-    for (uint16_t i = 0; i < WIFI_DATABUFFERSIZE; i++)
+    for (uint16_t i = 0; i < WIFI_BUFFER_SIZE; i++)
         wifi_dataBuffer[i] = 0;
     wifi_dataBufferIndex = 0;
 }
+
+#if defined(UNITY_TEST) || defined(WINDOWS_TEST)
+static const char *wifi_test_response = NULL;
+static uint16_t wifi_test_response_index = 0;
+
+void wifi_test_set_response(const char *response)
+{
+    wifi_test_response = response;
+    wifi_test_response_index = 0;
+}
+
+void wifi_test_feed_response_byte(void)
+{
+    if (wifi_test_response == NULL)
+        return;
+
+    char next_byte = wifi_test_response[wifi_test_response_index];
+    if (next_byte == '\0')
+        return;
+
+    wifi_test_response_index++;
+    wifi_command_callback((uint8_t)next_byte);
+}
+#endif
 
 WIFI_ERROR_MESSAGE_t wifi_command(const char *str, uint16_t timeOut_s)
 {
@@ -185,16 +212,17 @@ WIFI_ERROR_MESSAGE_t wifi_command_close_TCP_connection()
 }
 
 
-#define BUF_SIZE 128
+//#define BUF_SIZE 128
 #define IPD_PREFIX "+IPD,"
 #define PREFIX_LENGTH 5
 
 WIFI_TCP_Callback_t callback_when_message_received_static;
 char *received_message_buffer_static_pointer;
+uint16_t received_message_buffer_size;
 static void  wifi_TCP_callback(uint8_t byte)
 {
     static enum { IDLE, MATCH_PREFIX, LENGTH, DATA } state = IDLE;
-    static int length = 0, index = 0, prefix_index = 0;
+    static uint16_t length = 0, index = 0, prefix_index = 0;
 
     switch(state) {
         case IDLE:
@@ -232,29 +260,35 @@ static void  wifi_TCP_callback(uint8_t byte)
             break;
 
         case DATA:
-            if(index < length) {
+            if ((index < length) && (index < received_message_buffer_size - 1)) { // ensure space for null terminator
                 received_message_buffer_static_pointer[index++] = byte;
             }
-            if(index == length) {
-                // message is complete, null terminate the string
-                received_message_buffer_static_pointer[index] = '\0';
+            // Set next byte to null terminator to ensure the buffer is always a valid string, even if the message is truncated due to buffer size limits.
+            received_message_buffer_static_pointer[index] = '\0';
 
-                // reset to IDLE
+            if (index == length) 
+            { // message complete, reset to IDLE
                 state = IDLE;
                 length = 0;
                 index = 0;
 
-            wifi_clear_databuffer_and_index();
-            callback_when_message_received_static();
+                wifi_clear_databuffer_and_index();
+                callback_when_message_received_static();
             }
             break;
     }
-  
 }
 
+// Wrapper function for wifi_command_create_TCP_connection_n with default buffer size.
 WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer)
 {
+    return wifi_command_create_TCP_connection_n(IP, port, callback_when_message_received, received_message_buffer, WIFI_BUFFER_SIZE);
+}
+
+WIFI_ERROR_MESSAGE_t wifi_command_create_TCP_connection_n(char *IP, uint16_t port, WIFI_TCP_Callback_t callback_when_message_received, char *received_message_buffer, uint16_t buffer_size)
+{
     received_message_buffer_static_pointer = received_message_buffer;
+    received_message_buffer_size = buffer_size;
     callback_when_message_received_static = callback_when_message_received;
     char sendbuffer[128];
     char portString[7];

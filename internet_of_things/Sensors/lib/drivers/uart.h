@@ -12,7 +12,7 @@
  *                  Do not use UART0 for other purposes if you want 
  *                  to use stdio functions for PC terminal.
  *           UART2: Used for WIFI module in AT-command mode.
- * 
+ * Version history: 0.1 - Initial version
   *******************************************************************/
 #pragma once
 #include <stdint.h>
@@ -58,9 +58,9 @@ typedef void (*rx_callback_t)(uint8_t byte);
 //                                      |          | incoming bytes. Callback on receipt of '\n'.
 //                          ---------------------------------------------------------------------------------
 // RETURNS: UART_OK on success, or negative error code on failure.
-uart_t uart_init(uart_id_t uart_id, uint32_t baud_rate, rx_callback_t rx_callback, uint8_t buffer_size);
+uart_t uart_init(uart_id_t uart_id, uint32_t baud_rate, rx_callback_t rx_callback, uint16_t buffer_size);
 
-uart_t uart_write_bytes(uart_id_t uart_id, uint8_t* data, uint8_t length);
+uart_t uart_write_bytes(uart_id_t uart_id, uint8_t* data, uint16_t length);
 uart_t uart_write_byte(uart_id_t uart_id, uint8_t b);
 uart_t uart_read_byte(uart_id_t uart_id, uint8_t *byte);
 uart_t uart_read_byte_blocking(uart_id_t uart_id, uint8_t *byte);

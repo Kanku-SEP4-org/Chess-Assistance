@@ -87,7 +87,7 @@ describe('Home — monitoring dashboard', () => {
     expect(screen.getByText(/temperature/i)).toBeInTheDocument()
     expect(screen.getByText(/co2 level/i)).toBeInTheDocument()
     expect(screen.getByText(/light level/i)).toBeInTheDocument()
-    expect(screen.getByText(/focus score/i)).toBeInTheDocument()
+    expect(screen.getByText(/water drank/i)).toBeInTheDocument()
   })
 
   test('shows login prompt when no user is logged in', () => {
@@ -436,7 +436,7 @@ describe('Home — session lifecycle', () => {
     })
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /start chess session/i })).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /start monitoring/i })).toBeInTheDocument()
     })
   })
 
@@ -458,14 +458,14 @@ describe('Home — session lifecycle', () => {
     globalThis.fetch = vi.fn(() =>
       Promise.resolve({
         ok: true, status: 200,
-        json: () => Promise.resolve({ success: false, message: 'already ended' }),
+        json: () => Promise.resolve({ success: false, message: 'server error' }),
       })
     )
     await act(async () => {
       fireEvent.click(screen.getByRole('button', { name: /end session/i }))
     })
 
-    expect(globalThis.alert).toHaveBeenCalledWith('already ended')
+    expect(globalThis.alert).toHaveBeenCalledWith('server error')
   })
 
   test('End Session handles network error', async () => {

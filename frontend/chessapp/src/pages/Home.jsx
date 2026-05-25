@@ -21,6 +21,9 @@ function Home() {
   const [temperature, setTemperature] = useState(null);
   const [lightLevel, setLightLevel] = useState(null);
   const [co2Level, setCo2Level] = useState(null);
+  const [totalWater, setTotalWater] = useState(0);
+  const [addWaterAmount, setAddWaterAmount] = useState("");
+  const [showAddWater, setShowAddWater] = useState(false);
 
   const sessionDates = useRef(null);
 
@@ -36,6 +39,12 @@ function Home() {
           }
         })
         .catch(() => {});
+    }
+
+    const savedSession = localStorage.getItem("active_session_id");
+    if (savedSession) {
+      setSessionId(Number(savedSession));
+      setMonitoringStarted(true);
     }
   }, []);
 
@@ -64,8 +73,8 @@ function Home() {
           setLightLevel(lightData.value.toFixed(1));
         }
         if (co2Res.ok && co2Data.value != null) {
-        setCo2Level(co2Data.value.toFixed(1));
-      }
+          setCo2Level(co2Data.value.toFixed(1));
+        }
       } catch (err) {
         console.error("Failed to fetch sensor data:", err);
       }
@@ -78,12 +87,14 @@ function Home() {
 
   useEffect(() => {
     const handlePageHide = () => {
-      if (!sessionId) return;
-      const body = JSON.stringify({ session_id: sessionId });
+      const sid = sessionId || localStorage.getItem("active_session_id");
+      if (!sid) return;
+      const body = JSON.stringify({ session_id: Number(sid) });
       navigator.sendBeacon(
         `${API_URL}/session/end`,
-        new Blob([body], { type: "application/json" }),
+        new Blob([body], { type: "text/plain" }),
       );
+      localStorage.removeItem("active_session_id");
     };
 
     window.addEventListener("pagehide", handlePageHide);
@@ -197,6 +208,7 @@ function Home() {
       });
       if (res.status === 401) {
         localStorage.removeItem("lichess_user");
+        localStorage.removeItem("active_session_id");
         setLichessUser(null);
         setShowSleepForm(false);
         setAlerts(null);
@@ -206,9 +218,11 @@ function Home() {
       const data = await res.json();
       if (data.success) {
         setSessionId(data.session_id);
+        localStorage.setItem("active_session_id", data.session_id);
         setMonitoringStarted(true);
         setShowSleepForm(false);
         setAlerts(null);
+        setTotalWater(Number(waterIntake) || 0);
 
         // Save minutes slept for Environment Recommendation page
         const { sleep, wake } = sessionDates.current || buildDates();
@@ -217,7 +231,18 @@ function Home() {
         const minutesAwake = Math.round((now - wake) / 60000);
         localStorage.setItem("session_minutes_awake", minutesAwake);
       } else {
-        alert(data.message || "Failed to start session");
+        const msg = data.message || "";
+        const activeMatch = msg.match(/active session \(id:\s*(\d+)\)/);
+        if (activeMatch) {
+          const existingId = Number(activeMatch[1]);
+          setSessionId(existingId);
+          localStorage.setItem("active_session_id", existingId);
+          setMonitoringStarted(true);
+          setShowSleepForm(false);
+          setAlerts(null);
+        } else {
+          alert(msg || "Failed to start session");
+        }
       }
     } catch (err) {
       console.error("StartSession error:", err);
@@ -237,8 +262,11 @@ function Home() {
         body: JSON.stringify({ session_id: sessionId }),
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success || data.message?.includes("not found") || data.message?.includes("already ended")) {
         setSessionId(null);
+        localStorage.removeItem("active_session_id");
+        setMonitoringStarted(false);
+
       } else {
         alert(data.message || "Failed to end session");
       }
@@ -252,9 +280,19 @@ function Home() {
 
   return (
     <main className="app" style={{ backgroundImage: `url(${heroImg})` }}>
-      <Navbar />
+      <Navbar onLogout={() => {
+        setSessionId(null);
+        setLichessUser(null);
+        setMonitoringStarted(false);
+        setShowSleepForm(false);
+        setAlerts(null);
+      }} />
 
-      <section id="home" className="hero-section">
+      <section
+        id="home"
+        className="hero-section"
+        style={{ minHeight: monitoringStarted ? "auto" : "100vh" }}
+      >
         <div className="hero-content">
           <p className="eyebrow">Chess Performance Assistant</p>
           <h1 className="hero-title-split">
@@ -287,12 +325,14 @@ function Home() {
             </span>
           </h1>
 
-          <button
-            className="start-btn"
-            onClick={() => setMonitoringStarted(true)}
-          >
-            Start Monitoring
-          </button>
+          {!monitoringStarted && (
+            <button
+              className="start-btn"
+              onClick={() => setMonitoringStarted(true)}
+            >
+              Start Monitoring
+            </button>
+          )}
         </div>
       </section>
 
@@ -413,7 +453,7 @@ function Home() {
                 marginBottom: "24px",
               }}
             >
-              <p style={{ color: "#4caf50", margin: 0 }}>
+              <p style={{ color: "#d8aa55", margin: 0 }}>
                 Session #{sessionId} is active
               </p>
               <button
@@ -432,25 +472,103 @@ function Home() {
             <div className="metric-card">
               <span>Temperature</span>
               <strong>{temperature != null ? `${temperature}°C` : "—"}</strong>
-              <p>Optimal playing condition</p>
             </div>
 
             <div className="metric-card">
               <span>Light Level</span>
               <strong>{lightLevel != null ? `${lightLevel} lux` : "—"}</strong>
-              <p>Good visibility for focus</p>
             </div>
 
             <div className="metric-card">
               <span>CO2 Level</span>
               <strong>{co2Level != null ? `${co2Level} ppm` : "—"}</strong>
-              <p>Room air quality</p>
             </div>
 
             <div className="metric-card">
-              <span>Focus Score</span>
-              <strong>86%</strong>
-              <p>Ready for a strong session</p>
+              <span>Water Drank</span>
+              <strong>{totalWater} ml</strong>
+              <div
+                style={{
+                  marginTop: "10px",
+                  display: "flex",
+                  gap: "8px",
+                  alignItems: "center",
+                }}
+              >
+                {showAddWater ? (
+                  <>
+                    <input
+                      type="number"
+                      min="0"
+                      step="50"
+                      placeholder="ml"
+                      value={addWaterAmount}
+                      onChange={(e) => setAddWaterAmount(e.target.value)}
+                      style={{
+                        width: "90px",
+                        padding: "6px 10px",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(255,255,255,0.14)",
+                        background: "rgba(255,255,255,0.08)",
+                        color: "white",
+                        outline: "none",
+                      }}
+                    />
+                    <button
+                      aria-label="confirm water"
+                      onClick={() => {
+                        setTotalWater(
+                          (prev) => prev + (Number(addWaterAmount) || 0),
+                        );
+                        setAddWaterAmount("");
+                        setShowAddWater(false);
+                      }}
+                      style={{
+                        padding: "6px 12px",
+                        borderRadius: "8px",
+                        border: "none",
+                        background: "linear-gradient(135deg, #d8aa55, #8f6425)",
+                        color: "#111",
+                        fontWeight: 800,
+                        cursor: "pointer",
+                      }}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      aria-label="cancel water"
+                      onClick={() => setShowAddWater(false)}
+                      style={{
+                        padding: "6px 10px",
+                        borderRadius: "8px",
+                        border: "1px solid rgba(255,255,255,0.14)",
+                        background: "transparent",
+                        color: "white",
+                        cursor: "pointer",
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    aria-label="add water"
+                    onClick={() => setShowAddWater(true)}
+                    style={{
+                      padding: "4px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid rgba(216,170,85,0.5)",
+                      background: "transparent",
+                      color: "#d8aa55",
+                      fontWeight: 800,
+                      cursor: "pointer",
+                      fontSize: "18px",
+                    }}
+                  >
+                    +
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 

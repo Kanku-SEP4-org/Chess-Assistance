@@ -87,7 +87,7 @@ CREATE INDEX idx_sensor_room_timestamp ON sensor (room_id, time_stamp);
 
 CREATE TABLE game (
     id                    SERIAL PRIMARY KEY,
-    lichess_game_id       VARCHAR(8),
+    lichess_game_id       VARCHAR(16),
     time_control          time_control_type NOT NULL,
     is_time_increase      BOOLEAN,
     time_increase_sec     INTEGER,
@@ -181,3 +181,24 @@ CREATE TABLE dataset (
     avg_tpm_seconds                NUMERIC(10,6),
     FOREIGN KEY (match_id) REFERENCES match(id)
 );
+
+CREATE OR REPLACE FUNCTION sync_analysis_to_dataset()
+RETURNS TRIGGER AS $$
+BEGIN
+    UPDATE dataset
+    SET inaccuracy_cnt = NEW.inaccuracy_cnt,
+        mistake_cnt    = NEW.mistake_cnt,
+        blunder_cnt    = NEW.blunder_cnt,
+        acpl           = NEW.acpl,
+        accuracy       = NEW.accuracy
+    FROM game
+    WHERE game.id = NEW.game_id
+      AND dataset.match_id = game.match_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_sync_analysis_to_dataset
+AFTER INSERT OR UPDATE ON game_analysis
+FOR EACH ROW
+EXECUTE FUNCTION sync_analysis_to_dataset();

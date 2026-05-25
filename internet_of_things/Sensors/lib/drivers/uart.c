@@ -9,10 +9,13 @@
  *           to use stdio functions.
  *           This version only works with 8 databit, 1 stop bit and
  *           no parity.
+ * Version history: 0.1 - Initial version
+ *                  0.9 - 2026-05-07 uart_write_bytes: length parameter changed from uint8_t to uint16_t to support longer messages.
  *******************************************************************/
 #include "uart.h"
 #include "ringbuffer.h"
 #include <stddef.h>
+#ifndef WINDOWS_TEST
 #include <avr/io.h>
 #include <avr/interrupt.h>
 
@@ -32,8 +35,7 @@ static inline uint16_t ubrr_from_baud(uint32_t baud)
     return (uint16_t)((F_CPU / (8UL * baud)) - 1UL);
 }
 
-uart_t uart_init(uart_id_t uart_id, uint32_t baud, rx_callback_t rx_callback, uint8_t buffer_size)
-//uart_t uart_init(uart_id_t uart_id, uint32_t baud, uint8_t buffer_size)
+uart_t uart_init(uart_id_t uart_id, uint32_t baud, rx_callback_t rx_callback, uint16_t buffer_size)
 {
     uint16_t ubrr = ubrr_from_baud(baud);
 
@@ -157,9 +159,9 @@ uart_t uart_init(uart_id_t uart_id, uint32_t baud, rx_callback_t rx_callback, ui
     return UART_OK;
 }
 
-uart_t uart_write_bytes(uart_id_t uart_id, uint8_t *data, uint8_t length)
+uart_t uart_write_bytes(uart_id_t uart_id, uint8_t *data, uint16_t length)
 {
-    for(uint8_t i = 0; i < length; i++) 
+    for(uint16_t i = 0; i < length; i++) 
     {
         uart_write_byte(uart_id, data[i]);
     }
@@ -350,3 +352,4 @@ ISR(USART3_RX_vect)
         }
     }
 }
+#endif // WINDOWS_TEST
