@@ -105,7 +105,7 @@ public class LichessDbContext(DbContextOptions<LichessDbContext> options) : DbCo
             entity.ToTable("game");
             entity.HasKey(e => e.Id);
             entity.Property(e => e.Id).HasColumnName("id");
-            entity.Property(e => e.LichessGameId).HasColumnName("lichess_game_id").HasMaxLength(8);
+            entity.Property(e => e.LichessGameId).HasColumnName("lichess_game_id").HasMaxLength(16);
             entity.Property(e => e.TimeControl).HasColumnName("time_control")
                 .HasColumnType("chess_assistant.time_control_type");
             entity.Property(e => e.IsTimeIncrease).HasColumnName("is_time_increase");

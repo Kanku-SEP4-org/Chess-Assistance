@@ -87,7 +87,7 @@ CREATE INDEX idx_sensor_room_timestamp ON sensor (room_id, time_stamp);
 
 CREATE TABLE game (
     id                    SERIAL PRIMARY KEY,
-    lichess_game_id       VARCHAR(8),
+    lichess_game_id       VARCHAR(16),
     time_control          time_control_type NOT NULL,
     is_time_increase      BOOLEAN,
     time_increase_sec     INTEGER,
