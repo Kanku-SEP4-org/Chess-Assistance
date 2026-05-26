@@ -203,7 +203,7 @@ describe('ChessTrack — game history performance', () => {
     await waitFor(() => {
       expect(screen.getByText(/sicilian defense/i)).toBeInTheDocument()
     })
-    expect(screen.getByText(/no analysis/i)).toBeInTheDocument()
+    expect(screen.getByText(/request analysis/i)).toBeInTheDocument()
     expect(screen.getAllByRole('button', { name: /predict/i })).toHaveLength(2)
   })
 

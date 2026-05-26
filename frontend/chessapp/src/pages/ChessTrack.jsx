@@ -140,7 +140,7 @@ function ChessTrack() {
     setHistoryError('')
 
     try {
-      const response = await fetch(`${ML_API_URL}/predict/accuracy`, {
+      const response = await fetch(`${ML_API_URL}/predictions/accuracy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -482,17 +482,49 @@ function ChessTrack() {
                     )}
 
                     {result?.status === 'analysis_required' && (
-                      <p style={{ marginTop: '0.75rem', color: '#ffb300' }}>
-                        {result.message}
-                      </p>
+                      <div style={{ marginTop: '0.75rem' }}>
+                        <p style={{ color: '#ffb300', margin: '0 0 0.5rem' }}>
+                          {result.message}
+                        </p>
+                        <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                          <a
+                            href={result.game_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{ color: '#d8aa55', textDecoration: 'underline', fontSize: '0.85rem' }}
+                          >
+                            Open game on Lichess
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handlePredictPerformance(game.game_id)}
+                            style={{
+                              background: 'transparent',
+                              border: '1px solid #ffb300',
+                              color: '#ffb300',
+                              padding: '0.3rem 1rem',
+                              borderRadius: '6px',
+                              cursor: 'pointer',
+                              fontSize: '0.8rem',
+                            }}
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      </div>
                     )}
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                     {!game.has_analysis && (
-                      <span style={{ color: '#ffb300', fontSize: '0.8rem' }}>
-                        No analysis
-                      </span>
+                      <a
+                        href={game.game_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{ color: '#ffb300', fontSize: '0.8rem', textDecoration: 'underline' }}
+                      >
+                        Request analysis
+                      </a>
                     )}
                     <button
                       type="button"

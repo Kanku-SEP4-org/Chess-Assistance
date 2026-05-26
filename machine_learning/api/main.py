@@ -628,7 +628,7 @@ def _performance_verdict(actual_acpl: float, predicted_acpl: float, threshold: f
     return "normal"
 
 
-@app.post("/predict/accuracy")
+@app.post("/predictions/accuracy")
 def predict_accuracy(data: AccuracyPredictorFeatures):
     game     = _fetch_game(data.game_id)
     players  = game.get("players", {})
