@@ -49,7 +49,7 @@ rectangle "VPS" as VPS #F5F5F5 {
 
   rectangle "**Backend**" as Backend #FFFFFF {
 
-    rectangle "**API Gateway**\n<i>JS · REST / gRPC</i>" as APIGateway #FFF2CC
+    rectangle "**API Gateway**\n<i>Express.js · REST / gRPC</i>" as APIGateway #FFF2CC
 
     rectangle "**IoT + DB**\n<i>.NET · gRPC / RabbitMQ</i>" as IoTDB #FFF2CC
 
@@ -59,7 +59,7 @@ rectangle "VPS" as VPS #F5F5F5 {
 
     database "**Database**\n<i>PostgreSQL</i>" as DB #DAE8FC
 
-    rectangle "**ML Service**\n<i>Python / Flask</i>" as ML #FFF2CC
+    rectangle "**ML Service**\n<i>Python / FastAPI</i>" as ML #FFF2CC
   }
 
   rectangle "**Docker Compose**" as Docker #DAE8FC
@@ -90,6 +90,7 @@ IoTProducer  -[hidden]-> IoTDriver
 ' ── Connections ──────────────────────────────────────────────────────
 Frontend     <-->  CaddyTop      : HTTPS
 CaddyTop     <-->  APIGateway    : Proxy
+CaddyTop     <-->  ML            : Proxy
 
 APIGateway   -->   IoTDB         : gRPC
 APIGateway   <-->  Lichess       : gRPC
@@ -98,12 +99,9 @@ IoTDB        -->   RabbitBroker  : Publish
 RabbitBroker -->   IoTDB         : Consume
 
 IoTDB        -->   DB            : Read / Write
-DB           -->   APIGateway    : Read
-Lichess      -->   DB            : Read
-ML           -->   DB            : Read / Write
-ML           -->   APIGateway    : Analysis
+Lichess      <-->   DB            : Read / Write
+ML           -->   DB            : Read
 
-Lichess      <-->  ML
 
 RabbitBroker <-->  CaddyBottom
 CaddyBottom  <-->  IoTProducer
