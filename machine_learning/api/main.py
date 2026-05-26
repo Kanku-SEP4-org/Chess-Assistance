@@ -1,7 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
+import jwt as pyjwt
 import joblib, json, math, numpy as np, os
 import pandas as pd
 import psycopg2
@@ -10,19 +12,33 @@ import requests
 app = FastAPI(title="Chess Assistance Models API")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[FRONTEND_URL],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def require_auth(request: Request):
+    token = request.cookies.get("chess_session")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        return pyjwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Session expired")
+    except pyjwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid session")
 
 # ---------------------------------------------------------------------------
 # Winrate model
 # ---------------------------------------------------------------------------
 
-MODEL_PATH = os.getenv("MODEL_PATH", "../trainers/trainer-winrate/models/model.pkl")
+MODEL_PATH = os.getenv("MODEL_PATH", "../trainers/trainer-winrate/models/model_pipeline.pkl")
 
 if not os.path.exists(MODEL_PATH):
     raise RuntimeError(f"model_pipeline.pkl not found at {MODEL_PATH}")
@@ -235,7 +251,7 @@ class AngrinessPredictionRequest(BaseModel):
 
 
 @app.post("/predictions/angriness")
-def predict_angriness(data: AngrinessPredictionRequest):
+def predict_angriness(data: AngrinessPredictionRequest, player=Depends(require_auth)):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
 
@@ -287,7 +303,7 @@ class AngrinessPredictionRawRequest(BaseModel):
 
 
 @app.post("/predictions/angriness/raw")
-def predict_angriness_raw(data: AngrinessPredictionRawRequest):
+def predict_angriness_raw(data: AngrinessPredictionRawRequest, player=Depends(require_auth)):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
 
@@ -325,7 +341,7 @@ class GamePredictionRequest(BaseModel):
 
 
 @app.post("/predictions/angriness/lichess")
-async def predict_by_game_id(data: GamePredictionRequest):
+async def predict_by_game_id(data: GamePredictionRequest, player=Depends(require_auth)):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
 
@@ -398,7 +414,7 @@ async def predict_by_game_id(data: GamePredictionRequest):
 
 
 @app.get("/angriness/recent-games/{username}")
-async def recent_games(username: str):
+async def recent_games(username: str, player=Depends(require_auth)):
     async with httpx.AsyncClient() as client:
         r = await client.get(
             f"https://lichess.org/api/games/user/{username}",
@@ -602,6 +618,32 @@ class AccuracyPredictorFeatures(BaseModel):
     opening_familiarity: int | None = None
 
 
+def _fetch_game_with_analysis(game_id: str) -> dict:
+    resp = requests.get(
+        f"{LICHESS_API}/game/export/{game_id[:8]}",
+        params={"evals": "true", "opening": "true", "pgnInJson": "true"},
+        headers={"Accept": "application/json"},
+        timeout=10,
+    )
+    if resp.status_code == 404:
+        raise HTTPException(status_code=404, detail=f"Game '{game_id}' not found on Lichess")
+    if resp.status_code == 429:
+        raise HTTPException(status_code=503, detail="Lichess API rate limit exceeded")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Lichess returned {resp.status_code} for game export")
+    return resp.json()
+
+
+def _performance_verdict(actual_acpl: float, predicted_acpl: float, threshold: float = 10.0) -> str:
+    # Lower centipawn loss is better, so actual below expected means overperformance.
+    diff = actual_acpl - predicted_acpl
+    if diff < -threshold:
+        return "overperformed"
+    if diff > threshold:
+        return "underperformed"
+    return "normal"
+
+
 @app.post("/predictions/accuracy")
 def predict_accuracy(data: AccuracyPredictorFeatures):
     game     = _fetch_game(data.game_id)
@@ -657,15 +699,107 @@ def predict_accuracy(data: AccuracyPredictorFeatures):
     X          = pd.DataFrame([row])[AP_FEATURE_COLS]
     prediction = round(float(ap_pipeline.predict(X)[0]), 2)
 
+    analyzed_game = _fetch_game_with_analysis(data.game_id)
+    analyzed_players = analyzed_game.get("players", {})
+    analyzed_player = analyzed_players.get("white" if player_white else "black", {})
+    analysis = analyzed_player.get("analysis") or {}
+    actual_acpl = analysis.get("acpl")
+    if actual_acpl is None:
+        return {
+            "status": "analysis_required",
+            "game_id": data.game_id,
+            "game_url": f"{LICHESS_API}/{data.game_id[:8]}",
+            "message": "This game has no Lichess computer analysis yet. Request analysis on Lichess, then try again.",
+        }
+
+    actual_acpl = round(float(actual_acpl), 2)
+    difference = round(actual_acpl - prediction, 2)
+
     return {
+        "status": "ok",
         "game_id":                  data.game_id,
+        "game_url":                 f"{LICHESS_API}/{data.game_id[:8]}",
         "username":                 data.username,
         "player_color":             "white" if player_white else "black",
         "predicted_centipawn_loss": prediction,
+        "actual_centipawn_loss":    actual_acpl,
+        "difference":               difference,
+        "verdict":                  _performance_verdict(actual_acpl, prediction),
         "opening_eco":              eco,
         "opening_familiarity":      row["opening_familiarity"],
         "opening_ply":              row["opening_ply"],
     }
+
+
+@app.get("/accuracy/recent-games/{username}")
+def recent_accuracy_games(username: str):
+    resp = requests.get(
+        f"{LICHESS_API}/api/games/user/{username}",
+        params={
+            "max": 10,
+            "sort": "dateDesc",
+            "pgnInJson": "true",
+            "opening": "true",
+            "evals": "true",
+        },
+        headers={"Accept": "application/x-ndjson"},
+        timeout=10,
+    )
+    if resp.status_code == 404:
+        raise HTTPException(status_code=404, detail=f"User '{username}' not found on Lichess")
+    if resp.status_code != 200:
+        raise HTTPException(status_code=502, detail=f"Lichess returned {resp.status_code} for recent games")
+
+    user_lower = username.lower()
+    games = []
+    for line in resp.text.strip().split("\n"):
+        if not line:
+            continue
+        game = json.loads(line)
+        players = game.get("players", {})
+        white_id = players.get("white", {}).get("user", {}).get("id", "").lower()
+        black_id = players.get("black", {}).get("user", {}).get("id", "").lower()
+        if user_lower == white_id:
+            side = "white"
+            opponent_side = "black"
+        elif user_lower == black_id:
+            side = "black"
+            opponent_side = "white"
+        else:
+            continue
+
+        winner = game.get("winner")
+        if winner == side:
+            result = "win"
+        elif winner == opponent_side:
+            result = "loss"
+        else:
+            result = "draw"
+
+        clock = game.get("clock")
+        time_control = (
+            f"{clock['initial'] // 60}+{clock['increment']}"
+            if clock
+            else game.get("speed", "unknown")
+        )
+        analysis = players.get(side, {}).get("analysis") or {}
+
+        games.append({
+            "game_id": game["id"],
+            "game_url": f"{LICHESS_API}/{game['id']}",
+            "played_at": pd.Timestamp(game["createdAt"], unit="ms").isoformat(),
+            "player_color": side,
+            "opponent": players.get(opponent_side, {}).get("user", {}).get("name", "Anonymous"),
+            "result": result,
+            "opening": game.get("opening", {}).get("name"),
+            "opening_eco": game.get("opening", {}).get("eco"),
+            "time_control": time_control,
+            "speed": game.get("speed"),
+            "has_analysis": bool(analysis),
+            "actual_centipawn_loss": analysis.get("acpl"),
+        })
+
+    return {"games": games[:10]}
 
 # ---------------------------------------------------------------------------
 # Factor impact reports
@@ -725,3 +859,32 @@ def get_factor_impact_validation():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/health/ready")
+def health_ready():
+    checks: dict = {"api": "ok"}
+
+    if DATABASE_URL:
+        try:
+            conn = psycopg2.connect(DATABASE_URL)
+            conn.close()
+            checks["database"] = "ok"
+        except Exception as exc:
+            checks["database"] = f"error: {exc}"
+    else:
+        checks["database"] = "not_configured"
+
+    checks["models"] = {
+        "winrate": "loaded" if pipeline is not None else "not_loaded",
+        "angriness": "loaded" if angriness_model is not None else "not_loaded",
+        "accuracy_predictor": "loaded" if ap_pipeline is not None else "not_loaded",
+    }
+
+    all_ok = checks["database"] == "ok" and all(
+        v == "loaded" for v in checks["models"].values()
+    )
+    return JSONResponse(
+        content={"status": "ready" if all_ok else "degraded", **checks},
+        status_code=200 if all_ok else 503,
+    )

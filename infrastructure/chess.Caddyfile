@@ -11,6 +11,9 @@ api-chess.cannyboiz.com {
     handle /angriness/* {
         reverse_proxy chess-ml-api:8000
     }
+    handle /accuracy/* {
+        reverse_proxy chess-ml-api:8000
+    }
     handle /factor-impact/* {
         reverse_proxy chess-ml-api:8000
     }

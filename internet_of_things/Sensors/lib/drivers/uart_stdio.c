@@ -48,10 +48,10 @@ uart_t uart_stdio_init(uint32_t baud)
     return result;
 }
 
-uint8_t gets_nonblocking(char *buffer, uint8_t max_length)
+uint16_t gets_nonblocking(char *buffer, uint16_t max_length)
 {
     uart_t result;
-    uint8_t index = 0;
+    uint16_t index = 0;
     uint8_t c;
 
     if(_line_received) 
