@@ -75,7 +75,7 @@ function AngrinessPredictor() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Prediction failed.')
+        setError(data.detail || data.error || 'Prediction failed.')
         return
       }
 
@@ -130,7 +130,7 @@ function AngrinessPredictor() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Prediction failed.')
+        setError(data.detail || data.error || 'Prediction failed.')
         return
       }
 
@@ -168,7 +168,7 @@ function AngrinessPredictor() {
       const data = await res.json()
 
       if (!res.ok) {
-        setError(data.error || 'Failed to load recent games.')
+        setError(data.detail || data.error || 'Failed to load recent games.')
         return
       }
 

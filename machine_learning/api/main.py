@@ -38,7 +38,7 @@ def require_auth(request: Request):
 # Winrate model
 # ---------------------------------------------------------------------------
 
-MODEL_PATH = os.getenv("MODEL_PATH", "../trainers/trainer-winrate/models/model.pkl")
+MODEL_PATH = os.getenv("MODEL_PATH", "../trainers/trainer-winrate/models/model_pipeline.pkl")
 
 if not os.path.exists(MODEL_PATH):
     raise RuntimeError(f"model_pipeline.pkl not found at {MODEL_PATH}")
