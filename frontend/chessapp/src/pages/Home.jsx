@@ -143,7 +143,7 @@ function Home() {
 
       if (temperature != null && co2Level != null && lightLevel != null) {
         try {
-          const predictionRes = await fetch(`${ML_API_URL}/predict`, {
+          const predictionRes = await fetch(`${ML_API_URL}/predictions/winrate`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
