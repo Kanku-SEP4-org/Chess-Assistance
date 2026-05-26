@@ -1,0 +1,34 @@
+ @startuml
+  actor User
+  participant "ChessApp Frontend" as FE
+  participant "API Gateway" as GW
+  participant "ML API" as ML
+  participant "Winrate Model" as Model
+
+  User -> FE: Opens Environment Recommendation page
+
+  FE -> GW: GET /iot/temp
+  GW --> FE: temperature
+
+  FE -> GW: GET /iot/light
+  GW --> FE: light
+
+  FE -> GW: GET /iot/co2
+  GW --> FE: co2
+
+  User -> FE: Clicks Get Recommendation
+  FE -> ML: POST /recommendations/environment\nsleep, awake, temp, co2, light
+
+  ML -> Model: Predict current win probability
+  Model --> ML: current probability
+
+  loop For each candidate factor
+    ML -> Model: Predict probability with adjusted value
+    Model --> ML: candidate probability
+  end
+
+  ML -> ML: Choose best positive improvement
+  ML --> FE: recommended factor,\ncurrent value, recommended value,\nprobability gain
+
+  FE --> User: Shows recommendation
+  @enduml
