@@ -5,7 +5,7 @@
 # ──────────────────────────────────────────────────────────────────────────────
 
 $Root     = Split-Path $PSScriptRoot -Parent
-$Jar      = "C:\Users\hiayg\.vscode\extensions\jebbs.plantuml-2.18.1\plantuml.jar"
+$Jar      = Join-Path $env:USERPROFILE ".vscode\extensions\jebbs.plantuml-2.18.1\plantuml.jar"
 $OutRoot  = Join-Path $Root "outDiagrams"
 
 # Add more source folders here as the project grows
