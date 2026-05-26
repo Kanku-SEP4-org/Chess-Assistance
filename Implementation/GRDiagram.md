@@ -46,7 +46,7 @@ entity "health_record" as health_record {
   * <u>id</u> : serial             <<PK>>
   --
   # player_id : integer            <<FK>>
-  ~ confirmed_at : timestamp       <<CK>>
+  confirmed_at : timestamp
   sleep_time : timestamp
   awaken_time : timestamp
   sleep_duration : interval
@@ -68,7 +68,7 @@ entity "player_opening_stat" as player_opening_stat {
   * <u>id</u> : serial             <<PK>>
   --
   # player_id : integer            <<FK>>
-  ~ eco_code : varchar(3)          <<CK>>
+  ~ eco_code : varchar(3)          
   opening_name : varchar(100)
   player_as_white : integer
   player_as_black : integer
