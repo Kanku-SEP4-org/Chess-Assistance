@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
@@ -843,3 +844,32 @@ def get_factor_impact_validation():
 @app.get("/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/health/ready")
+def health_ready():
+    checks: dict = {"api": "ok"}
+
+    if DATABASE_URL:
+        try:
+            conn = psycopg2.connect(DATABASE_URL)
+            conn.close()
+            checks["database"] = "ok"
+        except Exception as exc:
+            checks["database"] = f"error: {exc}"
+    else:
+        checks["database"] = "not_configured"
+
+    checks["models"] = {
+        "winrate": "loaded" if pipeline is not None else "not_loaded",
+        "angriness": "loaded" if angriness_model is not None else "not_loaded",
+        "accuracy_predictor": "loaded" if ap_pipeline is not None else "not_loaded",
+    }
+
+    all_ok = checks["database"] == "ok" and all(
+        v == "loaded" for v in checks["models"].values()
+    )
+    return JSONResponse(
+        content={"status": "ready" if all_ok else "degraded", **checks},
+        status_code=200 if all_ok else 503,
+    )

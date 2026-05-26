@@ -84,6 +84,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: chess_postgres
+          POSTGRES_USER: chess
+          POSTGRES_PASSWORD: chess
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U chess"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
     defaults:
       run:
         working-directory: machine_learning
@@ -209,6 +224,7 @@ jobs:
           FACTOR_IMPACT_REPORT_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-factor-imp/models/factor_impact_report.json
           FACTOR_IMPACT_COMPARISON_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-factor-imp/models/model_comparison.json
           FACTOR_IMPACT_VALIDATION_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-factor-imp/models/factor_impact_validation.json
+          DATABASE_URL: postgresql://chess:chess@localhost:5432/chess_postgres
         run: |
           uvicorn main:app --host 127.0.0.1 --port 8000 &
           SERVER_PID=$!
@@ -216,17 +232,50 @@ jobs:
           for i in 1 2 3 4 5; do
             if curl -sf http://127.0.0.1:8000/health; then
               echo ""
-              echo "Health check passed."
-              kill $SERVER_PID
-              exit 0
+              echo "Liveness check passed."
+              break
             fi
             echo "Attempt $i: server not ready, waiting 2s..."
             sleep 2
           done
 
-          echo "FAIL: FastAPI server did not respond to /health within 10 seconds."
-          kill $SERVER_PID 2>/dev/null || true
-          exit 1
+          if ! curl -sf http://127.0.0.1:8000/health > /dev/null; then
+            echo "FAIL: FastAPI server did not respond to /health within 10 seconds."
+            kill $SERVER_PID 2>/dev/null || true
+            exit 1
+          fi
+
+          echo "Checking readiness (DB + models)..."
+          READY_RESPONSE=$(curl -s http://127.0.0.1:8000/health/ready)
+          echo "$READY_RESPONSE"
+
+          if echo "$READY_RESPONSE" | grep -q '"database": "ok"'; then
+            echo "Database connectivity verified."
+          else
+            echo "FAIL: database check did not return ok."
+            kill $SERVER_PID 2>/dev/null || true
+            exit 1
+          fi
+
+          kill $SERVER_PID
+
+      - name: Run ML API tests
+        if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
+        working-directory: machine_learning/api
+        env:
+          MODEL_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-winrate/models/model.pkl
+          ANGRINESS_MODEL_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-angriness-predictor/models/model.pkl
+          ANGRINESS_SCALER_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-angriness-predictor/models/scaler.pkl
+          ANGRINESS_BINS_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-angriness-predictor/models/angriness_bins.json
+          AP_PIPELINE_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-ap/models/model_pipeline.pkl
+          AP_ECO_MAP_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-ap/data/eco_frequency_map.json
+          FACTOR_IMPACT_REPORT_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-factor-imp/models/factor_impact_report.json
+          FACTOR_IMPACT_COMPARISON_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-factor-imp/models/model_comparison.json
+          FACTOR_IMPACT_VALIDATION_PATH: ${{ github.workspace }}/machine_learning/trainers/trainer-factor-imp/models/factor_impact_validation.json
+          DATABASE_URL: postgresql://chess:chess@localhost:5432/chess_postgres
+        run: |
+          pip install pytest httpx
+          pytest test_health.py -v
 
       - name: Validate Docker build
         if: steps.changes.outputs.ml == 'true' || github.event_name == 'workflow_dispatch'
