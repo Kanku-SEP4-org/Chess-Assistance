@@ -96,11 +96,13 @@ services:
     expose:
       - "3001"
     environment:
+      NODE_ENV: production
       GRPC_HOST: chess-api-gateway
       LICHESS_GRPC_HOST: chess-lichess-api-grpc
       LICHESS_GRPC_PORT: "8082"
       FRONTEND_URL: ${FRONTEND_URL}
       LICHESS_REDIRECT_URI: ${LICHESS_REDIRECT_URI}
+      JWT_SECRET: ${JWT_SECRET}
     networks:
       - caddy_net # <---- connect to caddy_net for reverse proxy
       - default
