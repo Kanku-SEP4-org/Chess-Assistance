@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import '../App.css'
 import Navbar from '../components/Navbar'
 import { ML_API_URL } from '../config'
@@ -57,11 +58,19 @@ function AngrinessPredictor() {
       const res = await fetch(`${ML_API_URL}/predictions/angriness/lichess`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           game_id: gameId.trim(),
           player_username: playerUsername.trim(),
         }),
       })
+
+      if (res.status === 401) {
+        localStorage.removeItem('lichess_user')
+        setLichessUser(null)
+        setError('Your session has expired. Please log in again.')
+        return
+      }
 
       const data = await res.json()
 
@@ -103,12 +112,20 @@ function AngrinessPredictor() {
       const res = await fetch(`${ML_API_URL}/predictions/angriness/lichess`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({
           game_id: gId.trim(),
           player_username: username.trim(),
           consecutive_losses_pregame: lossStreak,
         }),
       })
+
+      if (res.status === 401) {
+        localStorage.removeItem('lichess_user')
+        setLichessUser(null)
+        setError('Your session has expired. Please log in again.')
+        return
+      }
 
       const data = await res.json()
 
@@ -137,8 +154,16 @@ function AngrinessPredictor() {
 
     try {
       const res = await fetch(
-        `${ML_API_URL}/angriness/recent-games/${encodeURIComponent(username)}`
+        `${ML_API_URL}/angriness/recent-games/${encodeURIComponent(username)}`,
+        { credentials: 'include' }
       )
+
+      if (res.status === 401) {
+        localStorage.removeItem('lichess_user')
+        setLichessUser(null)
+        setError('Your session has expired. Please log in again.')
+        return
+      }
 
       const data = await res.json()
 
@@ -174,6 +199,34 @@ function AngrinessPredictor() {
   return (
     <>
       <Navbar />
+      {!lichessUser && (
+        <main className="track-page">
+          <section className="track-hero">
+            <p className="eyebrow">Angriness Scale Predictor</p>
+            <h1>Login required</h1>
+            <p>
+              You need to log in with your Lichess account to use the Angriness
+              Predictor.
+            </p>
+            <Link to="/login">
+              <button
+                style={{
+                  background: 'rgba(216,170,85,0.2)',
+                  border: '1px solid #d8aa55',
+                  color: '#d8aa55',
+                  padding: '0.6rem 1.5rem',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                }}
+              >
+                Log in with Lichess
+              </button>
+            </Link>
+          </section>
+        </main>
+      )}
+      {lichessUser && (
       <main className="track-page">
         <section className="track-hero">
           <p className="eyebrow">Angriness Scale Predictor</p>
@@ -408,6 +461,7 @@ function AngrinessPredictor() {
           </section>
         )}
       </main>
+      )}
     </>
   )
 }

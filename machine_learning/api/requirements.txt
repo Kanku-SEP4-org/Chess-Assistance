@@ -9,3 +9,4 @@ uvicorn
 requests
 httpx
 psycopg2-binary
+PyJWT

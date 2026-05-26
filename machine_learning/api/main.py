@@ -1,8 +1,9 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import httpx
+import jwt as pyjwt
 import joblib, json, math, numpy as np, os
 import pandas as pd
 import psycopg2
@@ -11,13 +12,27 @@ import requests
 app = FastAPI(title="Chess Assistance Models API")
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+JWT_SECRET = os.getenv("JWT_SECRET", "dev-secret-change-in-production")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[FRONTEND_URL],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+def require_auth(request: Request):
+    token = request.cookies.get("chess_session")
+    if not token:
+        raise HTTPException(status_code=401, detail="Not authenticated")
+    try:
+        return pyjwt.decode(token, JWT_SECRET, algorithms=["HS256"])
+    except pyjwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Session expired")
+    except pyjwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid session")
 
 # ---------------------------------------------------------------------------
 # Winrate model
@@ -236,7 +251,7 @@ class AngrinessPredictionRequest(BaseModel):
 
 
 @app.post("/predictions/angriness")
-def predict_angriness(data: AngrinessPredictionRequest):
+def predict_angriness(data: AngrinessPredictionRequest, player=Depends(require_auth)):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
 
@@ -288,7 +303,7 @@ class AngrinessPredictionRawRequest(BaseModel):
 
 
 @app.post("/predictions/angriness/raw")
-def predict_angriness_raw(data: AngrinessPredictionRawRequest):
+def predict_angriness_raw(data: AngrinessPredictionRawRequest, player=Depends(require_auth)):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
 
@@ -326,7 +341,7 @@ class GamePredictionRequest(BaseModel):
 
 
 @app.post("/predictions/angriness/lichess")
-async def predict_by_game_id(data: GamePredictionRequest):
+async def predict_by_game_id(data: GamePredictionRequest, player=Depends(require_auth)):
     if angriness_model is None:
         raise HTTPException(status_code=503, detail="Angriness model not loaded")
 
@@ -399,7 +414,7 @@ async def predict_by_game_id(data: GamePredictionRequest):
 
 
 @app.get("/angriness/recent-games/{username}")
-async def recent_games(username: str):
+async def recent_games(username: str, player=Depends(require_auth)):
     async with httpx.AsyncClient() as client:
         r = await client.get(
             f"https://lichess.org/api/games/user/{username}",
