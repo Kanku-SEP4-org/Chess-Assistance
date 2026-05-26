@@ -13,6 +13,7 @@ function renderAngrinessPredictor() {
 
 beforeEach(() => {
   localStorage.clear()
+  localStorage.setItem('lichess_user', JSON.stringify({ player_username: 'TestUser' }))
   globalThis.fetch = vi.fn(() =>
     Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
   )
