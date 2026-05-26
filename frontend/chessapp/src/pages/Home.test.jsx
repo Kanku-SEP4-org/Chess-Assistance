@@ -256,7 +256,7 @@ describe('Home — alerts display', () => {
           }),
         })
       }
-      if (target.includes('/predict')) {
+      if (target.includes('/predictions/winrate')) {
         return Promise.resolve({
           ok: true, status: 200,
           json: () => Promise.resolve({ prediction: 0.62 }),
@@ -325,7 +325,7 @@ describe('Home — session lifecycle', () => {
           }),
         })
       }
-      if (target.includes('/predict')) {
+      if (target.includes('/predictions/winrate')) {
         return Promise.resolve({
           ok: true, status: 200,
           json: () => Promise.resolve({ prediction: 0.55 }),
