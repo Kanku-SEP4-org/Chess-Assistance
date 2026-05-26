@@ -249,7 +249,7 @@ jobs:
           READY_RESPONSE=$(curl -s http://127.0.0.1:8000/health/ready)
           echo "$READY_RESPONSE"
 
-          if echo "$READY_RESPONSE" | grep -q '"database": "ok"'; then
+          if echo "$READY_RESPONSE" | grep -q '"database":\s*"ok"'; then
             echo "Database connectivity verified."
           else
             echo "FAIL: database check did not return ok."
