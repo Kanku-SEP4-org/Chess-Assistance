@@ -2,7 +2,7 @@
 
 A full-stack IoT and Machine Learning platform that helps chess players understand how their physical environment and health habits affect their game performance. The system collects real-time sensor data (temperature, humidity, CO2, light), tracks player wellness (sleep, water intake, activity), imports game data from Lichess, and uses trained ML models to predict win rates, detect tilt/angriness, estimate move accuracy, and recommend optimal playing conditions.
 
-Built as a SEP4 semester project (Internet of Things) by a 14-person team.
+Built as a SEP4 semester project (Internet of Things) by a 12-person team.
 
 ## Table of Contents
 
