@@ -110,7 +110,7 @@ def compute_overfitting_assessment(split_results, is_supervised):
     gaps = {}
     reasons = []
     notes = [
-        "Training Accuracy of 1.0000 is expected: RF memorizes training data (unconstrained tree depth)",
+        "RF regularized (max_depth=9, min_samples_leaf=5) — no memorization",
         "Model serves as Surrogate to Stage 1 Isolation Forest",
     ]
 
