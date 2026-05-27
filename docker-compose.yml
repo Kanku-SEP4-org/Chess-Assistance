@@ -9,6 +9,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       - ./scripts/databases/init.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
       - ./scripts/databases/triggers.sql:/docker-entrypoint-initdb.d/02_triggers.sql:ro
+      - ./scripts/databases/migrations/003_fix_analysis_sync_trigger_schema.sql:/docker-entrypoint-initdb.d/03_fix_analysis_sync_trigger_schema.sql:ro
     ports:
       - "5433:5432"
     healthcheck:
