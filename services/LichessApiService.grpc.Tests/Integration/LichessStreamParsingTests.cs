@@ -461,6 +461,230 @@ public class LichessStreamParsingTests : IDisposable
         Assert.Empty(await db.Matches.ToListAsync());
     }
 
+    // --- ProcessStreamWithTimeoutAsync tests ---
+
+    [Fact]
+    public async Task ProcessStreamWithTimeout_NormalData_ProcessesCorrectly()
+    {
+        var sessionId = await SeedSessionAsync();
+
+        var ndjson = """
+            {"type":"gameStart","game":{"gameId":"abc12345"}}
+            {"type":"gameFinish","game":{"gameId":"abc12345"}}
+            """;
+        using var reader = new StringReader(ndjson);
+
+        await _streamService.ProcessStreamWithTimeoutAsync(
+            reader, sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        var games = await db.Games.ToListAsync();
+        Assert.Single(games);
+        Assert.Equal("test1234", games[0].LichessGameId);
+    }
+
+    [Fact]
+    public async Task ProcessStreamWithTimeout_EndOfStream_CompletesNormally()
+    {
+        var sessionId = await SeedSessionAsync();
+
+        using var reader = new StringReader("");
+
+        await _streamService.ProcessStreamWithTimeoutAsync(
+            reader, sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        Assert.Empty(await db.Games.ToListAsync());
+    }
+
+    [Fact]
+    public async Task ProcessStreamWithTimeout_ExternalCancellation_DoesNotThrowTimeout()
+    {
+        var sessionId = await SeedSessionAsync();
+
+        var cts = new CancellationTokenSource();
+        var ndjson = """
+            {"type":"gameStart","game":{"gameId":"game1"}}
+            {"type":"gameStart","game":{"gameId":"game2"}}
+            """;
+        using var reader = new CancellingReader(ndjson, cts, cancelAfterLine: 1);
+
+        var ex = await Record.ExceptionAsync(() =>
+            _streamService.ProcessStreamWithTimeoutAsync(
+                reader, sessionId, playerId: 1, "testplayer", "fake_token", cts.Token));
+
+        Assert.IsNotType<TimeoutException>(ex);
+
+        var db = CreateDb();
+        Assert.Empty(await db.Matches.ToListAsync());
+    }
+
+    // --- CreateDatasetAsync edge case tests ---
+
+    [Fact]
+    public async Task GameFinish_NoRoom_DatasetHasNullSensors()
+    {
+        var sessionId = await SeedSessionAsync();
+
+        var ndjson = """
+            {"type":"gameStart","game":{"gameId":"abc12345"}}
+            {"type":"gameFinish","game":{"gameId":"abc12345"}}
+            """;
+        using var reader = new StringReader(ndjson);
+
+        await _streamService.ProcessStreamAsync(
+            reader, sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        var dataset = await db.Datasets.FirstOrDefaultAsync();
+        Assert.NotNull(dataset);
+        Assert.Null(dataset.AvgLux);
+        Assert.Null(dataset.AvgCelsius);
+        Assert.Null(dataset.AvgPpm);
+    }
+
+    [Fact]
+    public async Task GameFinish_WithConsecutiveLosses_SetsCount()
+    {
+        var sessionId = await SeedSessionAsync();
+        var callCount = 0;
+
+        _mockGameFetcher
+            .Setup(f => f.FetchLatestGameAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateSampleLichessGame());
+        _mockGameFetcher
+            .Setup(f => f.MapToGameEntity(It.IsAny<LichessGameDto>(), It.IsAny<string>(), It.IsAny<int>()))
+            .Returns((LichessGameDto dto, string username, int matchId) =>
+            {
+                callCount++;
+                return new Game
+                {
+                    LichessGameId = $"game_{callCount}",
+                    TimeControl = TimeControlType.Blitz,
+                    Result = callCount <= 2 ? GameResultType.Loss : GameResultType.Win,
+                    EcoCode = "B20",
+                    StartedAt = DateTimeOffset.FromUnixTimeMilliseconds(dto.CreatedAt).UtcDateTime,
+                    EndedAt = DateTimeOffset.FromUnixTimeMilliseconds(dto.LastMoveAt).UtcDateTime,
+                    DurationMin = 10,
+                    PlayerMoveCount = 20,
+                    MatchId = matchId,
+                };
+            });
+
+        var ndjson = """
+            {"type":"gameStart","game":{"gameId":"g1"}}
+            {"type":"gameFinish","game":{"gameId":"g1"}}
+            {"type":"gameStart","game":{"gameId":"g2"}}
+            {"type":"gameFinish","game":{"gameId":"g2"}}
+            {"type":"gameStart","game":{"gameId":"g3"}}
+            {"type":"gameFinish","game":{"gameId":"g3"}}
+            """;
+        using var reader = new StringReader(ndjson);
+
+        await _streamService.ProcessStreamAsync(
+            reader, sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        var datasets = await db.Datasets.OrderBy(d => d.Id).ToListAsync();
+        Assert.Equal(3, datasets.Count);
+        Assert.Equal(0, datasets[0].ConsecutiveLossesPregame);
+        Assert.Equal(1, datasets[1].ConsecutiveLossesPregame);
+        Assert.Equal(2, datasets[2].ConsecutiveLossesPregame);
+    }
+
+    [Fact]
+    public async Task GameFinish_WithOpeningStats_SetsWinRate()
+    {
+        var sessionId = await SeedSessionAsync();
+
+        var db = CreateDb();
+        db.PlayerOpeningStats.Add(new PlayerOpeningStat
+        {
+            PlayerId = 1,
+            EcoCode = "B20",
+            OpeningName = "Sicilian Defense",
+            PlayerWins = 7,
+            TotalGames = 11
+        });
+        await db.SaveChangesAsync();
+
+        var ndjson = """
+            {"type":"gameStart","game":{"gameId":"abc12345"}}
+            {"type":"gameFinish","game":{"gameId":"abc12345"}}
+            """;
+        using var reader = new StringReader(ndjson);
+
+        await _streamService.ProcessStreamAsync(
+            reader, sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        db = CreateDb();
+        var dataset = await db.Datasets.FirstOrDefaultAsync();
+        Assert.NotNull(dataset);
+        Assert.Equal(10, dataset.PlayerOpeningGameCount);
+        Assert.Equal(0.7m, dataset.PlayerOpeningWinRate);
+    }
+
+    [Fact]
+    public async Task GameFinish_NoOpeningStats_NullWinRate()
+    {
+        var sessionId = await SeedSessionAsync();
+
+        var ndjson = """
+            {"type":"gameStart","game":{"gameId":"abc12345"}}
+            {"type":"gameFinish","game":{"gameId":"abc12345"}}
+            """;
+        using var reader = new StringReader(ndjson);
+
+        await _streamService.ProcessStreamAsync(
+            reader, sessionId, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        var db = CreateDb();
+        var dataset = await db.Datasets.FirstOrDefaultAsync();
+        Assert.NotNull(dataset);
+        Assert.Null(dataset.PlayerOpeningWinRate);
+        Assert.Null(dataset.PlayerOpeningGameCount);
+    }
+
+    [Fact]
+    public async Task GameFinish_NullHealthWater_DefaultsToZero()
+    {
+        var db = CreateDb();
+
+        var healthRecord = new HealthRecord
+        {
+            SleepTime = DateTime.UtcNow.AddHours(-8),
+            AwakenTime = DateTime.UtcNow.AddHours(-1),
+            ConfirmedAt = DateTime.UtcNow,
+            WaterIntakeMl = null,
+            PlayerId = 1
+        };
+        db.HealthRecords.Add(healthRecord);
+        await db.SaveChangesAsync();
+
+        var session = new Session
+        {
+            StartedAt = DateTime.UtcNow,
+            PlayerId = 1,
+            HealthRecordId = healthRecord.Id
+        };
+        db.Sessions.Add(session);
+        await db.SaveChangesAsync();
+
+        var ndjson = """
+            {"type":"gameStart","game":{"gameId":"abc12345"}}
+            {"type":"gameFinish","game":{"gameId":"abc12345"}}
+            """;
+        using var reader = new StringReader(ndjson);
+
+        await _streamService.ProcessStreamAsync(
+            reader, session.Id, playerId: 1, "testplayer", "fake_token", CancellationToken.None);
+
+        db = CreateDb();
+        var dataset = await db.Datasets.FirstOrDefaultAsync();
+        Assert.NotNull(dataset);
+        Assert.Equal(0, dataset.WaterIntakeMl);
+    }
+
     public void Dispose()
     {
         _serviceProvider.Dispose();
