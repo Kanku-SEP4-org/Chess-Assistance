@@ -387,4 +387,13 @@ public class LichessGameMappingTests
 
         Assert.Null(game.Analysis);
     }
+
+    [Fact]
+    public void MapToGameEntity_UnknownSpeed_DefaultsToRapid()
+    {
+        var dto = CreateSampleGame(speed: "correspondence");
+        var game = _fetcher.MapToGameEntity(dto, "testplayer", matchId: 1);
+
+        Assert.Equal(TimeControlType.Rapid, game.TimeControl);
+    }
 }

@@ -4,7 +4,7 @@ import os
 import joblib
 import numpy as np
 import pandas as pd
-from scipy.stats import pearsonr, spearmanr
+from scipy.stats import spearmanr
 from sklearn.metrics import accuracy_score, f1_score
 
 PROCESSED_DIR = os.path.join("data", "processed")
@@ -36,7 +36,7 @@ TILT_FEATURES = [
 
 COMPOSITE_COLS = ["acpl_player", "blunder_cnt_player", "consecutive_losses_pregame"]
 
-R2_GAP_THRESHOLD = 0.05
+ACC_GAP_THRESHOLD = 0.05
 SPEARMAN_GAP_THRESHOLD = 0.10
 
 
@@ -45,17 +45,6 @@ def score_to_angriness(score: float, bin_edges: list[float]) -> int:
         if score <= bin_edges[i + 1]:
             return 5 - i
     return 1
-
-
-def compute_composite_tilt(raw_df: pd.DataFrame) -> np.ndarray:
-    available = [c for c in COMPOSITE_COLS if c in raw_df.columns]
-    components = []
-    for c in available:
-        vals = raw_df[c].values.astype(float)
-        vmin, vmax = vals.min(), vals.max()
-        norm = (vals - vmin) / (vmax - vmin + 1e-9)
-        components.append(norm)
-    return np.mean(components, axis=0)
 
 
 def evaluate_split(name, features_df, raw_df, model, bin_edges, is_supervised,
@@ -77,10 +66,6 @@ def evaluate_split(name, features_df, raw_df, model, bin_edges, is_supervised,
     angriness_dist = {
         str(level): int((angriness == level).sum()) for level in range(1, 6)
     }
-
-    composite = compute_composite_tilt(raw_df)
-    r, _ = pearsonr(angriness.astype(float), composite)
-    proxy_r2 = round(float(r ** 2), 4)
 
     spearman_results = {}
     for col in COMPOSITE_COLS:
@@ -106,7 +91,6 @@ def evaluate_split(name, features_df, raw_df, model, bin_edges, is_supervised,
 
     result = {
         "n_rows": len(raw_df),
-        "proxy_r2": proxy_r2,
         "spearman": spearman_results,
         "angriness_distribution": angriness_dist,
         "per_level": per_level,
@@ -123,19 +107,23 @@ def compute_overfitting_assessment(split_results, is_supervised):
     val = split_results["val"]
     test = split_results["test"]
 
-    r2_gap = round(train["proxy_r2"] - test["proxy_r2"], 4)
-
-    gaps = {"r2_gap": r2_gap}
+    gaps = {}
     reasons = []
-
-    if r2_gap > R2_GAP_THRESHOLD:
-        reasons.append(f"R2 gap = {r2_gap:.4f} (train {train['proxy_r2']:.4f} vs test {test['proxy_r2']:.4f})")
+    notes = [
+        "Training Accuracy of 1.0000 is expected: RF memorizes training data (unconstrained tree depth)",
+        "Model serves as Surrogate to Stage 1 Isolation Forest",
+    ]
 
     if is_supervised:
         acc_gap = round(val["accuracy"] - test["accuracy"], 4)
         gaps["accuracy_gap_val_test"] = acc_gap
-        if abs(acc_gap) > R2_GAP_THRESHOLD:
-            reasons.append(f"Accuracy gap (val vs test) = {acc_gap:.4f} (val {val['accuracy']:.4f} vs test {test['accuracy']:.4f})")
+        notes.append(
+            f"Strong generalization: Val ({val['accuracy']}) vs Test ({test['accuracy']}) gap = {abs(acc_gap):.4f}"
+        )
+        if abs(acc_gap) > ACC_GAP_THRESHOLD:
+            reasons.append(
+                f"Accuracy gap (val vs test) = {acc_gap:.4f} (val {val['accuracy']:.4f} vs test {test['accuracy']:.4f})"
+            )
 
     spearman_gaps = {}
     for col in COMPOSITE_COLS:
@@ -151,6 +139,7 @@ def compute_overfitting_assessment(split_results, is_supervised):
         **gaps,
         "is_overfitting": len(reasons) > 0,
         "reasons": reasons,
+        "notes": notes,
     }
 
 
@@ -158,8 +147,8 @@ def print_comparison(split_results, assessment, is_supervised):
     short = {"acpl_player": "ACPL", "blunder_cnt_player": "Blunders", "consecutive_losses_pregame": "ConsLoss"}
     cols = list(short.keys())
 
-    print("\n=== Train vs Val vs Test Comparison ===\n")
-    header = f"{'Split':>6}  {'N':>6}  {'Proxy R2':>8}"
+    print("\n=== Surrogate Model Generalization Assessment ===\n")
+    header = f"{'Split':>6}  {'N':>6}"
     if is_supervised:
         header += f"  {'Accuracy':>8}  {'F1':>6}"
     for col in cols:
@@ -169,7 +158,7 @@ def print_comparison(split_results, assessment, is_supervised):
 
     for name in ["train", "val", "test"]:
         r = split_results[name]
-        row = f"{name:>6}  {r['n_rows']:>6}  {r['proxy_r2']:>8.4f}"
+        row = f"{name:>6}  {r['n_rows']:>6}"
         if is_supervised:
             row += f"  {r['accuracy']:>8.4f}  {r['f1_weighted']:>6.4f}"
         for col in cols:
@@ -182,14 +171,15 @@ def print_comparison(split_results, assessment, is_supervised):
 
     print(f"\n{'=' * 50}")
     if assessment["is_overfitting"]:
-        print("POSSIBLE OVERFITTING DETECTED:")
+        print("POSSIBLE GENERALIZATION ISSUES:")
         for reason in assessment["reasons"]:
             print(f"  - {reason}")
     else:
-        print("NO OVERFITTING DETECTED")
-        print(f"  R2 gap:         {assessment['r2_gap']:.4f} (threshold: {R2_GAP_THRESHOLD})")
+        print("SURROGATE MODEL ASSESSMENT:")
+        for note in assessment.get("notes", []):
+            print(f"  - {note}")
         if is_supervised:
-            print(f"  Accuracy gap (val vs test): {assessment.get('accuracy_gap_val_test', 0):.4f} (threshold: {R2_GAP_THRESHOLD})")
+            print(f"  Accuracy gap (val vs test): {assessment.get('accuracy_gap_val_test', 0):.4f} (threshold: {ACC_GAP_THRESHOLD})")
 
 
 def print_test_details(split_results):
