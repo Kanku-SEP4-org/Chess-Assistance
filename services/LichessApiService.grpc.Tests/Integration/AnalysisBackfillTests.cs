@@ -234,8 +234,62 @@ public class AnalysisBackfillTests : IDisposable
         Assert.Empty(await db.GameAnalyses.ToListAsync());
     }
 
+    [Fact]
+    public async Task ExecuteAsync_RunsBackfillThenStopsOnCancel()
+    {
+        var (_, _, gameId) = await SeedGameWithoutAnalysisAsync();
+
+        _mockGameFetcher
+            .Setup(f => f.FetchGameByIdAsync("test1234", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(CreateGameDtoWithAnalysis());
+
+        var testableService = new TestableBackfillService(
+            _serviceProvider,
+            Mock.Of<ILogger<AnalysisBackfillService>>());
+
+        using var cts = new CancellationTokenSource(TimeSpan.FromMilliseconds(500));
+
+        try
+        {
+            await testableService.RunAsync(cts.Token);
+        }
+        catch (OperationCanceledException) { }
+
+        var db = CreateDb();
+        var analysis = await db.GameAnalyses.FirstOrDefaultAsync(a => a.GameId == gameId);
+        Assert.NotNull(analysis);
+        Assert.Equal(93, analysis.Accuracy);
+    }
+
+    [Fact]
+    public async Task ExecuteAsync_ImmediateCancellation_NeverCallsBackfill()
+    {
+        await SeedGameWithoutAnalysisAsync();
+
+        var testableService = new TestableBackfillService(
+            _serviceProvider,
+            Mock.Of<ILogger<AnalysisBackfillService>>());
+
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+
+        await testableService.RunAsync(cts.Token);
+
+        _mockGameFetcher.Verify(
+            f => f.FetchGameByIdAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()),
+            Times.Never);
+    }
+
     public void Dispose()
     {
         _serviceProvider.Dispose();
     }
+}
+
+internal class TestableBackfillService(
+    IServiceProvider serviceProvider,
+    ILogger<AnalysisBackfillService> logger)
+    : AnalysisBackfillService(serviceProvider, logger)
+{
+    public Task RunAsync(CancellationToken ct) => ExecuteAsync(ct);
 }
