@@ -21,9 +21,9 @@ permissions:
   contents: read
   packages: write
 
-# ───────────────────────────────────────────────────────────────
+# -------------
 # CI
-# ───────────────────────────────────────────────────────────────
+# -------------
 jobs:
   lichess-test:
     runs-on: ubuntu-latest
@@ -285,9 +285,9 @@ jobs:
           file: machine_learning/api/.dockerfile
           push: false
 
-  # ───────────────────────────────────────────────────────────────
+  # ----------------
   # PUBLISH TO GHCR
-  # ───────────────────────────────────────────────────────────────
+  # ----------------
   lichess-publish:
     needs: lichess-test
     if: >-
@@ -520,9 +520,9 @@ jobs:
           labels: ${{ steps.meta_main.outputs.labels }}
 
 
-  # ───────────────────────────────────────────────────────────────
+  # ---------------
   # DEPLOY TO VPS
-  # ───────────────────────────────────────────────────────────────
+  # ---------------
   deploy:
     needs: [lichess-publish, ml-publish, api-gateway-publish, iot-grpc-publish]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
