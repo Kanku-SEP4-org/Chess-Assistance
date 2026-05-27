@@ -112,6 +112,10 @@ def main():
     rf_model = RandomForestClassifier(
         n_estimators=200,
         random_state=42,
+        max_depth=9,
+        min_samples_leaf=5,
+        max_features='sqrt',
+        min_samples_split=10,
         n_jobs=-1,
     )
     rf_model.fit(raw_train[IF_FEATURES].values, y_train)
@@ -156,6 +160,10 @@ def main():
         "if_n_estimators": 200,
         "if_max_features": 0.75,
         "rf_n_estimators": 200,
+        "rf_max_depth": 9,
+        "rf_min_samples_leaf": 5,
+        "rf_max_features": "sqrt",
+        "rf_min_samples_split": 10,
         "n_rows": len(df),
         "n_rows_train": len(df_train),
         "n_if_features": len(IF_FEATURES),
