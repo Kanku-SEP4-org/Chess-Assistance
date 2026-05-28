@@ -32,12 +32,13 @@ jobs:
       run: sudo service rabbitmq-server start
 
     # --- C CLIENT BUILD & TEST ---
+      #passing the UNIT_TESTING flag allows us to include test code in the build, which is necessary for running our unit tests. This way, we can maintain a single build configuration for both production and testing, simplifying our workflow and ensuring that our tests are always up-to-date with the latest code changes.
     - name: Build Sensor Client C
       run: |
         cd internet_of_things/sensor_client_c
         mkdir -p build
         cd build
-        cmake ..
+        cmake -DCMAKE_C_FLAGS="-DUNIT_TESTING" .. 
         make
 
     - name: Run C Unit Tests
@@ -78,8 +79,11 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y build-essential cmake librabbitmq-dev rabbitmq-server python3-pip
 
+# give Rabbitmq some time to start up before running tests that depend on it
     - name: Start RabbitMQ Service
-      run: sudo service rabbitmq-server start
+      run: |
+        sudo service rabbitmq-server start 
+        sleep 3  
 
     # --- C# BUILD & TEST ---
     - name: Build and Test gRPC Server
