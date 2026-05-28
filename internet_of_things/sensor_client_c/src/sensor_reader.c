@@ -266,11 +266,13 @@ static int execute_unified_transaction(const char* transmit_payload, const char*
     char payload[STREAM_BUFFER_SIZE] = {0};
 
     // Step 1: Wireless Network Path
+#if !defined(_WIN32) && !defined(UNIT_TESTING)
     if (execute_socket_transaction(transmit_payload, prefix, payload) == 1) {
         if (parse_payload_by_type(payload, prefix, out_value, datatype_flag)) {
             return 1;
         }
     }
+#endif
 
     // Step 2: Serial Cable Fallback Path
     printf("SENSOR_READER: Wireless link quiet. Executing serial fallback tracking for %s...\n", prefix);
