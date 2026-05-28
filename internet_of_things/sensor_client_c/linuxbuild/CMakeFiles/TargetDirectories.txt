@@ -1,5 +1,0 @@
-/mnt/d/Docs/courses/SE Software Engineering/sem 4/01.SemesterProject/code/hopefully last/Chess-Assistance/internet_of_things/sensor_client_c/linuxbuild/CMakeFiles/test_message_builder.dir
-/mnt/d/Docs/courses/SE Software Engineering/sem 4/01.SemesterProject/code/hopefully last/Chess-Assistance/internet_of_things/sensor_client_c/linuxbuild/CMakeFiles/test_sensor_reader.dir
-/mnt/d/Docs/courses/SE Software Engineering/sem 4/01.SemesterProject/code/hopefully last/Chess-Assistance/internet_of_things/sensor_client_c/linuxbuild/CMakeFiles/sensor_client.dir
-/mnt/d/Docs/courses/SE Software Engineering/sem 4/01.SemesterProject/code/hopefully last/Chess-Assistance/internet_of_things/sensor_client_c/linuxbuild/CMakeFiles/edit_cache.dir
-/mnt/d/Docs/courses/SE Software Engineering/sem 4/01.SemesterProject/code/hopefully last/Chess-Assistance/internet_of_things/sensor_client_c/linuxbuild/CMakeFiles/rebuild_cache.dir
