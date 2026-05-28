@@ -1,1 +1,0 @@
-/usr/bin/cc CMakeFiles/sensor_client.dir/src/main.c.o CMakeFiles/sensor_client.dir/src/message_builder.c.o CMakeFiles/sensor_client.dir/src/rabbitmq_client.c.o CMakeFiles/sensor_client.dir/src/sensor_reader.c.o -o sensor_client  -lrabbitmq 
