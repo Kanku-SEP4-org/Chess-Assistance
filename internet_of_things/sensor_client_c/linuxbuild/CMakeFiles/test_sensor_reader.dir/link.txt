@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/test_sensor_reader.dir/tests/test_sensor_reader.c.o CMakeFiles/test_sensor_reader.dir/tests/Unity/src/unity.c.o CMakeFiles/test_sensor_reader.dir/src/message_builder.c.o CMakeFiles/test_sensor_reader.dir/src/rabbitmq_client.c.o CMakeFiles/test_sensor_reader.dir/src/sensor_reader.c.o -o test_sensor_reader  -lrabbitmq 

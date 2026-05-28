@@ -32,7 +32,7 @@
 #include <stdlib.h>
 
 #define SERIAL_PORT "/dev/ttyACM0"
-#define TARGET_SERVER_PORT 23
+#define TARGET_SERVER_PORT 2323
 #define STREAM_BUFFER_SIZE 128
 
 //Internal static tracking variables
@@ -119,10 +119,10 @@ static int execute_serial_transaction (const char* token, const char* response_p
     }
     return 0;
 #else
-    if (strcmp(token, "1\n") == 0) strcpy(dest_array, "TEMP:23.50");
-    else if (strcmp(token, "4\n") == 0) strcpy(dest_array, "WAT:500");
-    else if (strcmp(token, "3\n") == 0) strcpy(dest_array, "LIG:500");
-    else if (strcmp(token, "6\n") == 0) strcpy(dest_array, "CO2:450");
+    if (strcmp(token, "1") == 0) strcpy(dest_array, "TEMP:23.50");
+    else if (strcmp(token, "4") == 0) strcpy(dest_array, "WAT:500");
+    else if (strcmp(token, "3") == 0) strcpy(dest_array, "LIG:500");
+    else if (strcmp(token, "6") == 0) strcpy(dest_array, "CO2:450");
     return 1;
 #endif
 }
@@ -189,48 +189,86 @@ static int execute_serial_transaction (const char* token, const char* response_p
         return 1;
     }
 
-    static int execute_socket_transaction(const char* menu_token, const char* parsing_prefix, char* data_dest)
-    {
-        if (validate_client_link() < 0) return 0;
+static int execute_socket_transaction(const char* menu_token, const char* parsing_prefix, char* data_dest)
+{
+    // 1. Check if the client is still linked. If not, validate/accept them.
+    if (validate_client_link() < 0) return 0;
 
-        int write_result = send(active_client_fd, menu_token, (int)strlen(menu_token), 0);
-        if (write_result <= 0) {
-            close_socket(active_client_fd);
-            active_client_fd = INVALID_SOCKET;
-            return 0;
-        }
+    // 2. Transmit the command request token down the persistent channel
+    int write_result = send(active_client_fd, menu_token, (int)strlen(menu_token), 0);
 
-        char transport_staging_array[STREAM_BUFFER_SIZE] = {0};
-        const int read_result = recv(active_client_fd, transport_staging_array, STREAM_BUFFER_SIZE - 1, 0);
-        if (read_result <= 0) {
-            close_socket(active_client_fd);
-            active_client_fd = INVALID_SOCKET;
-            return 0;
-        }
-
-        char *token_location = strstr(transport_staging_array, parsing_prefix);
-        if (token_location) {
-            strcpy(data_dest, token_location);
-            return 1;
-        }
+    if (write_result <= 0) {
+        printf("SENSOR_READER: Persistent Wi-Fi socket pipe dropped on write.\n");
+        close_socket(active_client_fd);
+        active_client_fd = INVALID_SOCKET;
         return 0;
     }
 
+    //give Arduino time to respond (200 miliseconds)
+    usleep(200000);
+
+    // 3. Collect the response payload over the same channel
+    char transport_staging_array[STREAM_BUFFER_SIZE] = {0};
+    const int read_result = recv(active_client_fd, transport_staging_array, STREAM_BUFFER_SIZE - 1, 0);
+    if (read_result <= 0) {
+        printf("SENSOR_READER: Persistent Wi-Fi socket pipe dropped on read.\n");
+        close_socket(active_client_fd);
+        active_client_fd = INVALID_SOCKET;
+        return 0;
+    }
+
+    // 4. Evaluate responses against targeted match headers
+    char *token_location = strstr(transport_staging_array, parsing_prefix);
+    if (token_location) {
+        strcpy(data_dest, token_location);
+        return 1;
+    }
+    return 0;
+}
 // ============================================================================
 // STANDARDIZED CENTRAL TRANSACTION ENGINE
 // ============================================================================
 
+static int parse_payload_by_type(const char* payload, const char* prefix, void* out_value, int datatype_flag)
+{
+    switch (datatype_flag) {
+        case 1: { // Unified %d.%d Floating Point Reconstructor
+            int int_part = 0;
+            int dec_part = 0;
+            if (sscanf(payload, "TEMP:%d.%d", &int_part, &dec_part) == 2) {
+                float final_temp = (float)int_part + ((float)dec_part / 10.0f);
+                if (dec_part >= 10) final_temp = (float)int_part + ((float)dec_part / 100.0f);
+                *(float*)out_value = final_temp;
+                return 1;
+            }
+            return 0;
+        }
+        case 0: {
+            // Combine the clean label (e.g. "LIG:") with "%d" dynamically
+            char format_string[32];
+            snprintf(format_string, sizeof(format_string), "%s%%d", prefix);
+
+            if (sscanf(payload, format_string, (int*)out_value) == 1) {
+                return 1;
+            }
+            break;
+        }
+        case 2:
+            strcpy((char*)out_value, payload);
+            return 1;
+        default:
+            break;
+    }
+    return 0;
+}
 static int execute_unified_transaction(const char* transmit_payload, const char* serial_payload, const char* prefix, void* out_value, int datatype_flag)
 {
     char payload[STREAM_BUFFER_SIZE] = {0};
 
     // Step 1: Wireless Network Path
     if (execute_socket_transaction(transmit_payload, prefix, payload) == 1) {
-        switch (datatype_flag) {
-            case 1:  if (sscanf(payload, prefix, (float*)out_value) == 1) return 1; break;
-            case 0:  if (sscanf(payload, prefix, (int*)out_value) == 1) return 1; break;
-            case 2:  strcpy((char*)out_value, payload); return 1;
-            default: break;
+        if (parse_payload_by_type(payload, prefix, out_value, datatype_flag)) {
+            return 1;
         }
     }
 
@@ -238,21 +276,11 @@ static int execute_unified_transaction(const char* transmit_payload, const char*
     printf("SENSOR_READER: Wireless link quiet. Executing serial fallback tracking for %s...\n", prefix);
 #if !defined(_WIN32) && !defined(UNIT_TESTING)
     if (execute_serial_transaction(serial_payload, prefix, payload) == 1) {
-        switch (datatype_flag) {
-            case 1:  if (sscanf(payload, prefix, (float*)out_value) == 1) return 1; break;
-            case 0:  if (sscanf(payload, prefix, (int*)out_value) == 1) return 1; break;
-            case 2:  strcpy((char*)out_value, payload); return 1;
-            default: break;
-        }
+        return parse_payload_by_type(payload, prefix, out_value, datatype_flag);
     }
 #else
     execute_serial_transaction(serial_payload, prefix, payload);
-    switch (datatype_flag) {
-        case 1:  if (sscanf(payload, prefix, (float*)out_value) == 1) return 1; break;
-        case 0:  if (sscanf(payload, prefix, (int*)out_value) == 1) return 1; break;
-        case 2:  strcpy((char*)out_value, payload); return 1;
-        default: break;
-    }
+    return parse_payload_by_type(payload, prefix, out_value, datatype_flag);
 #endif
 
     return 0;
@@ -263,27 +291,41 @@ static int execute_unified_transaction(const char* transmit_payload, const char*
 //-----------------------------------------------
 int read_temperature(float *temperature)
 {
-    return execute_unified_transaction("1", "1\n", "TEMP:%f", temperature, 1);
+    if ( execute_unified_transaction("1\n", "1\n", "TEMP:", temperature, 1) == 1) {
+        return 1;
+    }
+    return 0;
 }
+//serial payload MUST have \n in the end because it needs it, while serial communicating, to know the command is over
 
 int read_water(int *water)
 {
-    return execute_unified_transaction("4", "4\n", "WAT:%d", water, 0);
-}
-
-int read_light(short *light)
-{
-    int temp_light = 0;
-    if (execute_unified_transaction("3", "3\n", "LIG:%d", &temp_light, 0) == 1) {
-        *light = (short)temp_light;
+    if (execute_unified_transaction("4\n", "4\n", "WAT:", water, 0) == 1) {
         return 1;
     }
     return 0;
 }
 
+int read_light(short *light)
+{
+    int temp_light = 0;
+    // Explicitly verify the transaction returned 1 (Success)
+    if (execute_unified_transaction("3\n", "3\n", "LIG:", &temp_light, 0) == 1) {
+        *light = (short)temp_light;
+        return 1;
+    }
+
+    // If it fails, assign a safe fallback or return error state
+    *light = 0;
+    return 0;
+}
+
 int read_co2(int *co2)
 {
-    return execute_unified_transaction("6", "6\n", "CO2:%d", co2, 0);
+    if ( execute_unified_transaction("6\n", "6\n", "CO2:", co2, 0) == 1) {
+        return 1;
+    }
+    return 0;
 }
 
 // ============================================================================
@@ -323,7 +365,7 @@ int provision_remote_arduino_wifi(const char *ssid, const char *password, const 
 
     // Package the raw string payloads cleanly
     sprintf(wifi_payload_buffer, "7%s,%s,%s", ssid, password, server_ip);
-    sprintf(serial_payload_buffer, "7%s,%s,%s\n", ssid, password, server_ip);
+    sprintf(serial_payload_buffer, "7%s,%s,%s", ssid, password, server_ip);
 
     printf("SENSOR_READER: Sending standardized setup payload downstream...\n");
 
@@ -347,217 +389,6 @@ int provision_remote_arduino_wifi(const char *ssid, const char *password, const 
     printf("SENSOR_READER ERROR: Initial provisioning handshake failed.\n");
     return 0;
 }
-/*
-//  Wrap the Temperature Reading logic
-int read_temperature(float *temperature)
-{
-#if !defined(_WIN32) && !defined(UNIT_TESTING)
-    // --- REAL LINUX LOGIC ---
-    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
-    if (serial == -1)
-    {
-        printf("open_port: Unable to open");
-        return -1;
-    }
-    
-    setup_serial(serial);
-
-    char buffer[100] = {0};
-
-    sleep(2); // arduino may reset when port opens
-    tcflush(serial, TCIOFLUSH); // clear old data
-
-    write(serial, "1\n", 2);
-
-    usleep(500000);
-
-    read(serial, buffer, sizeof(buffer) - 1);
-
-    close(serial);
-
-    char *temp_pos = strstr(buffer, "TEMP:");
-    if (temp_pos && sscanf(temp_pos, "TEMP:%f", temperature) == 1)
-    {
-        return 1;
-    }
-    return 0;
-#else
-    // --- WINDOWS CLOUD MOCK ---
-    // This allows testing the Message Builder/RabbitMQ without an Arduino
-    *temperature = 23.5f;
-    return 1;
-#endif
-}
-
-int read_water(int *water)
-{   
-#if !defined(_WIN32) && !defined(UNIT_TESTING)
-
-    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
-    if (serial == -1)
-    {
-        printf("open_port: Unable to open\n");
-        return -1;
-    }
-
-    setup_serial(serial);
-
-    char buffer[100] = {0};
-
-    sleep(2); // arduino may reset when port opens
-    tcflush(serial, TCIOFLUSH); // clear old data
-
-    write(serial, "4\n", 2);
-
-    usleep(500000);
-
-    read(serial, buffer, sizeof(buffer) - 1);
-
-    close(serial);
-
-    char *water_pos = strstr(buffer, "WAT:");
-    if (water_pos && sscanf(water_pos, "WAT:%d", water) == 1)
-    {
-        return 1;
-    }
-    return 0;
-
-    return 0;
-#else
-    // --- WINDOWS CLOUD MOCK ---
-    // This allows testing the Message Builder/RabbitMQ without an Arduino
-    *water = 500;
-    return 1;
-#endif
-}
-
-
-int read_light(short *light)
-{
-#if !defined(_WIN32) && !defined(UNIT_TESTING)
-    // --- REAL LINUX LOGIC ---
-    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
-    if (serial == -1)
-    {
-        printf("open_port: Unable to open");
-        return -1;
-    }
-    
-    setup_serial(serial);
-
-    char buffer[100] = {0};
-
-    sleep(2);
-    tcflush(serial, TCIOFLUSH);
-
-    write(serial, "3\n", 2);
-
-    usleep(500000);
-
-    read(serial, buffer, sizeof(buffer) - 1);
-
-    close(serial);
-
-    char *light_pos = strstr(buffer, "LIG:");
-    if (light_pos && sscanf(light_pos, "LIG:%hd", light) == 1)
-    {
-        return 1;
-    }
-
-    return 0;
-#else
-    // --- WINDOWS CLOUD MOCK ---
-    // This allows testing the Message Builder/RabbitMQ without an Arduino
-    *light = 500;
-    return 1;
-#endif
-}
-
-int fill_cup(int *success)
-{
-#if !defined(_WIN32) && !defined(UNIT_TESTING)
-    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
-    if (serial == -1)
-    {
-        printf("open_port: Unable to open");
-        return -1;
-    }
-
-    setup_serial(serial);
-    char buffer[100] = {0};
-
-    sleep(2);
-    tcflush(serial, TCIOFLUSH);
-
-    write(serial, "5\n", 2);
-
-    usleep(500000);
-
-    read(serial, buffer, sizeof(buffer) - 1);
-
-    close(serial);
-
-    if (strstr(buffer, "PUMP:DONE"))
-    {
-        *success = 1;
-        return 1;
-    }
-
-    if (strstr(buffer, "PUMP:FAIL"))
-    {
-        *success = 0;
-        return 1;
-    }
-
-    return 0;
-#else
-    // Windows / testing mock
-    *success =1;
-    printf("Mock: Fill cup command sent to Arduino\n");
-    return 1;
-#endif
-}
-
-int read_co2(int *co2)
-{
-#if !defined(_WIN32) && !defined(UNIT_TESTING)
-    // --- REAL LINUX LOGIC ---
-    int serial = open(SERIAL_PORT, O_RDWR | O_NOCTTY);
-    if (serial == -1)
-    {
-        printf("open_port: Unable to open");
-        return -1;
-    }
-    
-    setup_serial(serial);
-
-    char buffer[100] = {0};
-
-    sleep(2); // arduino may reset when port opens
-    tcflush(serial, TCIOFLUSH); // clear old data
-
-    write(serial, "6\n", 2);
-
-    usleep(500000);
-
-    read(serial, buffer, sizeof(buffer) - 1);
-
-    close(serial);
-
-    char *co2_pos = strstr(buffer, "CO2:");
-    if (co2_pos && sscanf(co2_pos, "CO2:%d", co2) == 1)
-    {
-        return 1;
-    }
-    return 0;
-#else
-    // --- WINDOWS CLOUD MOCK ---
-    // This allows testing the Message Builder/RabbitMQ without an Arduino
-    *co2 = 450;
-    return 1;
-#endif
-}
-*/
 
 // in administrator powershell
 
@@ -610,3 +441,29 @@ int read_co2(int *co2)
 //    sudo chmod a+rw /dev/ttyACM0
 // 3. Build and launch the application using your VS Code CMake extension or the terminal.
 //    The server will find the wireless network quiet, automatically switch to Serial mode, and fetch your metrics!
+
+
+//in ubuntu terminal:
+//rm -rf cmake-build-debug
+//mkdir linuxbuild && cd linuxbuild
+//# Run CMake
+//cmake ..
+//make
+// ./sensor_client
+
+
+//to install cmake in ubuntu, 1st update:
+//sudo apt update
+//then:
+//sudo apt install -y cmake build-essential
+
+//start the rabbitmq server container in root! (ChessAssistant)
+//!!!make sure docker desktop is running 1st XD
+//docker compose up -d rabbitmq
+
+//to BRIDGE with the container
+//in ADMIN powershell
+//netsh interface portproxy add v4tov4 listenport=2323 listenaddress=0.0.0.0 connectport=2323 connectaddress=$($(wsl hostname -I).Trim())
+//New-NetFirewallRule -DisplayName "Arduino WSL Wi-Fi Bridge" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 2323
+
+//All should be fine from here on

@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/test_message_builder.dir/tests/test_message_builder.c.o CMakeFiles/test_message_builder.dir/tests/Unity/src/unity.c.o CMakeFiles/test_message_builder.dir/src/message_builder.c.o CMakeFiles/test_message_builder.dir/src/rabbitmq_client.c.o CMakeFiles/test_message_builder.dir/src/sensor_reader.c.o -o test_message_builder  -lrabbitmq 

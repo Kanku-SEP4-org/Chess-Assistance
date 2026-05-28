@@ -12,7 +12,7 @@
 #include <avr/eeprom.h>    // Native AVR flash storage engine
 
 #if __has_include("credentials_private.h")
-    #include "credentials_private.h"
+    #include "../credentials_private.h"
 #else
     // File is missing (GitHub Actions). Inject safe compiler dummy placeholders
     // so the remote pipeline finishes building successfully without errors.
@@ -31,7 +31,7 @@ static comm_mode_t current_mode = COMM_SERIAL;
 static char tcp_receive_buffer[TCP_BUFF_SIZE] = {0};
 static char tcp_setup_ip_buffer[EEPROM_STR_LEN] = {0};//matching memory properties
 static volatile bool new_tcp_packet_ready = false;
-static int port = 23; //localized for easy edit and DRY compliance
+static int port = 2323; //localized for easy edit and DRY compliance
 
 // EEPROM Memory Mapping Structure
 // for user stable connection
