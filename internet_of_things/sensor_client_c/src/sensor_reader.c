@@ -316,9 +316,6 @@ int read_light(short *light)
         *light = (short)temp_light;
         return 1;
     }
-
-    // If it fails, assign a safe fallback or return error state
-    *light = 0;
     return 0;
 }
 
