@@ -119,10 +119,10 @@ static int execute_serial_transaction (const char* token, const char* response_p
     }
     return 0;
 #else
-    if (strcmp(token, "1") == 0) strcpy(dest_array, "TEMP:23.50");
-    else if (strcmp(token, "4") == 0) strcpy(dest_array, "WAT:500");
-    else if (strcmp(token, "3") == 0) strcpy(dest_array, "LIG:500");
-    else if (strcmp(token, "6") == 0) strcpy(dest_array, "CO2:450");
+    if (strcmp(token, "1") == 0 || strcmp(token, "1\n") == 0) strcpy(dest_array, "TEMP:23.50");
+    else if (strcmp(token, "4") == 0 || strcmp(token, "4\n") == 0) strcpy(dest_array, "WAT:500");
+    else if (strcmp(token, "3") == 0 || strcmp(token, "3\n") == 0) strcpy(dest_array, "LIG:500");
+    else if (strcmp(token, "6") == 0 || strcmp(token, "6\n") == 0) strcpy(dest_array, "CO2:450");
     return 1;
 #endif
 }
