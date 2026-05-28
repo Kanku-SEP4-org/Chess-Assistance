@@ -119,10 +119,10 @@ static int execute_serial_transaction (const char* token, const char* response_p
     }
     return 0;
 #else
-    if (strcmp(token, "1") == 0) strcpy(dest_array, "TEMP:23.50");
-    else if (strcmp(token, "4") == 0) strcpy(dest_array, "WAT:500");
-    else if (strcmp(token, "3") == 0) strcpy(dest_array, "LIG:500");
-    else if (strcmp(token, "6") == 0) strcpy(dest_array, "CO2:450");
+    if (strcmp(token, "1\n") == 0) strcpy(dest_array, "TEMP:23.50");
+    else if (strcmp(token, "4\n") == 0) strcpy(dest_array, "WAT:500");
+    else if (strcmp(token, "3\n") == 0) strcpy(dest_array, "LIG:500");
+    else if (strcmp(token, "6\n") == 0) strcpy(dest_array, "CO2:450");
     return 1;
 #endif
 }
@@ -336,7 +336,7 @@ int fill_cup(int *success)
         char response_payload[STREAM_BUFFER_SIZE] = {0};
 
     #if !defined(_WIN32) && !defined(UNIT_TESTING)
-        if (execute_unified_transaction("5", "5\n", "PUMP:", response_payload, 2) == 1) {
+        if (execute_unified_transaction("5\n", "5\n", "PUMP:", response_payload, 2) == 1) {
             if (strstr(response_payload, "DONE")) {
                 *success = 1;
                 return 1;
@@ -347,7 +347,7 @@ int fill_cup(int *success)
             }
         }
     #else
-        execute_unified_transaction("5", "5\n", "PUMP:", response_payload, 2);
+        execute_unified_transaction("5\n", "5\n", "PUMP:", response_payload, 2);
         if (strstr(response_payload, "DONE")) {
             *success = 1;
             return 1;
@@ -364,8 +364,8 @@ int provision_remote_arduino_wifi(const char *ssid, const char *password, const 
     char arduino_response_destination[STREAM_BUFFER_SIZE] = {0};
 
     // Package the raw string payloads cleanly
-    sprintf(wifi_payload_buffer, "7%s,%s,%s", ssid, password, server_ip);
-    sprintf(serial_payload_buffer, "7%s,%s,%s", ssid, password, server_ip);
+    sprintf(wifi_payload_buffer, "7%s,%s,%s\n", ssid, password, server_ip);
+    sprintf(serial_payload_buffer, "7%s,%s,%s\n", ssid, password, server_ip);
 
     printf("SENSOR_READER: Sending standardized setup payload downstream...\n");
 
