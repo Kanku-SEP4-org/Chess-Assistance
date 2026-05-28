@@ -232,13 +232,13 @@ static int execute_socket_transaction(const char* menu_token, const char* parsin
 static int parse_payload_by_type(const char* payload, const char* prefix, void* out_value, int datatype_flag)
 {
     switch (datatype_flag) {
-        case 1: { // Unified %d.%d Floating Point Reconstructor
-            int int_part = 0;
-            int dec_part = 0;
-            if (sscanf(payload, "TEMP:%d.%d", &int_part, &dec_part) == 2) {
-                float final_temp = (float)int_part + ((float)dec_part / 10.0f);
-                if (dec_part >= 10) final_temp = (float)int_part + ((float)dec_part / 100.0f);
-                *(float*)out_value = final_temp;
+        case 1: {
+            char format_string[32];
+            float parsed_value = 0.0f;
+            snprintf(format_string, sizeof(format_string), "%s%%f", prefix);
+
+            if (sscanf(payload, format_string, &parsed_value) == 1) {
+                *(float*)out_value = parsed_value;
                 return 1;
             }
             return 0;
