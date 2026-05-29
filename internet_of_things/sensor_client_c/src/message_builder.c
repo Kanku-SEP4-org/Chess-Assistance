@@ -61,6 +61,13 @@ void create_water_message(char *responseMessage)
             timestamp
         );
     }
+    else {
+        sprintf(
+            responseMessage,
+            "{\"arduinoId\":1,\"type\":\"water\",\"value\":0,\"timestamp\":%ld}",
+            timestamp
+        );
+    }
 }
 
 void create_light_message(char *message)
@@ -90,8 +97,8 @@ void create_light_message(char *message)
             "{"
                 "\"arduinoId\":1,"
                 "\"type\":\"light\","
-                "\"value\": 0.00"
-                "\"timestamp\":%ld,"
+                "\"value\": 0.00,"
+                "\"timestamp\":%ld"
             "}",
             timestamp
         );

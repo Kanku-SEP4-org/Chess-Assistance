@@ -40,15 +40,20 @@ int main()
 
         create_light_message(lightMessage);
         send_response(connection, lightMessage);
+        usleep(200000); // give arduino time to clear flags
 
         create_temperature_message(tempMessage);
         send_response(connection, tempMessage);
+        usleep(200000);
 
         create_water_message(waterMessage);
         send_response(connection, waterMessage);
+        usleep(200000);
 
         create_co2_message(co2Message);
         send_response(connection, co2Message);
+        usleep(200000);
+
         sleep(5);
     }
 

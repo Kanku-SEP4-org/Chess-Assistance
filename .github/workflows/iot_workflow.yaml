@@ -37,7 +37,7 @@ jobs:
         cd internet_of_things/sensor_client_c
         mkdir -p build
         cd build
-        cmake ..
+        cmake -DCMAKE_C_FLAGS="-DUNIT_TESTING" .. 
         make
 
     - name: Run C Unit Tests
@@ -79,7 +79,9 @@ jobs:
         sudo apt-get install -y build-essential cmake librabbitmq-dev rabbitmq-server python3-pip
 
     - name: Start RabbitMQ Service
-      run: sudo service rabbitmq-server start
+      run: |
+        sudo service rabbitmq-server start 
+        sleep 3  
 
     # --- C# BUILD & TEST ---
     - name: Build and Test gRPC Server
