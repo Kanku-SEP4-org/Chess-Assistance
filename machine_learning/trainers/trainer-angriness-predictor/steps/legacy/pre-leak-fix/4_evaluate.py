@@ -12,7 +12,6 @@ MODEL_PATH = os.getenv("MODEL_PATH", "models/model.pkl")
 IF_MODEL_PATH = os.getenv("IF_MODEL_PATH", "models/if_model.pkl")
 BINS_PATH = os.getenv("BINS_PATH", "models/angriness_bins.json")
 OUT_PATH = os.getenv("EVAL_METRICS_PATH", "models/eval_metrics.json")
-RAW_VALIDATED_CSV = os.path.join(PROCESSED_DIR, "raw_validated.csv")
 
 SPLITS = {
     "train": {
@@ -48,70 +47,8 @@ def score_to_angriness(score: float, bin_edges: list[float]) -> int:
     return 1
 
 
-def build_next_game_signal(path: str = RAW_VALIDATED_CSV):
-    """Map (game_id, username) -> the player's NEXT game rating change.
-
-    This is an EXTERNAL construct-validity signal: `elo_diff` (and therefore the
-    next game's win/loss) is never an input to the Isolation Forest that generated
-    the angriness labels, so correlating angriness(game N) with the outcome of game
-    N+1 is non-circular. The tilt hypothesis predicts that an angrier game is
-    followed by a worse result (negative next-game rating change).
-    """
-    if not os.path.exists(path):
-        return None
-    df = pd.read_csv(path)
-    needed = {"username", "created_at", "game_id", "elo_diff"}
-    if not needed.issubset(df.columns):
-        return None
-
-    df = df.sort_values(["username", "created_at"]).reset_index(drop=True)
-    df["next_elo_diff"] = df.groupby("username")["elo_diff"].shift(-1)
-
-    signal = {}
-    for gid, uname, ned in zip(df["game_id"], df["username"], df["next_elo_diff"]):
-        if pd.isna(ned):
-            continue  # player's last game — no "next game"
-        signal[(gid, uname)] = {"next_elo_diff": float(ned), "next_is_loss": bool(ned < 0)}
-    return signal
-
-
-def compute_external_validity(angriness, raw_df, next_game_map):
-    """Spearman(angriness, next-game rating change) + mean angriness by next outcome."""
-    if next_game_map is None or "game_id" not in raw_df.columns or "username" not in raw_df.columns:
-        return None
-
-    keys = list(zip(raw_df["game_id"], raw_df["username"]))
-    next_elo = np.array(
-        [next_game_map.get(k, {}).get("next_elo_diff", np.nan) for k in keys], dtype=float
-    )
-    next_loss = np.array(
-        [next_game_map.get(k, {}).get("next_is_loss", np.nan) for k in keys], dtype=float
-    )
-    ang = np.asarray(angriness, dtype=float)
-    has_next = ~np.isnan(next_elo)
-
-    if int(has_next.sum()) < 10:
-        return {"note": f"insufficient next-game data (n={int(has_next.sum())})"}
-
-    rho, pval = spearmanr(ang[has_next], next_elo[has_next])
-    loss_mask = has_next & (next_loss == 1)
-    win_mask = has_next & (next_loss == 0)
-    mean_loss = float(ang[loss_mask].mean()) if loss_mask.any() else None
-    mean_win = float(ang[win_mask].mean()) if win_mask.any() else None
-
-    return {
-        "signal": "player's next-game rating change (elo_diff of game N+1)",
-        "n": int(has_next.sum()),
-        "spearman_next_elo_diff": {"rho": round(float(rho), 4), "p_value": round(float(pval), 6)},
-        "mean_angriness_when_next_is_loss": round(mean_loss, 3) if mean_loss is not None else None,
-        "mean_angriness_when_next_is_not_loss": round(mean_win, 3) if mean_win is not None else None,
-        "tilt_hypothesis": "rho < 0 AND mean_angriness_when_next_is_loss > mean_angriness_when_next_is_not_loss",
-        "non_circular": "elo_diff / next-game outcome is not in IF_FEATURES, so this is an independent signal",
-    }
-
-
 def evaluate_split(name, features_df, raw_df, model, bin_edges, is_supervised,
-                   if_model=None, if_features=None, next_game_map=None):
+                   if_model=None, if_features=None):
     if is_supervised:
         # RF trained on unscaled features — predict using raw data
         angriness = model.predict(raw_df[if_features].values)
@@ -161,10 +98,6 @@ def evaluate_split(name, features_df, raw_df, model, bin_edges, is_supervised,
     if is_supervised:
         result["accuracy"] = acc
         result["f1_weighted"] = f1
-
-    external = compute_external_validity(angriness, raw_df, next_game_map)
-    if external is not None:
-        result["external_validity"] = external
 
     return result
 
@@ -313,13 +246,6 @@ def main():
     else:
         print("Model type: Isolation Forest (unsupervised)")
 
-    next_game_map = build_next_game_signal()
-    if next_game_map is None:
-        print("  [!] Next-game signal unavailable (raw_validated.csv missing columns) — "
-              "skipping external validity.")
-    else:
-        print(f"  Next-game signal built for {len(next_game_map)} (game_id, username) pairs.")
-
     split_results = {}
     for name, paths in SPLITS.items():
         if not os.path.exists(paths["features"]):
@@ -332,7 +258,7 @@ def main():
 
         split_results[name] = evaluate_split(
             name, features_df, raw_df, model, bin_edges, is_supervised,
-            if_model=if_model, if_features=if_features, next_game_map=next_game_map,
+            if_model=if_model, if_features=if_features,
         )
 
     assessment = compute_overfitting_assessment(split_results, is_supervised)
@@ -341,25 +267,12 @@ def main():
     print_comparison(split_results, assessment, is_supervised)
     validations = print_test_details(split_results)
 
-    external_test = split_results.get("test", {}).get("external_validity")
-    if external_test and "spearman_next_elo_diff" in external_test:
-        rho = external_test["spearman_next_elo_diff"]["rho"]
-        pval = external_test["spearman_next_elo_diff"]["p_value"]
-        ml = external_test["mean_angriness_when_next_is_loss"]
-        mw = external_test["mean_angriness_when_next_is_not_loss"]
-        supports = (rho is not None and rho < 0) and (ml is not None and mw is not None and ml > mw)
-        print("\n  External validity (non-circular — next-game rating change):")
-        print(f"    Spearman(angriness, next_elo_diff) = {rho} (p={pval}, n={external_test['n']})")
-        print(f"    Mean angriness | next is loss: {ml}   | next not loss: {mw}")
-        print(f"    Supports tilt hypothesis: {'YES' if supports else 'NO / weak'}")
-
     report = {
         "model_type": bins_data.get("model_type", "isolation_forest"),
         "supervised": is_supervised,
         "splits": split_results,
         "overfitting_assessment": assessment,
         "validations": validations,
-        "external_validity_test": external_test,
     }
 
     os.makedirs(os.path.dirname(OUT_PATH) or ".", exist_ok=True)
