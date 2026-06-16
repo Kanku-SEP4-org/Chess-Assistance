@@ -144,7 +144,7 @@ def main():
         "if_max_features": 0.75,
         "rf_n_estimators": 200,
         "rf_max_depth": 9,
-        "rf_min_samples_leaf": 5,
+        "rf_min_samples_leaf": 9,
         "rf_max_features": "sqrt",
         "rf_min_samples_split": 10,
         "n_rows": n_total,
