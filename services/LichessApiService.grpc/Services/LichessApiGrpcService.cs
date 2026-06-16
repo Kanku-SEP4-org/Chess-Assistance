@@ -200,7 +200,8 @@ public class LichessApiGrpcService(
     {
         var session = await db.Sessions.FindAsync(request.SessionId);
 
-        if (session == null)
+        // Reject missing and not-owned identically to avoid leaking which session ids exist.
+        if (session == null || session.PlayerId != request.PlayerId)
         {
             return new EndSessionResponse
             {

@@ -348,7 +348,7 @@ public class GrpcServiceTests : IDisposable
         await _db.SaveChangesAsync();
 
         var response = await _service.EndSession(
-            new EndSessionRequest { SessionId = session.Id },
+            new EndSessionRequest { SessionId = session.Id, PlayerId = 1 },
             CreateTestContext());
 
         Assert.True(response.Success);
@@ -361,11 +361,37 @@ public class GrpcServiceTests : IDisposable
     public async Task EndSession_NonexistentSession_ReturnsFalse()
     {
         var response = await _service.EndSession(
-            new EndSessionRequest { SessionId = 9999 },
+            new EndSessionRequest { SessionId = 9999, PlayerId = 1 },
             CreateTestContext());
 
         Assert.False(response.Success);
         Assert.Contains("not found", response.Message);
+    }
+
+    [Fact]
+    public async Task EndSession_WrongOwner_ReturnsFalseAndDoesNotEnd()
+    {
+        var hr = await SeedHealthRecordAsync();
+        var session = new Session
+        {
+            StartedAt = DateTime.UtcNow.AddMinutes(-10),
+            PlayerId = 1,
+            HealthRecordId = hr.Id
+        };
+        _db.Sessions.Add(session);
+        await _db.SaveChangesAsync();
+
+        // Caller is player 2 trying to end player 1's session.
+        var response = await _service.EndSession(
+            new EndSessionRequest { SessionId = session.Id, PlayerId = 2 },
+            CreateTestContext());
+
+        Assert.False(response.Success);
+        // Same message as a missing session: don't leak that the id exists.
+        Assert.Contains("not found", response.Message);
+
+        var unchanged = await _db.Sessions.FindAsync(session.Id);
+        Assert.Null(unchanged!.EndedAt);
     }
 
     [Fact]
@@ -384,7 +410,7 @@ public class GrpcServiceTests : IDisposable
         var session = await _db.Sessions.FirstAsync();
 
         var response = await _service.EndSession(
-            new EndSessionRequest { SessionId = session.Id },
+            new EndSessionRequest { SessionId = session.Id, PlayerId = 1 },
             CreateTestContext());
 
         Assert.False(response.Success);

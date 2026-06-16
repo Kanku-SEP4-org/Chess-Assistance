@@ -353,12 +353,13 @@ app.post("/session/start", requireAuth, async (req, res) => {
 });
 
 // POST /session/end
-app.post("/session/end", async (req, res) => {
+app.post("/session/end", requireAuth, async (req, res) => {
   let body = req.body;
   if (typeof body === "string") {
     try { body = JSON.parse(body); } catch { return res.status(400).json({ error: "Invalid body" }); }
   }
   const { session_id, water_drunk_during_session_ml } = body;
+  const { player_id } = req.player;
 
   if (!session_id) {
     return res.status(400).json({ error: "Missing session_id" });
@@ -371,6 +372,7 @@ app.post("/session/end", async (req, res) => {
           session_id: Number(session_id),
           water_drunk_during_session_ml:
             Number(water_drunk_during_session_ml) || 0,
+          player_id: Number(player_id),
         },
         (err, response) => {
           if (err) reject(err);

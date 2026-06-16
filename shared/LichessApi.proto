@@ -43,6 +43,7 @@ message StartSessionResponse {
 message EndSessionRequest {
   int32 session_id = 1;
   int32 water_drunk_during_session_ml = 2;
+  int32 player_id = 3;   // caller identity, set by gateway from verified JWT
 }
 
 message EndSessionResponse {
