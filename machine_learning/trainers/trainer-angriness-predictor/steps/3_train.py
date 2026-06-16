@@ -98,7 +98,7 @@ def main():
         n_estimators=200,
         random_state=42,
         max_depth=9,
-        min_samples_leaf=5,
+        min_samples_leaf=9,
         max_features="sqrt",
         min_samples_split=10,
         n_jobs=-1,
