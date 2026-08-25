@@ -1,0 +1,154 @@
+{
+  "summary": {
+    "contamination_is_inert": true,
+    "explanation": "decision_function = score_samples - offset_; only offset_ depends on contamination, and a constant shift cancels under percentile binning, so labels/RF/eval are identical. Only n_anomalies (cosmetic) changes.",
+    "real_label_driver": "PERCENTILE_EDGES",
+    "best_edge_scheme_by_external_validity": "baseline_10_25_30_25_10",
+    "baseline_is_competitive": true
+  },
+  "fixed_if_hyperparameters": {
+    "n_estimators": 200,
+    "max_features": 0.75,
+    "random_state": 42
+  },
+  "sweep_a_contamination": [
+    {
+      "contamination": "auto",
+      "n_anomalies": 4469,
+      "anomaly_rate": 0.307,
+      "rf_train_accuracy": 0.743,
+      "val_accuracy": 0.7262,
+      "test_accuracy": 0.7081,
+      "spearman_next_elo_diff": -0.0867,
+      "label_agreement_vs_0.03": 1.0
+    },
+    {
+      "contamination": 0.01,
+      "n_anomalies": 146,
+      "anomaly_rate": 0.01,
+      "rf_train_accuracy": 0.743,
+      "val_accuracy": 0.7262,
+      "test_accuracy": 0.7081,
+      "spearman_next_elo_diff": -0.0867,
+      "label_agreement_vs_0.03": 1.0
+    },
+    {
+      "contamination": 0.02,
+      "n_anomalies": 292,
+      "anomaly_rate": 0.0201,
+      "rf_train_accuracy": 0.743,
+      "val_accuracy": 0.7262,
+      "test_accuracy": 0.7081,
+      "spearman_next_elo_diff": -0.0867,
+      "label_agreement_vs_0.03": 1.0
+    },
+    {
+      "contamination": 0.03,
+      "n_anomalies": 437,
+      "anomaly_rate": 0.03,
+      "rf_train_accuracy": 0.743,
+      "val_accuracy": 0.7262,
+      "test_accuracy": 0.7081,
+      "spearman_next_elo_diff": -0.0867,
+      "label_agreement_vs_0.03": 1.0
+    },
+    {
+      "contamination": 0.05,
+      "n_anomalies": 728,
+      "anomaly_rate": 0.05,
+      "rf_train_accuracy": 0.743,
+      "val_accuracy": 0.7262,
+      "test_accuracy": 0.7081,
+      "spearman_next_elo_diff": -0.0867,
+      "label_agreement_vs_0.03": 1.0
+    },
+    {
+      "contamination": 0.1,
+      "n_anomalies": 1456,
+      "anomaly_rate": 0.1,
+      "rf_train_accuracy": 0.743,
+      "val_accuracy": 0.7262,
+      "test_accuracy": 0.7081,
+      "spearman_next_elo_diff": -0.0867,
+      "label_agreement_vs_0.03": 1.0
+    }
+  ],
+  "sweep_b_percentile_edges": [
+    {
+      "edges_name": "baseline_10_25_30_25_10",
+      "edges": [
+        0,
+        10,
+        35,
+        65,
+        90,
+        100
+      ],
+      "rf_train_accuracy": 0.743,
+      "val_accuracy": 0.7262,
+      "test_accuracy": 0.7081,
+      "accuracy_gap_val_test": 0.0181,
+      "abs_external_validity_rho": 0.0867,
+      "external_validity_rho": -0.0867,
+      "acc_gap_ok": true,
+      "tilt_checks_pass": true
+    },
+    {
+      "edges_name": "uniform_20_each",
+      "edges": [
+        0,
+        20,
+        40,
+        60,
+        80,
+        100
+      ],
+      "rf_train_accuracy": 0.7192,
+      "val_accuracy": 0.6933,
+      "test_accuracy": 0.6921,
+      "accuracy_gap_val_test": 0.0012,
+      "abs_external_validity_rho": 0.0728,
+      "external_validity_rho": -0.0728,
+      "acc_gap_ok": true,
+      "tilt_checks_pass": true
+    },
+    {
+      "edges_name": "tail_light_5_20_50_20_5",
+      "edges": [
+        0,
+        5,
+        25,
+        75,
+        95,
+        100
+      ],
+      "rf_train_accuracy": 0.7957,
+      "val_accuracy": 0.7559,
+      "test_accuracy": 0.7495,
+      "accuracy_gap_val_test": 0.0064,
+      "abs_external_validity_rho": 0.0787,
+      "external_validity_rho": -0.0787,
+      "acc_gap_ok": true,
+      "tilt_checks_pass": true
+    },
+    {
+      "edges_name": "tail_heavy_15_25_20_25_15",
+      "edges": [
+        0,
+        15,
+        40,
+        60,
+        85,
+        100
+      ],
+      "rf_train_accuracy": 0.7444,
+      "val_accuracy": 0.7262,
+      "test_accuracy": 0.7172,
+      "accuracy_gap_val_test": 0.009,
+      "abs_external_validity_rho": 0.0722,
+      "external_validity_rho": -0.0722,
+      "acc_gap_ok": true,
+      "tilt_checks_pass": true
+    }
+  ]
+}
